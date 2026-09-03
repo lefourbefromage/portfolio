@@ -2,139 +2,190 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project
+Rédigé en français : le site, ses contenus et son mainteneur le sont aussi.
 
-Personal portfolio for Vincent Waldmann. Static site, no framework, no build step, no
-dependency manifest: `index.html` + `css/style.css` + `js/main.js` are shipped as written.
-All user-facing copy is in French.
+## Le projet
 
-## Version control
+Portfolio personnel de Vincent Waldmann. Site statique, sans framework, sans étape de build
+et sans gestionnaire de dépendances : `index.html`, `css/style.css` et `js/main.js` sont
+servis tels qu'ils sont écrits. Tous les textes destinés aux visiteurs sont en français.
 
-Git repo on `main`, pushed to `git@github-perso:lefourbefromage/portfolio.git`.
+## Lancer le site
 
-`github-perso` is an SSH host alias defined in `~/.ssh/config`, not a typo — it pins the
-personal key with `IdentitiesOnly yes`. Using plain `github.com` in a remote URL on this
-machine offers the *work* key instead and fails with `Permission denied (publickey)`. Keep
-the alias in any remote you add here.
+Le serveur de dev est déclaré dans `.claude/launch.json` — démarre-le avec le panneau
+navigateur (`preview_start` avec `{name: "portfolio"}`), jamais avec Bash. C'est un simple
+`python3 -m http.server 4173`. Il n'y a ni build, ni lint, ni tests.
 
-Vendored skills (`.agents/`, and the symlinks in `.claude/skills/`) are gitignored — 5.4 MB
-that `skills-lock.json`, which is tracked, can restore.
-
-## Running it
-
-The dev server is declared in `.claude/launch.json` — start it with the Browser pane
-(`preview_start` with `{name: "portfolio"}`), never with Bash. It is `python3 -m http.server 4173`.
-There is no build, lint or test command.
-
-**The preview aggressively caches `style.css` and `main.js`.** A plain reload — even
-`navigate` with `force: true` — will silently keep serving the old file, and injecting a
-cache-busted `<script>` copy leaves *duplicate* IIFE instances registered, which produces
-very confusing state. The reliable refresh is:
+**Le panneau met `style.css` et `main.js` en cache de façon agressive.** Un rechargement
+ordinaire — même `navigate` avec `force: true` — continue de servir l'ancien fichier en
+silence, et injecter une copie du `<script>` avec un paramètre anti-cache laisse *plusieurs*
+instances des IIFE enregistrées, ce qui produit un état incompréhensible. Le rafraîchissement
+fiable :
 
 ```js
 await fetch('css/style.css', {cache: 'reload'}); await fetch('js/main.js', {cache: 'reload'}); location.reload();
 ```
 
-If a change seems not to apply, verify by comparing `document.styleSheets` rules against a
-fresh `fetch()` of the same file before assuming the code is wrong.
+Si une modification semble sans effet, compare les règles de `document.styleSheets` avec un
+`fetch()` frais du même fichier avant de conclure que le code est en cause. Et quand le
+panneau est masqué, les captures d'écran retardent : fie-toi aux mesures du DOM.
 
-## Hero: a fixed design canvas addressed in percentages
+## Versionnement
 
-`.hero__panel` is a container query context (`container-name: panel`) locked to
-`aspect-ratio: 1472 / 599`, the Figma frame size. Every decorative element inside
-`.hero__decor` is positioned in **percentages of that frame**, and text sizes use `cqw`.
-So when a request is phrased in pixels ("descend la ligne de 10px"), convert against the
-design size — **10px ≈ 0.679% horizontally, ≈ 1.669% vertically**. Sticker rotation lives in
-each `.sticker-N` rule as `--rot`, not in a `transform`.
+Dépôt git sur `main`, poussé vers `git@github-perso:lefourbefromage/portfolio.git`.
 
-To place an element relative to a decorative SVG path (e.g. "put UX at the start of the
-arrow"), read the fractional point out of the SVG's own `d`, scale it by the element's
-`width:%` and by 1472/599 for the vertical component, then add the element's `left`/`top`.
+`github-perso` est un alias d'hôte SSH défini dans `~/.ssh/config`, ce n'est pas une faute de
+frappe : il épingle la clé personnelle avec `IdentitiesOnly yes`. Utiliser `github.com` en
+clair dans une URL de remote propose la clé *professionnelle* et échoue sur
+`Permission denied (publickey)`. Garde l'alias dans tout remote ajouté ici.
 
-## Sticker peel interaction (`js/main.js`, first IIFE)
+Les skills vendorisées (`.agents/`, et les liens symboliques de `.claude/skills/`) sont
+ignorées par git — 5,4 Mo que `skills-lock.json`, lui versionné, permet de restaurer.
 
-Dragging a sticker must **not move it** — it lifts a corner in 3D and springs back.
-JS only writes `--tiltx` / `--tilty` / `--peel-scale`; the composed transform lives entirely
-in the `.decor--sticker` rule. Keep it that way: adding a translate in JS breaks the design
-intent. `setPointerCapture` is wrapped in try/catch because synthetic drags throw
-`NotFoundError`.
+## Système de design
 
-## Trail section (`#experiences`) — the scroll-driven topographic map
+### Palette : quatre couleurs
 
-The most intricate part of the site. `js/main.js`, second IIFE.
+Tout est défini dans `:root`. **N'introduis pas de cinquième couleur** sans le demander.
 
-**Shape.** A tall `.trail` runway (`height: 1150vh`) with a `position: sticky` stage.
-Scroll progress is `-trail.getBoundingClientRect().top / runway`, rAF-throttled.
+| Token | Valeur | Usage |
+|---|---|---|
+| `--cream` | `#fef1da` | Blanc cassé : fond des sections claires, **ou** couleur de texte sur fond foncé |
+| `--navy` | `#172247` | Bleu foncé : couleur de texte, ou fond foncé |
+| `--green` | `#4f914f` | Touche de couleur sur certains éléments |
+| `--pink` | `#f8d0ee` | Touche de couleur, **sur fond foncé uniquement** |
 
-**The camera is one composed transform** on `.trail__map` (7200×7200, `transform-origin: 0 0`),
-read right-to-left: bring the walker's map point to the origin, scale, rotate, then drop it
-on screen.
+Corollaire à ne pas oublier : sur fond sombre le texte est **crème, jamais blanc pur**.
+`body` porte déjà `color: var(--cream)`.
+
+### L'axe des bleus
+
+Tous les bleus du site partagent la **teinte 226**. Seules la luminosité et la saturation
+varient, et la saturation *baisse* quand la couleur s'éclaircit — c'est ce qui donne des
+bleus d'encre plutôt que des bleus électriques. Un bleu à saturation 80 % dans les tons
+moyens jure avec le reste du site ; c'est un écart mesuré et écarté délibérément.
+
+- `--ink` `#060d22` — `hsl(226 70% 8%)`. Fond du site, et encre de la carte topographique.
+- `--ink-rgb` `6 13 34` — pour les opacités : `rgb(var(--ink-rgb) / .32)`.
+- `--cream-rgb`, `--navy-rgb` — même usage pour les deux autres.
+
+**Ne réintroduis jamais une opacité en `rgba()` codée en dur.** La section parcours en a
+compté jusqu'à dix, à neuf opacités différentes, ce qui rendait tout changement manuel.
+
+Exceptions restant hors palette, à trancher un jour : `#44d444` (pastille « Disponible »),
+`#4258a2` (bordure du badge de localisation), `#fffaf0` (fond des cartes du parcours).
+
+### Typographie
+
+Deux familles, toutes deux auto-hébergées dans `fonts/` en woff2 variable.
+
+- **Clash Display** (`--font-display`, graisses 200–700) — titres en bold, ainsi que les
+  sous-titres et les labels.
+- **Inter** (`--font-body`, graisses 100–900) — texte courant, en regular.
+
+`body` porte `--font-body` ; `--font-display` est appliqué explicitement aux onze sélecteurs
+de titres et de labels. Un nouvel élément de texte hérite donc d'Inter par défaut, ce qui est
+le comportement voulu.
+
+## Le hero : un repère fixe adressé en pourcentages
+
+`.hero__panel` est un contexte de container query (`container-name: panel`) verrouillé sur
+`aspect-ratio: 1472 / 599`, la taille du cadre Figma. Chaque élément décoratif de
+`.hero__decor` est positionné en **pourcentage de ce cadre**, et les tailles de texte sont en
+`cqw`. Donc quand une demande est formulée en pixels (« descend la ligne de 10px »), convertis
+contre cette taille de référence : **10px ≈ 0,679 % en horizontal, ≈ 1,669 % en vertical**.
+La rotation de chaque sticker vit dans sa règle `.sticker-N` sous forme de `--rot`, pas dans
+un `transform`.
+
+Pour placer un élément par rapport à un tracé SVG décoratif (par exemple « mets UX au départ
+de la flèche »), lis le point fractionnaire dans le `d` du SVG, multiplie-le par le `width:%`
+de l'élément et par 1472/599 pour la composante verticale, puis ajoute ses `left`/`top`.
+
+## Le décollage des stickers (`js/main.js`, première IIFE)
+
+Draguer un sticker ne doit **pas le déplacer** : ça soulève un coin en 3D et ça revient en
+place. Le JS n'écrit que `--tiltx`, `--tilty` et `--peel-scale` ; la transformation composée
+vit entièrement dans la règle `.decor--sticker`. Garde ce partage : ajouter une translation
+dans le JS casse l'intention. `setPointerCapture` est enveloppé dans un try/catch parce que
+les drags synthétiques lèvent `NotFoundError`.
+
+## La section parcours (`#experiences`)
+
+La partie la plus délicate du site. `js/main.js`, deuxième IIFE.
+
+**Forme.** Une piste `.trail` très haute (`height: 1150vh`) avec une scène en
+`position: sticky`. La progression du scroll vaut
+`-trail.getBoundingClientRect().top / runway`, limitée par rAF.
+
+**La caméra est une seule transformation composée** sur `.trail__map` (7200×7200,
+`transform-origin: 0 0`), qui se lit de droite à gauche : amener le point du marcheur à
+l'origine, mettre à l'échelle, tourner, puis le poser à l'écran.
 
 ```
 translate(cx,cy) rotate(rot) scale(zoom) translate(-here.x,-here.y)
 ```
 
-Everything else follows from this. **Do not animate anything else per frame** — a single
-composited transform is why the section is smooth on touch. `cx`/`cy` are the screen centre
-plus a small sine drift so the walker breathes around the middle without ever nearing an edge.
+Tout le reste en découle. **N'anime rien d'autre image par image** — c'est cette
+transformation unique et composite qui rend la section fluide au doigt. `cx`/`cy` valent le
+centre de l'écran plus une légère dérive sinusoïdale, pour que le marcheur respire autour du
+milieu sans jamais approcher un bord.
 
-**Heading-up rotation** is sampled either side of the walker, then *unwrapped* across the
-atan2 seam (`while (heading - prev > 180) heading -= 360`) or a fast scroll snaps a full turn,
-then damped by `ROT_DAMP`. Raising the damping past ~0.4 makes fast scrolling feel swingy — the
-current value was tuned down deliberately.
+**La rotation cap en haut** est échantillonnée de part et d'autre du marcheur, puis
+*déroulée* à la couture de l'atan2 (`while (heading - prev > 180) heading -= 360`), faute de
+quoi un scroll rapide provoque un tour complet, puis amortie par `ROT_DAMP`. Au-delà de ~0,4
+l'amortissement rend le scroll rapide brinquebalant : la valeur actuelle a été baissée exprès.
 
-**Labels counter-transform.** Stops sit *inside* the rotating map so they stick to the terrain,
-and cancel the camera with `rotate(calc(-1 * var(--rot))) scale(calc(1 / var(--zoom)))`.
-`--rot` and `--zoom` are set on `.trail__map` every frame purely as this JS→CSS interface.
+**Les étiquettes se contre-transforment.** Les étapes vivent *à l'intérieur* de la carte qui
+tourne, pour rester collées au terrain, et annulent la caméra avec
+`rotate(calc(-1 * var(--rot))) scale(calc(1 / var(--zoom)))`. `--rot` et `--zoom` sont posés
+sur `.trail__map` à chaque image uniquement pour servir d'interface JS → CSS.
 
-**Pacing is non-linear by design.** `costAt(p)` returns scroll cost per unit of route: a base,
-plus a grade penalty from the `GRADE` profile ("as if you were climbing"), plus a triangular
-dwell well at every stop so the walker nearly halts while the card is readable. It is
-integrated once into a cumulative table and inverted by binary search in `progressFor()`.
-Raise `DWELL_COST`/`DWELL_W` for longer pauses; both were lowered when a fifth stop was added,
-since more stops multiply total runway.
+**Le rythme est non linéaire par construction.** `costAt(p)` renvoie un coût de scroll par
+unité de parcours : une base, plus une pénalité de pente issue du profil `GRADE` (« comme si
+on montait »), plus un puits triangulaire à chaque étape pour que le marcheur s'arrête
+presque le temps qu'on lise la carte. Le tout est intégré une fois en table cumulée, puis
+inversé par recherche dichotomique dans `progressFor()`. Augmente `DWELL_COST`/`DWELL_W` pour
+des pauses plus longues ; les deux ont été baissés quand une cinquième étape est arrivée,
+puisque le nombre d'étapes multiplie la longueur totale de la piste.
 
-**Scroll range is clamped to the stops.** `START`/`END` come from the first and last
-`data-at`, so the section opens already standing at the first waypoint with green route
-behind, and ends at the last one with grey dashes continuing past it. Consequence: the raw
-route fraction is never 0 or 1 — the HUD readout deliberately shows `scrolled`, not `p`.
+**La plage de scroll est bornée aux étapes.** `START` et `END` viennent du premier et du
+dernier `data-at`, si bien que la section s'ouvre déjà à la première étape avec du vert
+derrière soi, et se termine à la dernière avec les pointillés gris qui continuent au-delà.
+Conséquence : la fraction brute du parcours ne vaut jamais 0 ni 1 — l'affichage du HUD montre
+donc délibérément `scrolled`, et non `p`.
 
-**Two stacked paths, identical `d`.** `.trail__track` is the grey dashed route ahead;
-`.trail__track-done` is solid green and is revealed with `stroke-dasharray: ${walked} ${total}`.
-That trick only works because the walked line is *not* dashed — if you ever make it dashed
-again you need a `<mask>` and a separate reveal path.
+**Deux tracés superposés, au `d` identique.** `.trail__track` est la route grise en
+pointillés devant ; `.trail__track-done` est verte, pleine, et se révèle par
+`stroke-dasharray: ${walked} ${total}`. Cette astuce ne fonctionne que parce que la ligne
+parcourue n'est *pas* en pointillés — si elle le redevenait, il faudrait un `<mask>` et un
+tracé de révélation distinct.
 
-Adding or moving a stop means editing `data-at` in `index.html`; positions on screen are
-computed from `getPointAtLength`, so nothing else needs touching.
+Ajouter ou déplacer une étape se fait en éditant `data-at` dans `index.html` ; les positions à
+l'écran sont calculées par `getPointAtLength`, il n'y a rien d'autre à toucher.
 
-`prefers-reduced-motion: reduce` unpins the whole thing into a plain vertical timeline. When
-hiding parts of the map there, hide the leaf elements — hiding a container has twice silently
-taken `.trail__stops` with it.
+`prefers-reduced-motion: reduce` désépingle l'ensemble en une simple frise verticale. Quand tu
+y masques des morceaux de la carte, masque les éléments feuilles — masquer un conteneur a déjà
+emporté `.trail__stops` deux fois en silence.
 
-## Generated assets
+## Les assets générés
 
-`assets/hero-topo.svg`, `assets/trail-map.svg` and the trail's route `d` attribute are all
-**generated by the Python scripts in `tools/`** (numpy / scipy / matplotlib, all already
-installed). Each uses a fixed seed: re-running `gen_map.py` and `gen_route.py` reproduces the
-committed assets byte-for-byte, so you can change a parameter and regenerate with confidence.
-See `tools/README.md` — it also records the one gap, that `gen_topo.py` emits a raw 204 KB SVG
-while the shipped `hero-topo.svg` is 132 KB, a cleanup pass that was not preserved.
+`assets/hero-topo.svg`, `assets/trail-map.svg` et l'attribut `d` du parcours sont tous
+**produits par les scripts Python de `tools/`** (numpy / scipy / matplotlib, déjà installés).
+Chacun utilise une graine fixe : relancer `gen_map.py` et `gen_route.py` reproduit les assets
+versionnés **à l'octet près**, tu peux donc changer un paramètre et régénérer en confiance.
+Voir `tools/README.md`, qui consigne aussi la seule lacune : `gen_topo.py` sort un SVG brut de
+204 Ko alors que le `hero-topo.svg` livré en fait 132 Ko, une passe de nettoyage qui n'a pas
+été conservée.
 
-Note `gen_route.py` rewrites the `d` of **both** `<path>`s in `index.html`; they must always
-carry the same value. Constraints these scripts satisfy, worth preserving:
+`gen_route.py` réécrit le `d` des **deux** `<path>` d'`index.html` ; ils doivent toujours
+porter la même valeur.
 
-- `trail-map.svg` is a **seamless periodic 2400px tile** (`gaussian_filter(..., mode="wrap")`
-  on every octave, plus a duplicated first row/column) so it can `background-repeat` across
-  7200px at ~200 KB instead of one huge unique map. The map is oversized precisely so its
-  edges never enter frame.
-- Contour strokes must use the site navy (`#22345f` family), matching the background and type.
-- The route is a Catmull-Rom spine through hand-placed switchbacks, displaced along the
-  **normal** by multi-octave fractal noise and tapered to zero at both ends, to read like a
-  real GPS trace rather than a drawn curve. It must not self-intersect, and there is no loop.
-- `hero-topo.svg` is animated by the `#topo-wave` SVG filter defined at the top of
-  `index.html` (`feTurbulence` + `feDisplacementMap`, SMIL-animated `baseFrequency`).
+## À préciser
 
-## Skills
+Ces points ne sont pas encore arbitrés — demande plutôt que de supposer :
 
-`.claude/skills/` and `.agents/skills/` hold 26 vendored design/animation skills, pinned by
-hash in `skills-lock.json`. They are third-party content — do not hand-edit them.
+- **La hiérarchie du site.** La nav pointe vers `#a-propos`, `#projets` et `#contact`, qui
+  **n'existent pas**. Et `#experiences`, qui existe, n'est lié depuis nulle part.
+- **L'hébergement**, donc si les chemins doivent rester relatifs et si une étape de
+  minification est un jour nécessaire.
+- **La source de vérité du design** : savoir si le fichier Figma fait toujours foi.
