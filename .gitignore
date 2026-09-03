@@ -1,0 +1,17 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Sorties intermédiaires des générateurs
+assets/hero-topo-raw.svg
+
+# Éditeurs
+.vscode/
+.idea/
+*.swp
+
+# Skills tierces vendorisées : 5,4 Mo / 202 fichiers, restaurables depuis
+# skills-lock.json (qui, lui, est versionné). .claude/skills n'est qu'un
+# ensemble de liens symboliques vers .agents/skills, d'où les deux lignes.
+.agents/
+.claude/skills/

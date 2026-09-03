@@ -1,0 +1,567 @@
+/* ---------- Font ---------- */
+@font-face {
+  font-family: "Clash Display";
+  src: url("../fonts/ClashDisplay-Variable.woff2") format("woff2-variations"),
+       url("../fonts/ClashDisplay-Variable.ttf") format("truetype-variations");
+  font-weight: 200 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ---------- Reset ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+img { display: block; max-width: 100%; }
+a { text-decoration: none; color: inherit; }
+
+:root {
+  --bg: #060d22;
+  --cream: #fef1da;
+  --pink: #f8d0ee;
+  --ghost: rgba(15, 24, 54, 0.7);
+  --green: #4f914f;
+  --border-cream: #ebd9b7;
+}
+
+body {
+  background: var(--bg);
+  font-family: "Clash Display", "Space Grotesk", sans-serif;
+  color: #fff;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- Header ---------- */
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: clamp(16px, 1.8vw, 22px) clamp(20px, 2.6vw, 40px);
+  max-width: 1512px;
+  margin-inline: auto;
+}
+
+.logo {
+  display: flex;
+  flex-direction: column;
+  font-weight: 700;
+  font-size: clamp(15px, 1.35vw, 20px);
+  line-height: 1.15;
+}
+
+.main-nav {
+  display: flex;
+  gap: clamp(24px, 3vw, 48px);
+  font-size: clamp(14px, 1vw, 16px);
+  color: var(--pink);
+}
+
+.main-nav a:first-child { text-transform: uppercase; }
+
+.btn-contact {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--border-cream);
+  border-radius: 43px;
+  padding: 12px clamp(18px, 1.6vw, 26px);
+  font-size: clamp(14px, 1vw, 16px);
+  font-weight: 600;
+  color: var(--pink);
+  white-space: nowrap;
+  transition: background-color .2s ease;
+}
+
+.btn-contact__arrow { color: var(--pink); }
+
+.btn-contact:hover { background-color: rgba(235, 217, 183, 0.08); }
+
+/* ---------- Hero ---------- */
+.hero {
+  padding: 0 clamp(10px, 1.3vw, 20px) clamp(20px, 3vw, 40px);
+  max-width: 1512px;
+  margin-inline: auto;
+}
+
+.hero__panel {
+  position: relative;
+  container-type: inline-size;
+  container-name: panel;
+  aspect-ratio: 1472 / 599;
+  border-radius: 20px;
+  overflow: hidden;
+  background: linear-gradient(to bottom, #172247, var(--bg));
+  isolation: isolate;
+}
+
+.hero__bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: bottom;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+
+.hero__topo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: .5;
+  pointer-events: none;
+  filter: url(#topo-wave);
+}
+
+/* ---------- Hero content (text stack) ---------- */
+.hero__content {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding-top: 4cqw;
+}
+
+.hero__intro {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.7cqw;
+  margin-bottom: .3cqw;
+}
+
+.hero__intro-text { color: var(--pink); }
+
+.hero__intro-name {
+  background: var(--green);
+  color: var(--cream);
+  font-weight: 700;
+  border-radius: 5px;
+  padding: .15em .5em;
+}
+
+.hero__title {
+  margin: 0;
+  text-transform: uppercase;
+  font-weight: 700;
+  line-height: .92;
+  letter-spacing: -.01em;
+}
+
+.hero__title-line {
+  display: block;
+  font-size: 7.65cqw;
+}
+
+.hero__title-line--fill { color: var(--cream); }
+
+.hero__title-line--ghost {
+  width: 64.5cqw;
+  height: auto;
+  margin: -.5cqw auto 0;
+}
+
+.hero__badges {
+  display: flex;
+  gap: 1.2cqw;
+  margin-top: .8cqw;
+  font-size: 1.25cqw;
+}
+
+.badge {
+  border-radius: 5px;
+  padding: .7em 1.3em;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.badge--location {
+  background: rgba(23, 34, 71, 0.85);
+  border-color: #4258a2;
+  color: rgba(255, 255, 255, 0.74);
+}
+
+.badge--available {
+  background: rgba(68, 212, 68, 0.13);
+  border-color: #44d444;
+  color: #44d444;
+  font-weight: 500;
+}
+
+/* ---------- Decorative stickers ---------- */
+.hero__decor {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.decor { position: absolute; }
+
+.decor--underline {
+  left: 16.03%;
+  top: 13.55%;
+  width: 36.14%;
+  height: auto;
+  opacity: .9;
+}
+
+.decor--path-left {
+  left: 11.61%;
+  top: 43.66%;
+  width: 10.19%;
+  height: auto;
+}
+
+.decor--path-right {
+  left: 78.85%;
+  top: 20.19%;
+  width: 10.97%;
+  height: auto;
+  transform: rotate(153.7deg);
+}
+
+.decor--sticker {
+  object-fit: contain;
+  filter: drop-shadow(0 .6cqw 1.2cqw rgba(0, 0, 0, .4));
+  transform: rotate(var(--rot, 0deg)) perspective(700px) rotateX(var(--tiltx, 0deg)) rotateY(var(--tilty, 0deg)) scale(var(--peel-scale, 1));
+  transition: transform .55s cubic-bezier(.34, 1.56, .64, 1);
+  cursor: grab;
+  touch-action: none;
+  pointer-events: auto;
+}
+
+.decor--sticker.is-dragging {
+  transition: none;
+  cursor: grabbing;
+}
+
+.sticker-1 { left: 19.5%;  top: 21%;    width: 7%;   aspect-ratio: 1/1;     --rot: -15.96deg; }
+.sticker-2 { left: 76.04%; top: 32%;    width: 6%;   aspect-ratio: 300/348; --rot: -13.36deg; }
+.sticker-3 { left: 82.18%; top: 65.32%; width: 5.2%; aspect-ratio: 300/353; --rot: -15deg; }
+.sticker-4 { left: 75.18%; top: 66.32%; width: 4.2%; aspect-ratio: 300/351; --rot: -20.14deg; }
+.sticker-5 { left: 36%;    top: 43%;    width: 4.5%; aspect-ratio: 300/353; --rot: 12.37deg; }
+.sticker-6 { left: 28.5%;  top: 63%;    width: 3.8%; aspect-ratio: 300/351; --rot: -12.11deg; }
+.sticker-7 { left: 77.36%; top: 65.99%; width: 6%;   aspect-ratio: 400/482; --rot: 9.87deg; }
+.sticker-8 { left: 22.14%; top: 57%;    width: 5%;   aspect-ratio: 400/488; --rot: 0deg; }
+.sticker-9 { left: 61%;    top: 42%;    width: 5.5%; aspect-ratio: 400/425; --rot: 8.22deg; }
+.sticker-10 { left: 18.14%; top: 46%;   width: 4.2%; aspect-ratio: 300/352; --rot: 15.73deg; }
+
+/* ---------- Parcours : la carte topographique ---------- */
+.trail {
+  position: relative;
+  /* long runway: slow going, and the pause at each stop eats a good share */
+  height: 1150vh;
+  --rot: 0deg;
+  --zoom: 1;
+}
+
+.trail__stage {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--cream);
+  color: #22304f;
+}
+
+/* --- the map that slides, turns and zooms under you --- */
+.trail__map {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 7200px;
+  height: 7200px;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+.trail__contours,
+.trail__route {
+  position: absolute;
+  inset: 0;
+  width: 7200px;
+  height: 7200px;
+}
+
+/* one seamless 2400px tile, repeated across the whole map */
+.trail__contours {
+  background: url("../assets/trail-map.svg") 0 0 / 2400px 2400px repeat;
+}
+
+/* --- the route: dashed grey ahead, solid green behind --- */
+.trail__track,
+.trail__track-done {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.trail__track {
+  stroke: rgba(34, 48, 79, .32);
+  stroke-width: 5;
+  stroke-dasharray: 16 14;
+}
+
+.trail__track-done {
+  stroke: var(--green);
+  stroke-width: 7;
+}
+
+/* --- waypoints: anchored to the terrain, kept upright --- */
+.trail__stops {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trail__stop {
+  position: absolute;
+  width: 0;
+  height: 0;
+  /* undo the map's rotation and zoom so labels stay readable */
+  transform-origin: 0 0;
+  transform: rotate(calc(-1 * var(--rot))) scale(calc(1 / var(--zoom)));
+}
+
+.trail__stop-pin {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 15px;
+  height: 15px;
+  margin: -7.5px 0 0 -7.5px;
+  border-radius: 50%;
+  background: var(--cream);
+  border: 3px solid var(--green);
+  box-shadow: 0 2px 6px rgba(34, 48, 79, .28);
+}
+
+.trail__stop-card {
+  position: absolute;
+  left: 0;
+  /* clears the walker's dot and pulse, which sit on the pin during the pause */
+  bottom: 40px;
+  width: max-content;
+  max-width: 30ch;
+  padding: 9px 15px 11px;
+  border: 1px solid rgba(34, 48, 79, .16);
+  border-radius: 10px;
+  background: #fffaf0;
+  box-shadow: 0 10px 26px rgba(34, 48, 79, .16);
+  opacity: 0;
+  transform: translate(-50%, 6px) scale(.92);
+  transform-origin: 50% 100%;
+  transition: opacity .4s ease, transform .5s cubic-bezier(.34, 1.4, .64, 1);
+}
+
+.trail__stop.is-reached .trail__stop-card {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+}
+
+.trail__stop-year {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .16em;
+  color: var(--green);
+}
+
+.trail__stop-role {
+  margin: 2px 0 0;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: #16203a;
+}
+
+.trail__stop-org {
+  margin: 3px 0 0;
+  font-size: 13px;
+  color: rgba(34, 48, 79, .66);
+}
+
+.trail__stop-dot {
+  display: inline-block;
+  margin: 0 6px;
+  color: rgba(34, 48, 79, .38);
+}
+
+/* --- you are here: parked near the middle of the screen --- */
+.trail__you {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 3;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.trail__you-dot,
+.trail__you-pulse {
+  position: absolute;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.trail__you-dot {
+  width: 18px;
+  height: 18px;
+  background: var(--green);
+  border: 4px solid var(--cream);
+  box-shadow: 0 3px 10px rgba(34, 48, 79, .35);
+}
+
+.trail__you-pulse {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--green);
+  animation: trail-pulse 2.4s ease-out infinite;
+}
+
+@keyframes trail-pulse {
+  0%   { opacity: .6; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0;  transform: translate(-50%, -50%) scale(3.8); }
+}
+
+/* --- overlays --- */
+.trail__intro {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 4;
+  padding: clamp(22px, 4vh, 48px) clamp(20px, 4vw, 56px) 0;
+  pointer-events: none;
+}
+
+.trail__eyebrow {
+  margin: 0 0 4px;
+  font-size: clamp(10px, .9vw, 13px);
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: rgba(34, 48, 79, .55);
+}
+
+.trail__heading {
+  margin: 0;
+  font-size: clamp(30px, 4.4vw, 62px);
+  font-weight: 700;
+  line-height: .95;
+  text-transform: uppercase;
+  color: #16203a;
+}
+
+.trail__hud {
+  position: absolute;
+  right: clamp(18px, 3vw, 48px);
+  bottom: clamp(18px, 3vh, 40px);
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.trail__progress-label {
+  margin: 0;
+  font-size: clamp(26px, 3.2vw, 46px);
+  font-weight: 700;
+  color: rgba(34, 48, 79, .2);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 900px) {
+  .site-header { flex-wrap: wrap; row-gap: 12px; }
+  .main-nav { order: 3; width: 100%; justify-content: center; }
+
+  .hero__panel { aspect-ratio: auto; min-height: 480px; }
+  .hero__title-line { font-size: 10cqw; }
+  .hero__intro { font-size: 3cqw; }
+  .hero__badges { font-size: 2.2cqw; }
+
+  .decor--sticker, .decor--underline, .decor--path-left, .decor--path-right {
+    display: none;
+  }
+
+  /* The map stays interactive on small screens — it is one composited
+     transform, so it scrubs smoothly on touch. Just tighten the labels. */
+  .trail { height: 780vh; }
+  .trail__stop-card { padding: 7px 12px 9px; border-radius: 8px; }
+  .trail__stop-role { font-size: 16px; }
+  .trail__stop-org { font-size: 12px; }
+  .trail__stop-year { font-size: 10px; }
+  .trail__stop-pin { width: 13px; height: 13px; margin: -6.5px 0 0 -6.5px; }
+}
+
+/* No pinning, no camera: a plain vertical timeline instead */
+@media (prefers-reduced-motion: reduce) {
+  .trail { height: auto; }
+
+  .trail__stage {
+    position: static;
+    height: auto;
+    padding: 40px 20px 56px;
+  }
+
+  .trail__map {
+    position: static;
+    width: auto;
+    height: auto;
+    transform: none;
+  }
+
+  .trail__contours,
+  .trail__route,
+  .trail__you,
+  .trail__hud { display: none; }
+
+  .trail__intro {
+    position: static;
+    padding: 0;
+  }
+
+  .trail__stops {
+    position: static;
+    margin: 26px auto 0;
+    padding-left: 26px;
+    max-width: min(520px, 100% - 44px);
+    border-left: 2px dashed rgba(34, 48, 79, .3);
+  }
+
+  .trail__stop {
+    position: relative;
+    width: auto;
+    height: auto;
+    transform: none;
+    margin-bottom: 14px;
+  }
+
+  .trail__stop-pin {
+    left: -34px;
+    top: 20px;
+    margin: 0;
+  }
+
+  .trail__stop-card {
+    position: static;
+    max-width: none;
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .trail__you-pulse { animation: none; }
+}
