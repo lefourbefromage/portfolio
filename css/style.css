@@ -283,9 +283,14 @@ body {
 /* ---------- Parcours : la carte topographique ---------- */
 .trail {
   position: relative;
-  /* runway: the legs between stops are short, the pauses and the end-of-section
-     hold eat the rest */
-  height: 933vh;
+  /* 100vh d'entrée + 417vh de piste épinglée + 100vh de sortie. Ce rapport cale
+     deux rendez-vous : l'entrée dans l'aimant de la PREMIÈRE carte à l'instant
+     où la section achève de se poser, et la sortie de l'aimant de la DERNIÈRE
+     quand elle commence à se retirer. La vitesse, elle, ne dépend pas de cette
+     valeur — fraction() mesure sur toute la traversée — donc la changer décale
+     seulement ces deux rendez-vous, sans casser la continuité. Pas de hauteur
+     réduite en mobile : les 100vh d'entrée et de sortie ne rétrécissent pas. */
+  height: 617vh;
   --rot: 0deg;
   --zoom: 1;
 }
@@ -819,7 +824,6 @@ body {
 
   /* The map stays interactive on small screens — it is one composited
      transform, so it scrubs smoothly on touch. Just tighten the labels. */
-  .trail { height: 640vh; }
   .trail__stop-card { padding: 7px 12px 9px; border-radius: 8px; }
   .trail__stop-role { font-size: 16px; }
   .trail__stop-org { font-size: 12px; }

@@ -131,7 +131,7 @@ les drags synthétiques lèvent `NotFoundError`.
 
 La partie la plus délicate du site. `js/main.js`, deuxième IIFE.
 
-**Forme.** Une piste `.trail` très haute (`height: 933vh`) avec une scène en
+**Forme.** Une piste `.trail` très haute (`height: 617vh`) avec une scène en
 `position: sticky`. La progression du scroll vaut
 `-trail.getBoundingClientRect().top / runway`, limitée par rAF.
 
@@ -172,16 +172,24 @@ deux blocs sans le vouloir.
 unité de parcours : une base, plus une pénalité de pente issue du profil `GRADE` (« comme si
 on montait »), plus un puits triangulaire à chaque étape pour que le marcheur s'arrête
 presque le temps qu'on lise la carte. Le tout est intégré une fois en table cumulée, puis
-inversé par recherche dichotomique dans `progressFor()`. Augmente `DWELL_COST`/`DWELL_W` pour
-des pauses plus longues, `BASE_COST`/`GRADE_COST` pour de plus longues marches.
+inversé par recherche dichotomique dans `progressFor()`. Augmente `BASE_COST`/`GRADE_COST`
+pour de plus longues marches.
+
+**Les étapes sont des aimants, pas des ralentisseurs.** Le puits de coût est un trapèze très
+étroit (`DETENT_W` = 0,0025 de parcours) et très haut (`DETENT_COST` = 8,7, soit ~18x le coût
+en terrain libre) : on arrive presque à pleine vitesse, on se colle net, et il faut ~45 vh de
+scroll pour décrocher — pendant lesquels le marcheur n'avance que de 47 px de carte. La
+version précédente étalait au contraire la décélération sur un quart de marche, ce qui se
+lisait comme un ralentissement mou plutôt que comme un arrêt. Si tu élargis `DETENT_W`, tu
+retombes dans le ralenti ; c'est l'étroitesse qui fait l'aimant.
 
 **Les marches sont volontairement courtes.** C'est réglé aux deux bouts, et il faut tenir les
 deux ensemble sous peine de casser l'équilibre :
 
-- *géométriquement*, les `data-at` sont resserrés (0,10 → 0,56 au lieu de 0,10 → 0,88), soit
-  1 089 px de carte entre deux étapes au lieu de ~1 800 ;
+- *géométriquement*, les `data-at` sont resserrés — un écart de 0,07, contre 0,115 puis 0,18
+  dans les versions précédentes, soit 663 px de carte entre deux étapes au lieu de ~1 800 ;
 - *en scroll*, `BASE_COST` et `GRADE_COST` ont été divisés par deux environ, si bien qu'un
-  intervalle d'étape à étape coûte ~157 vh au lieu de ~243.
+  intervalle d'étape à étape coûte ~94 vh au lieu de ~243 (49 de marche, 45 d'aimant).
 
 La vitesse à l'écran pendant la marche, elle, n'a quasiment pas bougé (~13 px de carte par
 vh) : c'est le trajet qui est plus court, pas le pas qui est plus rapide. Si tu retouches un
@@ -190,7 +198,10 @@ une marche expédiée.
 
 **Le zoom est piloté par l'approche d'une étape, et rien d'autre.** `approachAt(p)` vaut 0 en
 pleine marche et 1 sur une étape ; le zoom va de `ZOOM_TRAVEL` (0,95 — on prend du recul, on
-couvre du terrain) à `ZOOM_STOP` (1,55 — on se penche sur la carte). `ZOOM_W` est plus large
+couvre du terrain) à `ZOOM_STOP` (1,55 — on se penche sur la carte). **`ZOOM_W` doit rester
+sous la demi-distance entre deux étapes** (0,035 aujourd'hui) : au-delà, les fenêtres
+d'approche se recouvrent, le zoom ne redescend jamais à `ZOOM_TRAVEL` et la carte reste plaquée
+de bout en bout. Il a fallu le baisser de 0,048 à 0,030 en rapprochant les cartes. `ZOOM_W` est plus large
 que `DWELL_W` **exprès** : l'objectif bouge déjà avant que le scroll ne se mette à résister,
 et continue de bouger pendant la pause, ce qui évite que les ~55 % de scroll passés à l'arrêt
 paraissent morts. Le profil `GRADE` ne pilote plus le zoom, seulement le rythme.
@@ -199,13 +210,45 @@ Sous `ZOOM_TRAVEL`, on voit plus de carte : à 2560×1440 il reste 1 142 px de m
 coin d'écran le plus exposé et le bord du 7200×7200. Descendre nettement sous 0,95 finirait
 par laisser voir le crème derrière les contours.
 
-**La plage de scroll est bornée aux étapes, plus une traîne.** `START` est le premier
-`data-at` : la section s'ouvre déjà à la première étape, avec du vert derrière soi. `END` est
-le dernier `data-at` **plus `TAIL_RUN`** (0,015 de parcours), franchi au tarif `TAIL_COST`.
-C'est la latence de fin : une fois sur la dernière carte, le marcheur ne fait plus que ramper
-— le chemin continue visiblement un peu, la carte reste à l'écran — et il faut encore ~126 vh
-de scroll avant que la section ne se dépingle et que le contact n'arrive. Sans cette traîne,
-atteindre la dernière étape et voir la section suivante démarrer étaient le même geste.
+**La section se lit en trois temps, et c'est le point le plus délicat du fichier.** `START`
+est le premier `data-at` **moins `LEAD_RUN`** (0,113 de parcours), `END` le dernier **plus
+`TAIL_RUN`** (0,0607). Ces bornes ne coïncident ni avec le début ni avec la fin de la piste :
+
+- pendant les **100 vh où la section entre par le bas**, le marcheur avance déjà sur l'amorce.
+  Il atteint l'aimant de la première carte à l'instant précis où la section achève de se
+  poser — c'est là que la marche « commence vraiment » ;
+- tant que la scène est **épinglée**, on marche d'étape en étape jusqu'à la dernière carte ;
+- pendant les **100 vh où elle ressort par le haut**, le marcheur continue sur la traîne, si
+  bien qu'on le voit progresser *pendant* qu'on défile vers le contact.
+
+Sans ces deux bouts, le marcheur restait figé tant que la section n'était pas collée, puis se
+figeait de nouveau dès qu'elle se décollait : deux ruptures nettes, aux deux extrémités.
+
+**Tout tient à une division.** `fraction()` mesure la progression sur
+`trail.offsetHeight + innerHeight`, c'est-à-dire sur *toute la traversée* de la section — du
+moment où son bord haut entre par le bas de l'écran à celui où son bord bas sort par le haut.
+Il n'y a donc aucune couture à recoller : la densité de scroll est uniforme par construction,
+le marcheur ne change jamais d'allure, ni quand la scène se pose ni quand elle se décolle. Une
+version antérieure calculait les points de couture à l'avance ; elle dérivait de 5 % sur
+mobile, où `vh` et `window.innerHeight` ne sont pas d'accord à cause de la barre d'URL. Ne
+réintroduis pas ce découpage explicite.
+
+Le `height` du CSS ne règle donc pas la vitesse, seulement **deux rendez-vous** : à 617 vh
+(100 d'entrée + 417 de piste + 100 de sortie), l'entrée dans l'aimant de la première carte
+tombe pile quand la section achève de se poser, et la sortie de l'aimant de la dernière pile
+quand elle commence à se retirer. Mesuré à 3 px près sur le tracé, aux deux bouts. Le changer
+décale ces rendez-vous sans rien casser. C'est aussi pourquoi **il n'y a pas de hauteur
+réduite en mobile** : les 100 vh d'entrée et de sortie ne rétrécissent pas.
+
+`LEAD_RUN` est près du double de `TAIL_RUN`, et ce n'est pas une faute de frappe : le terrain
+d'avant la première carte est plus plat, donc moins cher, donc il en faut davantage pour
+dépenser les mêmes 100 vh. C'est aussi ce qui a forcé à **décaler toutes les étapes plus loin
+sur le tracé** (première carte à 0,133 au lieu de 0,10) : avec l'ancienne position il n'y
+avait pas assez de chemin en amont pour payer l'entrée.
+
+Conséquence de l'amorce : la partie basse du tracé est désormais visible dès l'entrée, et la
+marge au bord de la carte y est au plus juste — **324 px mesurés en 3440×1440**, le format le
+plus large vérifié. Au-delà, le crème apparaîtrait derrière les contours.
 
 Conséquence : la fraction brute du parcours ne vaut jamais 0 ni 1 — l'affichage du HUD montre
 donc délibérément `scrolled`, et non `p`.
@@ -217,7 +260,19 @@ parcourue n'est *pas* en pointillés — si elle le redevenait, il faudrait un `
 tracé de révélation distinct.
 
 Ajouter ou déplacer une étape se fait en éditant `data-at` dans `index.html` ; les positions à
-l'écran sont calculées par `getPointAtLength`, il n'y a rien d'autre à toucher.
+l'écran sont calculées par `getPointAtLength`. Mais **quatre valeurs se recalculent ensemble**
+dès qu'on touche à l'espacement, et les oublier se voit tout de suite :
+
+| valeur | contrainte |
+|---|---|
+| `ZOOM_W` | < demi-distance entre deux étapes, sinon le zoom ne respire plus |
+| `TAIL_RUN` | fixe la vitesse à l'écran : ~13,5 px de carte par vh |
+| `DETENT_COST` | fixe l'aimant à ~45 vh |
+| `LEAD_RUN` | rendez-vous d'entrée : `scrollFor(première − DETENT_W)` = 100 vh de traversée |
+| `height` (CSS) | rendez-vous de sortie, et donc la traversée totale |
+
+Les trois dernières se résolvent ensemble : le barème est intégré une fois, donc changer l'une
+déplace les autres. En pratique on les cherche numériquement plutôt qu'à la main.
 
 ### Le mode « étape par étape »
 
@@ -260,8 +315,8 @@ rien d'autre**. Elles sont obtenues en **inversant `progressFor` par dichotomie*
 des coûts : il n'y a aucune position à tenir à jour à la main.
 
 **La traîne est hors du mode auto, dans les deux sens.** Une fois sur la dernière carte, un
-geste vers le bas n'est plus absorbé : on repasse en scroll manuel pour parcourir la traîne
-puis sortir vers le contact. Et à l'intérieur de la traîne, plus rien n'est intercepté — sans
+geste vers le bas n'est plus absorbé : on repasse en scroll manuel, et c'est ce scroll-là qui
+emmène à la fois la scène hors de l'écran et le marcheur plus loin sur le chemin. Et à l'intérieur de la traîne, plus rien n'est intercepté — sans
 ça, remonter d'un cran vous ramenait aussitôt sur la dernière carte. C'est le rôle du garde
 `fraction() > LAST_MARK` dans `targetFor()`, qui est le point de passage unique des trois
 gestionnaires (molette, doigt, clavier). Un geste vers le haut *depuis* la dernière carte,

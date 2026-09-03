@@ -79,8 +79,13 @@
 
   const ROT_DAMP = 0.34;    // only part of the full heading-up turn
   const LEAD = 0.02;        // tangent window, as a share of route length
-  const DWELL_W = 0.026;    // how much route progress each pause spans
-  const DWELL_COST = 4.2;   // how strongly a stop resists the scroll
+  // L'aimant d'une étape : un palier de coût très élevé, encadré de rampes
+  // courtes. On arrive presque à pleine vitesse, on se colle net, et il faut
+  // insister au scroll pour décrocher. C'est l'inverse de l'ancien long
+  // ralenti à l'approche, qui étalait la décélération sur un quart de marche.
+  const DETENT_HOLD = 0.0010; // demi-largeur du palier, en part de parcours
+  const DETENT_W = 0.0025;    // ... et de la rampe qui l'encadre
+  const DETENT_COST = 8.12;   // ~45vh de scroll pour décrocher d'une carte
   const BASE_COST = 0.30;   // the walk between stops is deliberately cheap
   const GRADE_COST = 0.95;  // steep ground costs more scroll to cross
   const CARD_LEAD = 0.012;  // reveal the card just before you arrive
@@ -91,13 +96,24 @@
   // before the scroll starts to resist, and keeps moving through the pause.
   const ZOOM_TRAVEL = 0.95;
   const ZOOM_STOP = 1.55;
-  const ZOOM_W = 0.048;     // how much route progress the approach spans
+  // À garder sous la demi-distance entre deux étapes (0,035 aujourd'hui), sinon
+  // les fenêtres d'approche se recouvrent et le zoom ne redescend jamais à
+  // ZOOM_TRAVEL : la carte reste plaquée de bout en bout.
+  const ZOOM_W = 0.030;     // how much route progress the approach spans
 
-  // The tail: past the last stop the route carries on a little, but at a cost
-  // high enough that you stay parked on the card while the scroll drains. It is
-  // what stops the next section from starting the instant you arrive.
-  const TAIL_RUN = 0.015;   // how much route is left to creep through
-  const TAIL_COST = 6;      // ... and how hard it resists (~126vh of hold)
+  // L'amorce et la traîne : les portions de chemin que le marcheur parcourt
+  // *pendant* que la scène entre par le bas, puis ressort par le haut. Elles
+  // n'ont rien de particulier dans le barème — même coût qu'ailleurs — c'est
+  // fraction() qui les fait tomber dans les 100vh d'entrée et les 100vh de
+  // sortie. Sans elles, le marcheur restait figé tant que la section n'était
+  // pas collée, puis se figeait de nouveau dès qu'elle se décollait : deux
+  // ruptures nettes, aux deux bouts.
+  //
+  // Elles ne sont pas égales, et c'est normal : le terrain d'avant la première
+  // carte est plus plat, donc il en faut davantage pour dépenser les mêmes
+  // 100vh de scroll. Les deux se recalculent, voir le tableau de CLAUDE.md.
+  const LEAD_RUN = 0.113;
+  const TAIL_RUN = 0.0607;
 
   const DRIFT_X = 0.05;
   const DRIFT_Y = 0.06;
@@ -123,8 +139,9 @@
   // The scroll covers first stop -> last stop, plus the tail. That way you open
   // already standing at the first job with green route behind you, and the last
   // card holds while the trail creeps on past it.
-  const START = stopPositions[0];
+  const FIRST = stopPositions[0];
   const LAST = stopPositions[stopPositions.length - 1];
+  const START = FIRST - LEAD_RUN;
   const END = LAST + TAIL_RUN;
 
   // How close the nearest waypoint is: 0 out on the trail, 1 standing on it.
@@ -137,15 +154,18 @@
     return near;
   }
 
-  // Scroll cost per unit of route: steep ground is slow, and each stop sits in
-  // a well of very high cost so the walker all but halts while you read it.
+  // Coût de scroll par unité de parcours : le terrain raide est lent, et chaque
+  // étape porte un aimant — trapèze étroit et très haut, plutôt qu'une longue
+  // pente. Le marcheur n'y avance que de ~47px de carte pour 45vh de scroll :
+  // autant dire qu'il est collé, et qu'il faut insister pour repartir.
   function costAt(p) {
     let c = BASE_COST + GRADE_COST * gradeAt(p);
     for (const at of stopPositions) {
       const d = Math.abs(p - at);
-      if (d < DWELL_W) c += DWELL_COST * (1 - d / DWELL_W);
+      if (d >= DETENT_W) continue;
+      const grip = d <= DETENT_HOLD ? 1 : 1 - (d - DETENT_HOLD) / (DETENT_W - DETENT_HOLD);
+      c += DETENT_COST * grip;
     }
-    if (p > LAST) c += TAIL_COST;
     return c;
   }
 
@@ -173,6 +193,46 @@
     return START + (END - START) * clamp01((i - 1 + t) / STEPS);
   }
 
+  // L'inverse de progressFor : à quelle fraction de scroll se tient-on ici ?
+  function scrollFor(target) {
+    let lo = 0;
+    let hi = 1;
+    for (let k = 0; k < 40; k++) {
+      const mid = (lo + hi) / 2;
+      if (progressFor(mid) < target) lo = mid;
+      else hi = mid;
+    }
+    return (lo + hi) / 2;
+  }
+
+  // Les étapes, en fraction de scroll. Le mode auto ne s'arrête que là-dessus,
+  // la traîne en est volontairement exclue : elle se parcourt à la main.
+  const MARKS = stopPositions.map(scrollFor);
+  const LAST_MARK = MARKS[MARKS.length - 1];
+
+  const runwayOf = () => trail.offsetHeight - window.innerHeight;
+
+  // La progression court sur *toute* la traversée de la section : de l'instant
+  // où son bord haut entre par le bas de l'écran, à celui où son bord bas sort
+  // par le haut. Ni l'épinglage ni le dépinglage ne l'interrompent — le marcheur
+  // avance déjà pendant que la scène se met en place, et continue d'avancer
+  // pendant qu'elle s'en va. Ce sont ces deux fois 100vh qui suppriment les
+  // deux ruptures, à l'entrée comme à la sortie.
+  //
+  // Une seule division, donc densité de scroll uniforme par construction et
+  // aucune couture à recoller. Une version antérieure calculait le point de
+  // couture à l'avance : elle dérivait de 5 % sur mobile, où `vh` et
+  // `window.innerHeight` ne sont pas d'accord à cause de la barre d'URL.
+  const spanOf = () => trail.offsetHeight + window.innerHeight;
+
+  const fraction = () => {
+    const span = spanOf();
+    return span > 0 ? clamp01((window.innerHeight - trail.getBoundingClientRect().top) / span) : 0;
+  };
+
+  // ... et sa réciproque, dont le mode auto a besoin pour viser une étape.
+  const pageYFor = (frac) => trail.offsetTop - window.innerHeight + spanOf() * frac;
+
   let total = track.getTotalLength();
   let prevHeading = null;
   let ticking = false;
@@ -190,8 +250,7 @@
   function render() {
     ticking = false;
 
-    const runway = trail.offsetHeight - window.innerHeight;
-    const scrolled = runway > 0 ? clamp01(-trail.getBoundingClientRect().top / runway) : 0;
+    const scrolled = fraction();
     const p = progressFor(scrolled);
     const walked = total * p;
 
@@ -277,24 +336,6 @@
   const REARM = 260;         // ms de battement après une marche, contre l'inertie
   const MARK_EPS = 0.004;
 
-  // L'inverse de progressFor : à quelle fraction de scroll se tient-on ici ?
-  function scrollFor(target) {
-    let lo = 0;
-    let hi = 1;
-    for (let k = 0; k < 40; k++) {
-      const mid = (lo + hi) / 2;
-      if (progressFor(mid) < target) lo = mid;
-      else hi = mid;
-    }
-    return (lo + hi) / 2;
-  }
-
-  // Les seuls endroits où le mode auto s'arrête : les étapes, et rien d'autre.
-  // La traîne qui suit la dernière carte en est volontairement exclue — elle se
-  // parcourt au scroll, à la main. Au-delà des deux extrémités, la page reprend.
-  const MARKS = stopPositions.map(scrollFor);
-  const LAST_MARK = MARKS[MARKS.length - 1];
-
   const toggle = trail.querySelector('.trail__auto');
   const toggleLabel = trail.querySelector('.trail__auto-label');
   let auto = true;
@@ -302,13 +343,6 @@
   let lockUntil = 0;
   let wheelAcc = 0;
   let touchY = null;
-
-  const runwayOf = () => trail.offsetHeight - window.innerHeight;
-
-  function fraction() {
-    const r = runwayOf();
-    return r > 0 ? clamp01(-trail.getBoundingClientRect().top / r) : 0;
-  }
 
   // 1px de tolérance : au ras de l'épinglage le rect vaut couramment 0,23px, et
   // un test strict laisserait le tout premier geste filer sous la section.
@@ -328,7 +362,7 @@
 
   function glideTo(frac) {
     const from = window.scrollY;
-    const to = trail.offsetTop + runwayOf() * frac;
+    const to = pageYFor(frac);
     const dur = Math.min(GLIDE_MAX, Math.max(GLIDE_MIN, Math.abs(to - from) * GLIDE_PACE));
     const t0 = performance.now();
     glide = { to: frac };
