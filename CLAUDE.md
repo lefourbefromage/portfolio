@@ -87,6 +87,24 @@ Deux familles, toutes deux auto-hébergées dans `fonts/` en woff2 variable.
 de titres et de labels. Un nouvel élément de texte hérite donc d'Inter par défaut, ce qui est
 le comportement voulu.
 
+## La structure de la page
+
+`Hero > Projets > À propos > Parcours > Contact > Footer`, dans cet ordre, et la nav du
+header comme celle du footer pointent toutes vers des sections qui existent bel et bien.
+
+Le fond du site est sombre (`--ink`) partout **sauf** le parcours, qui est crème : c'est le
+seul contraste fort de la page, et c'est ce qui fait ressortir la carte. Ne mets pas une
+deuxième section claire à côté.
+
+Les sections plates partagent trois primitives — `.section` (largeur max et rythme vertical),
+`.section__eyebrow` / `.section__title` / `.section__lede` — et la pastille `.todo` qui
+signale un contenu encore à écrire. Le parcours garde ses propres `.trail__eyebrow` et
+`.trail__heading` parce qu'il est sur fond clair et que ses couleurs sont inversées.
+
+`html` porte `scroll-behavior: smooth`, sous `prefers-reduced-motion: no-preference`. Cliquer
+une ancre qui traverse le parcours le fait donc défiler d'un trait : c'est voulu, la caméra
+suit image par image sans casser.
+
 ## Le hero : un repère fixe adressé en pourcentages
 
 `.hero__panel` est un contexte de container query (`container-name: panel`) verrouillé sur
@@ -109,11 +127,11 @@ vit entièrement dans la règle `.decor--sticker`. Garde ce partage : ajouter un
 dans le JS casse l'intention. `setPointerCapture` est enveloppé dans un try/catch parce que
 les drags synthétiques lèvent `NotFoundError`.
 
-## La section parcours (`#experiences`)
+## La section parcours (`#parcours`)
 
 La partie la plus délicate du site. `js/main.js`, deuxième IIFE.
 
-**Forme.** Une piste `.trail` très haute (`height: 1150vh`) avec une scène en
+**Forme.** Une piste `.trail` très haute (`height: 933vh`) avec une scène en
 `position: sticky`. La progression du scroll vaut
 `-trail.getBoundingClientRect().top / runway`, limitée par rAF.
 
@@ -140,17 +158,55 @@ tourne, pour rester collées au terrain, et annulent la caméra avec
 `rotate(calc(-1 * var(--rot))) scale(calc(1 / var(--zoom)))`. `--rot` et `--zoom` sont posés
 sur `.trail__map` à chaque image uniquement pour servir d'interface JS → CSS.
 
+**`.trail__you` vit dans la carte lui aussi**, posé en coordonnées carte (`here.x`, `here.y`)
+et contre-transformé de la même façon — la caméra amène ce point pile en `cx, cy`, donc il
+retombe au même endroit à l'écran que s'il était posé sur la scène. Ce n'est pas un détour
+gratuit : `.trail__map` est un contexte d'empilement à lui seul (il porte un `transform`), donc
+tant que le point restait un frère de la carte avec un `z-index`, **rien** de la carte ne
+pouvait passer devant lui. Le mettre dedans, juste avant `.trail__stops`, est le seul moyen de
+le garder au-dessus du terrain tout en laissant les étiquettes passer par-dessus. L'ordre de
+peinture tient au seul ordre du DOM (les deux sont en `z-index: auto`) : ne réordonne pas ces
+deux blocs sans le vouloir.
+
 **Le rythme est non linéaire par construction.** `costAt(p)` renvoie un coût de scroll par
 unité de parcours : une base, plus une pénalité de pente issue du profil `GRADE` (« comme si
 on montait »), plus un puits triangulaire à chaque étape pour que le marcheur s'arrête
 presque le temps qu'on lise la carte. Le tout est intégré une fois en table cumulée, puis
 inversé par recherche dichotomique dans `progressFor()`. Augmente `DWELL_COST`/`DWELL_W` pour
-des pauses plus longues ; les deux ont été baissés quand une cinquième étape est arrivée,
-puisque le nombre d'étapes multiplie la longueur totale de la piste.
+des pauses plus longues, `BASE_COST`/`GRADE_COST` pour de plus longues marches.
 
-**La plage de scroll est bornée aux étapes.** `START` et `END` viennent du premier et du
-dernier `data-at`, si bien que la section s'ouvre déjà à la première étape avec du vert
-derrière soi, et se termine à la dernière avec les pointillés gris qui continuent au-delà.
+**Les marches sont volontairement courtes.** C'est réglé aux deux bouts, et il faut tenir les
+deux ensemble sous peine de casser l'équilibre :
+
+- *géométriquement*, les `data-at` sont resserrés (0,10 → 0,56 au lieu de 0,10 → 0,88), soit
+  1 089 px de carte entre deux étapes au lieu de ~1 800 ;
+- *en scroll*, `BASE_COST` et `GRADE_COST` ont été divisés par deux environ, si bien qu'un
+  intervalle d'étape à étape coûte ~157 vh au lieu de ~243.
+
+La vitesse à l'écran pendant la marche, elle, n'a quasiment pas bougé (~13 px de carte par
+vh) : c'est le trajet qui est plus court, pas le pas qui est plus rapide. Si tu retouches un
+des deux réglages, vérifie l'autre — allonger la géométrie sans rallonger le coût donnerait
+une marche expédiée.
+
+**Le zoom est piloté par l'approche d'une étape, et rien d'autre.** `approachAt(p)` vaut 0 en
+pleine marche et 1 sur une étape ; le zoom va de `ZOOM_TRAVEL` (0,95 — on prend du recul, on
+couvre du terrain) à `ZOOM_STOP` (1,55 — on se penche sur la carte). `ZOOM_W` est plus large
+que `DWELL_W` **exprès** : l'objectif bouge déjà avant que le scroll ne se mette à résister,
+et continue de bouger pendant la pause, ce qui évite que les ~55 % de scroll passés à l'arrêt
+paraissent morts. Le profil `GRADE` ne pilote plus le zoom, seulement le rythme.
+
+Sous `ZOOM_TRAVEL`, on voit plus de carte : à 2560×1440 il reste 1 142 px de marge entre le
+coin d'écran le plus exposé et le bord du 7200×7200. Descendre nettement sous 0,95 finirait
+par laisser voir le crème derrière les contours.
+
+**La plage de scroll est bornée aux étapes, plus une traîne.** `START` est le premier
+`data-at` : la section s'ouvre déjà à la première étape, avec du vert derrière soi. `END` est
+le dernier `data-at` **plus `TAIL_RUN`** (0,015 de parcours), franchi au tarif `TAIL_COST`.
+C'est la latence de fin : une fois sur la dernière carte, le marcheur ne fait plus que ramper
+— le chemin continue visiblement un peu, la carte reste à l'écran — et il faut encore ~126 vh
+de scroll avant que la section ne se dépingle et que le contact n'arrive. Sans cette traîne,
+atteindre la dernière étape et voir la section suivante démarrer étaient le même geste.
+
 Conséquence : la fraction brute du parcours ne vaut jamais 0 ni 1 — l'affichage du HUD montre
 donc délibérément `scrolled`, et non `p`.
 
@@ -163,9 +219,72 @@ tracé de révélation distinct.
 Ajouter ou déplacer une étape se fait en éditant `data-at` dans `index.html` ; les positions à
 l'écran sont calculées par `getPointAtLength`, il n'y a rien d'autre à toucher.
 
-`prefers-reduced-motion: reduce` désépingle l'ensemble en une simple frise verticale. Quand tu
-y masques des morceaux de la carte, masque les éléments feuilles — masquer un conteneur a déjà
-emporté `.trail__stops` deux fois en silence.
+### Le mode « étape par étape »
+
+Activé par défaut, débrayable par le bouton `.trail__auto` du HUD. Dedans, **un geste n'est
+plus une poignée mais un déclencheur** : un cran ou deux de molette et la caméra parcourt
+d'elle-même tout le chemin jusqu'à l'étape suivante.
+
+Le rythme de cette marche se règle par `GLIDE_PACE` (3,4 ms par px de scroll à couvrir),
+borné par `GLIDE_MIN`/`GLIDE_MAX`. **La lenteur est le sujet** : on doit voir le cheminement
+se faire, pas être téléporté d'une carte à l'autre. Ça donne 3,8 à 6,3 s par étape, ~295 px/s
+de scroll. La valeur a été cherchée en trois passes (0,9 → 1,8 → 4,5 → 3,4) : c'est un réglage
+tenu, pas une valeur par défaut, et le trop rapide s'est révélé bien plus gênant que le trop
+lent. Si tu dois trancher, penche du côté lent.
+Garde `GLIDE_MAX` assez haut pour qu'aucune marche ne soit écrêtée sur un écran courant,
+sinon la plus longue irait plus vite que les autres, ce qui s'entend tout de suite.
+
+**L'interpolation est linéaire. N'y remets pas d'assouplissement.** Un ease-in-out (cubique
+puis smoothstep) a été essayé et retiré : quand le sujet est de suivre le chemin, toute courbe
+d'entrée/sortie se lit comme une accélération bizarre au milieu du trajet. Le scroll avance
+maintenant à ~295 px/s du début à la fin de la marche, mesuré plat à 4 % près.
+
+Attention, il reste **une seconde source d'accélération, plus forte, et celle-là est
+volontaire** : le marcheur avance à `vitesse de scroll / costAt(p)`, et `costAt` varie d'un
+facteur ~8 entre le creux d'une étape et le milieu d'une marche. Donc même à scroll
+parfaitement linéaire, le marcheur rampe en quittant une carte puis file au milieu. C'est le
+principe même de la section en défilement libre. Si ça devait gêner en mode auto, le correctif
+n'est pas de retoucher la courbe mais d'interpoler `p` au lieu du scroll — en passant par
+`scrollFor(p)` à chaque image, ce qui donnerait une vitesse au sol constante.
+
+**Le verrou anti-inertie ne couvre pas toute la marche**, seulement `INERTIA_LOCK` (1,1 s), le
+temps qu'un flick de trackpad retombe. C'est indispensable depuis que les marches durent
+plusieurs secondes : avec un verrou couvrant toute la durée, un visiteur pressé restait
+prisonnier 8 s. Passé ce délai, un nouveau geste **enchaîne** sur l'étape d'après en cours de
+route — `glide.to` sert de référence, donc il vise bien la marque suivant la destination et
+non celle suivant la position courante.
+
+`MARKS` est la liste des seules fractions de scroll où le mode s'arrête : **une par étape, et
+rien d'autre**. Elles sont obtenues en **inversant `progressFor` par dichotomie**
+(`scrollFor`), donc elles suivent automatiquement tout changement de `data-at`, de `GRADE` ou
+des coûts : il n'y a aucune position à tenir à jour à la main.
+
+**La traîne est hors du mode auto, dans les deux sens.** Une fois sur la dernière carte, un
+geste vers le bas n'est plus absorbé : on repasse en scroll manuel pour parcourir la traîne
+puis sortir vers le contact. Et à l'intérieur de la traîne, plus rien n'est intercepté — sans
+ça, remonter d'un cran vous ramenait aussitôt sur la dernière carte. C'est le rôle du garde
+`fraction() > LAST_MARK` dans `targetFor()`, qui est le point de passage unique des trois
+gestionnaires (molette, doigt, clavier). Un geste vers le haut *depuis* la dernière carte,
+lui, reste automatique : on remonte bien d'étape en étape.
+
+Trois pièges, tous déjà payés :
+
+- **`scrollTo` doit passer `behavior: 'instant'`.** `html` porte `scroll-behavior: smooth`, qui
+  sinon anime chaque pas de l'animation et la fait ramer sur place.
+- **`preventDefault` même quand rien n'avance.** Un flick de trackpad envoie ~25 événements ;
+  sans le verrou `lockUntil` + le seuil `WHEEL_TRIGGER`, un seul geste traversait toute la
+  section. Les événements pendant le verrou sont absorbés mais ne font rien.
+- **Le test d'épinglage tolère 1px.** Au ras de la couture `getBoundingClientRect().top` vaut
+  couramment 0,23px, et un `<= 0` strict laissait filer le tout premier geste.
+
+Quand `nextMark` ne renvoie plus rien — au tout début en remontant, au bout de la traîne en
+descendant — le geste **n'est pas** absorbé et la page reprend son défilement normal. C'est ce
+qui évite d'enfermer le visiteur ; le bouton du HUD est la seconde sortie.
+
+`prefers-reduced-motion: reduce` désépingle l'ensemble en une simple frise verticale — le mode
+auto n'y est pas branché du tout, et le HUD (donc son bouton) y est masqué. Quand tu y masques
+des morceaux de la carte, masque les éléments feuilles — masquer un conteneur a déjà emporté
+`.trail__stops` deux fois en silence.
 
 ## Les assets générés
 
@@ -184,8 +303,11 @@ porter la même valeur.
 
 Ces points ne sont pas encore arbitrés — demande plutôt que de supposer :
 
-- **La hiérarchie du site.** La nav pointe vers `#a-propos`, `#projets` et `#contact`, qui
-  **n'existent pas**. Et `#experiences`, qui existe, n'est lié depuis nulle part.
+- **Le contenu de `#projets`, `#a-propos` et `#contact`.** Les sections existent et sont
+  maquettées, mais leurs textes sont des **placeholders assumés**, marqués par la pastille
+  `.todo` (« À compléter »). N'invente pas de projets, de client ou de bio à sa place :
+  demande-lui le contenu. L'adresse de `#contact` est `adresse@a-completer.fr`, et les liens
+  réseaux sont des `<span>`, pas des `<a>`, pour ne pas laisser d'ancre morte.
 - **L'hébergement**, donc si les chemins doivent rester relatifs et si une étape de
   minification est un jour nécessaire.
 - **La source de vérité du design** : savoir si le fichier Figma fait toujours foi.
