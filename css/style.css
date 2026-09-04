@@ -316,7 +316,6 @@ body {
   will-change: transform;
 }
 
-.trail__contours,
 .trail__route {
   position: absolute;
   inset: 0;
@@ -324,9 +323,27 @@ body {
   height: 7200px;
 }
 
-/* one seamless 2400px tile, repeated across the whole map */
-.trail__contours {
-  background: url("../assets/trail-map.svg") 0 0 / 2400px 2400px repeat;
+/* --- le relief : une seule tuile, les décalages déjà dessinés dedans ---
+   Chaque niveau de courbe est remonté dans le dessin lui-même, par
+   tools/gen_relief.py : on obtient l'empilement des cartes topo dessinées sans
+   la moindre 3D. Une version précédente empilait un calque par niveau en Z, et
+   la surface composée saturait le compositeur — la carte et le tracé
+   clignotaient, et disparaissaient au scroll. Avec un calque unique le problème
+   ne peut plus revenir : ne redécoupe pas ce fond en calques.
+
+   La tuile fait 1400px, moins que les 2400 de la carte plate : il faut voir un
+   massif entier pour que l'empilement se lise comme du volume. */
+.trail__relief {
+  position: absolute;
+  /* Déborde largement les 7200px de la carte : en reculant la caméra on voit
+     plus de terrain, et le bord du motif se retrouvait dans le champ. Le décalage
+     de 2800px est un multiple de la tuile (2 x 1400), donc la phase du motif est
+     inchangée — le terrain ne bouge pas d'un pixel. */
+  left: -2800px;
+  top: -2800px;
+  width: 12800px;
+  height: 12800px;
+  background: url("../assets/trail-relief.svg") 0 0 / 1400px 1400px repeat;
 }
 
 /* --- the route: dashed grey ahead, solid green behind --- */
@@ -848,7 +865,7 @@ body {
     transform: none;
   }
 
-  .trail__contours,
+  .trail__relief,
   .trail__route,
   .trail__you,
   .trail__hud { display: none; }

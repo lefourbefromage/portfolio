@@ -168,6 +168,34 @@ le garder au-dessus du terrain tout en laissant les étiquettes passer par-dessu
 peinture tient au seul ordre du DOM (les deux sont en `z-index: auto`) : ne réordonne pas ces
 deux blocs sans le vouloir.
 
+**Le relief est cuit dans la tuile, et il doit le rester.** `assets/trail-relief.svg` est une
+tuile de 1400 px où chaque niveau de courbe est déjà remonté de `i × STEP` dans le dessin
+lui-même — c'est ce qui donne l'empilement des cartes topographiques dessinées, sans aucune
+3D. Un seul `background`, un seul calque.
+
+**Ne redécoupe pas ce fond en calques.** Une version l'a fait — un `<div>` par niveau, décalé
+en `translateZ` dans un contexte `preserve-3d`, la carte inclinée en `rotateX`. Ça marchait
+visuellement, et c'était inutilisable : la surface composée (24 calques sur toute la carte,
+1 244 Mpx) saturait le compositeur, qui évinçait des tuiles. La carte et le tracé
+**clignotaient et disparaissaient** au scroll, et il y avait des gels de 1,5 à 2 s. En prime,
+un SVG dans un contexte `preserve-3d` n'est pas toujours composité : le tracé s'évanouissait
+par intermittence. Avec la tuile cuite, plus rien de tout ça ne peut revenir — mesuré à 8-17 ms
+médians, 25 ms au pire, sur toute la traversée.
+
+Le prix de la cuisson, assumé : la direction de l'empilement est fixée dans l'image, donc elle
+suit la rotation cap-en-haut au lieu de rester verticale à l'écran. `ROT_DAMP` bornant la
+rotation à ±25°, le relief penche un peu au fil de la marche.
+
+Deux contraintes à respecter si tu retouches `tools/gen_relief.py` :
+
+- **`STEP` doit rester sous le quart de l'espacement horizontal des courbes** (~`TILE/LEVELS`).
+  Au-delà, deux niveaux voisins se croisent au lieu de s'emboîter et le volume cesse de se
+  lire — dans les pentes raides ça donne déjà un paquet de lignes parallèles plutôt que du
+  relief. Baisser `STEP` corrige, au prix d'un relief plus discret.
+- **Chaque niveau est dessiné deux fois**, à `dy` et `dy + TILE`. C'est ce qui garde la couture
+  invisible malgré le décalage vertical : sans la copie, chaque niveau laisserait une bande
+  vide en bas de la tuile.
+
 **Le rythme est non linéaire par construction.** `costAt(p)` renvoie un coût de scroll par
 unité de parcours : une base, plus une pénalité de pente issue du profil `GRADE` (« comme si
 on montait »), plus un puits triangulaire à chaque étape pour que le marcheur s'arrête
@@ -197,8 +225,10 @@ des deux réglages, vérifie l'autre — allonger la géométrie sans rallonger 
 une marche expédiée.
 
 **Le zoom est piloté par l'approche d'une étape, et rien d'autre.** `approachAt(p)` vaut 0 en
-pleine marche et 1 sur une étape ; le zoom va de `ZOOM_TRAVEL` (0,95 — on prend du recul, on
-couvre du terrain) à `ZOOM_STOP` (1,55 — on se penche sur la carte). **`ZOOM_W` doit rester
+pleine marche et 1 sur une étape ; le zoom va de `ZOOM_TRAVEL` (0,70 — on prend du recul, on
+couvre du terrain) à `ZOOM_STOP` (1,14 — on se penche sur la carte). Garde le rapport entre
+les deux (1,63) si tu les retouches : c'est lui qui donne son amplitude au mouvement
+d'approche, pas leurs valeurs absolues. **`ZOOM_W` doit rester
 sous la demi-distance entre deux étapes** (0,035 aujourd'hui) : au-delà, les fenêtres
 d'approche se recouvrent, le zoom ne redescend jamais à `ZOOM_TRAVEL` et la carte reste plaquée
 de bout en bout. Il a fallu le baisser de 0,048 à 0,030 en rapprochant les cartes. `ZOOM_W` est plus large
@@ -206,9 +236,13 @@ que `DWELL_W` **exprès** : l'objectif bouge déjà avant que le scroll ne se me
 et continue de bouger pendant la pause, ce qui évite que les ~55 % de scroll passés à l'arrêt
 paraissent morts. Le profil `GRADE` ne pilote plus le zoom, seulement le rythme.
 
-Sous `ZOOM_TRAVEL`, on voit plus de carte : à 2560×1440 il reste 1 142 px de marge entre le
-coin d'écran le plus exposé et le bord du 7200×7200. Descendre nettement sous 0,95 finirait
-par laisser voir le crème derrière les contours.
+**Reculer la caméra fait voir le bord du motif**, et c'est le piège de ce réglage. À 0,70 la
+marge entre le coin d'écran le plus exposé et le bord de la carte était tombée à 195 px en
+2560×1440, et passait négative au-delà. `.trail__relief` déborde donc les 7200 px de la carte
+de **2800 px de chaque côté — exactement deux tuiles**, pour que la phase du motif soit
+inchangée et que le terrain ne bouge pas d'un pixel. Il reste ainsi 2 995 px de marge en
+2560×1440 et 2 378 px en 3440×1440. Si tu baisses encore `ZOOM_TRAVEL`, remesure, et agrandis
+le débord **par multiples de 1400**.
 
 **La section se lit en trois temps, et c'est le point le plus délicat du fichier.** `START`
 est le premier `data-at` **moins `LEAD_RUN`** (0,113 de parcours), `END` le dernier **plus
@@ -246,12 +280,23 @@ dépenser les mêmes 100 vh. C'est aussi ce qui a forcé à **décaler toutes le
 sur le tracé** (première carte à 0,133 au lieu de 0,10) : avec l'ancienne position il n'y
 avait pas assez de chemin en amont pour payer l'entrée.
 
-Conséquence de l'amorce : la partie basse du tracé est désormais visible dès l'entrée, et la
-marge au bord de la carte y est au plus juste — **324 px mesurés en 3440×1440**, le format le
-plus large vérifié. Au-delà, le crème apparaîtrait derrière les contours.
+Conséquence de l'amorce : la partie basse du tracé est visible dès l'entrée, ce qui est le
+moment où la marge au bord du motif est la plus faible. C'est ce cas-là qu'il faut mesurer
+quand on touche au zoom ou au débord de `.trail__relief`.
 
 Conséquence : la fraction brute du parcours ne vaut jamais 0 ni 1 — l'affichage du HUD montre
 donc délibérément `scrolled`, et non `p`.
+
+**Le `d` du tracé porte l'altitude.** Il n'est plus celui que produit `gen_route.py` :
+`gen_relief.py` le relit et remonte chaque point de la hauteur du terrain sous lui, du même
+barème que les courbes de la tuile — d'où un chemin qui épouse le relief. Bonne surprise :
+comme `getPointAtLength` renvoie donc des positions déjà relevées, **la caméra, les pastilles
+d'étape et le marcheur suivent le terrain sans une ligne de JS en plus**.
+
+Le tracé plat de référence vit dans `assets/route-flat.path`, et c'est lui que le script
+relit — relancer `gen_relief.py` ne cumule donc pas les décalages. **Si tu régénères le tracé
+avec `gen_route.py`, supprime ce fichier puis relance `gen_relief.py`**, sinon l'altitude
+resterait calée sur l'ancien tracé.
 
 **Deux tracés superposés, au `d` identique.** `.trail__track` est la route grise en
 pointillés devant ; `.trail__track-done` est verte, pleine, et se révèle par
@@ -343,7 +388,7 @@ des morceaux de la carte, masque les éléments feuilles — masquer un conteneu
 
 ## Les assets générés
 
-`assets/hero-topo.svg`, `assets/trail-map.svg` et l'attribut `d` du parcours sont tous
+`assets/hero-topo.svg`, `assets/trail-relief.svg` et l'attribut `d` du parcours sont tous
 **produits par les scripts Python de `tools/`** (numpy / scipy / matplotlib, déjà installés).
 Chacun utilise une graine fixe : relancer `gen_map.py` et `gen_route.py` reproduit les assets
 versionnés **à l'octet près**, tu peux donc changer un paramètre et régénérer en confiance.
@@ -354,6 +399,14 @@ Voir `tools/README.md`, qui consigne aussi la seule lacune : `gen_topo.py` sort 
 `gen_route.py` réécrit le `d` des **deux** `<path>` d'`index.html` ; ils doivent toujours
 porter la même valeur.
 
+**`gen_map.py` et `assets/trail-map.svg` ne servent plus au site** : c'est la carte plate,
+remplacée par la tuile en relief. Le script reste comme référence du terrain d'origine, mais
+plus rien ne pointe dessus.
+
+**Ordre des scripts.** `gen_relief.py` écrit lui aussi dans le `d` du parcours, après
+`gen_route.py`. La chaîne est donc : `gen_route.py`, puis supprimer
+`assets/route-flat.path`, puis `gen_relief.py`.
+
 ## À préciser
 
 Ces points ne sont pas encore arbitrés — demande plutôt que de supposer :
@@ -363,6 +416,10 @@ Ces points ne sont pas encore arbitrés — demande plutôt que de supposer :
   `.todo` (« À compléter »). N'invente pas de projets, de client ou de bio à sa place :
   demande-lui le contenu. L'adresse de `#contact` est `adresse@a-completer.fr`, et les liens
   réseaux sont des `<span>`, pas des `<a>`, pour ne pas laisser d'ancre morte.
+- **Le design des titres**, `.trail__intro` compris, qui doit être repris. En attendant, les
+  cartes d'étape passent derrière « L'ASCENSION » et les deux textes se croisent : c'est
+  **connu et assumé**, pas un bug. Ne le rattrape pas par un fond ou un dégradé sous le titre,
+  le sujet sera traité par la refonte.
 - **L'hébergement**, donc si les chemins doivent rester relatifs et si une étape de
   minification est un jour nécessaire.
 - **La source de vérité du design** : savoir si le fichier Figma fait toujours foi.

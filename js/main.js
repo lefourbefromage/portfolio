@@ -94,8 +94,8 @@
   // step back to cover ground, then lean into the map as a stop comes up.
   // ZOOM_W is wider than DWELL_W on purpose, so the lens is already moving
   // before the scroll starts to resist, and keeps moving through the pause.
-  const ZOOM_TRAVEL = 0.95;
-  const ZOOM_STOP = 1.55;
+  const ZOOM_TRAVEL = 0.70;
+  const ZOOM_STOP = 1.14;
   // À garder sous la demi-distance entre deux étapes (0,035 aujourd'hui), sinon
   // les fenêtres d'approche se recouvrent et le zoom ne redescend jamais à
   // ZOOM_TRAVEL : la carte reste plaquée de bout en bout.
