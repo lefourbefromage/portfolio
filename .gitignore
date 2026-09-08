@@ -19,3 +19,14 @@ assets/hero-topo-raw.svg
 # Source haute définition du schéma Beepz : 6,5 Mo, non référencée par le site
 # (projet-beepz.html charge le .webp de 139 Ko qui en est tiré).
 assets/beepz-system.png
+
+# Sources des sept stickers du hero (sans le filtre « abîmé ») : non
+# référencées par le site, qui ne charge que les .webp détourés qui en sont
+# tirés. Même partage que assets/beepz-system.png.
+assets/adobe.png
+assets/affinity.png
+assets/figma.png
+assets/github.png
+assets/html.png
+assets/sass less.png
+assets/ui ux.png

@@ -326,13 +326,13 @@ body {
 /* Sept stickers, positionnés en % du cadre 1472x599 (cf. CLAUDE.md, « Le hero »).
    L'aspect-ratio de chacun est celui de son webp détouré : les images sont
    rognées au plus près, donc la boîte CSS colle au dessin, sans marge morte. */
-.sticker-1 { left: 16.06%; top: 40.23%; width: 3.9%;  aspect-ratio: 461/700; --rot:  -6deg; }   /* Figma, centré sur le départ de .decor--path-left */
-.sticker-2 { left: 78.5%;  top: 32%;   width: 5.8%;  aspect-ratio: 19/20;   --rot: -11deg; }   /* HTML */
-.sticker-3 { left: 79%;    top: 63%;   width: 10.1%; aspect-ratio: 350/239; --rot:  10deg; }   /* Sass & Less */
-.sticker-4 { left: 28.5%;  top: 49.2%; width: 8.3%;  aspect-ratio: 700/423; --rot: -10deg; }   /* Adobe */
-.sticker-5 { left: 57.3%;  top: 55.7%; width: 5.9%;  aspect-ratio: 699/700; --rot:   8deg; }   /* Github */
-.sticker-6 { left: 14.47%; top: 64.58%; width: 5.85%; aspect-ratio: 700/607; --rot:  -6deg; }   /* Affinity */
-.sticker-7 { left: 41.5%;  top:  6%;   width: 5.2%;  aspect-ratio: 489/700; --rot:  -8deg; }   /* UI/UX */
+.sticker-1 { left: 16.06%; top: 40.23%; width: 3.9%;  aspect-ratio: 306/447; --rot:  -6deg; }   /* Figma, centré sur le départ de .decor--path-left */
+.sticker-2 { left: 78.5%;  top: 32%;   width: 5.8%;  aspect-ratio: 399/405;   --rot: -11deg; }   /* HTML */
+.sticker-3 { left: 79%;    top: 63%;   width: 10.1%; aspect-ratio: 513/349; --rot:  10deg; }   /* Sass & Less */
+.sticker-4 { left: 28.5%;  top: 49.2%; width: 8.3%;  aspect-ratio: 594/355; --rot: -10deg; }   /* Adobe */
+.sticker-5 { left: 57.3%;  top: 55.7%; width: 5.9%;  aspect-ratio: 390/387; --rot:   8deg; }   /* Github */
+.sticker-6 { left: 14.47%; top: 64.58%; width: 5.85%; aspect-ratio: 440/379; --rot:  -6deg; }   /* Affinity */
+.sticker-7 { left: 41.5%;  top:  6%;   width: 5.2%;  aspect-ratio: 397/566; --rot:  -8deg; }   /* UI/UX */
 
 /* ---------- Le tas de photos : à cheval sur le hero et À propos ----------
    Même façon de faire que les stickers du hero : tout est posé en pourcentage
