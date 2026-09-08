@@ -15,3 +15,7 @@ assets/hero-topo-raw.svg
 # ensemble de liens symboliques vers .agents/skills, d'où les deux lignes.
 .agents/
 .claude/skills/
+
+# Source haute définition du schéma Beepz : 6,5 Mo, non référencée par le site
+# (projet-beepz.html charge le .webp de 139 Ko qui en est tiré).
+assets/beepz-system.png

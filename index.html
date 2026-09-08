@@ -231,6 +231,10 @@
               <span class="trail__stop-year">2012</span>
               <h3 class="trail__stop-role">Graphiste</h3>
               <p class="trail__stop-org">Nouveau Monde DDB<span class="trail__stop-dot">·</span>Lyon</p>
+              <p class="trail__stop-note">
+                Chargé de la création de visuels et de supports web (newsletter, articles, vidéo)
+                pour les clients de l’agence&nbsp;: Wedze, Pilot, SPAR…
+              </p>
             </div>
           </li>
           <li class="trail__stop" data-at="0.203">
@@ -239,6 +243,10 @@
               <span class="trail__stop-year">2013</span>
               <h3 class="trail__stop-role">Webdesigner Junior</h3>
               <p class="trail__stop-org">Jacquie &amp; Michel<span class="trail__stop-dot">·</span>Paris</p>
+              <p class="trail__stop-note">
+                Prise de poste chez J&amp;M&nbsp;: création de visuels pour les réseaux sociaux, design
+                d’interaction web, refonte des sites historiques de la marque.
+              </p>
             </div>
           </li>
           <li class="trail__stop" data-at="0.273">
@@ -247,14 +255,22 @@
               <span class="trail__stop-year">2016</span>
               <h3 class="trail__stop-role">Designer &amp; Frontend dev</h3>
               <p class="trail__stop-org">Jacquie &amp; Michel<span class="trail__stop-dot">·</span>Pau</p>
+              <p class="trail__stop-note">
+                Conception et intégration des projets web de la marque, création des visuels de
+                communication pour les réseaux sociaux, réalisation de concepts marketing.
+              </p>
             </div>
           </li>
           <li class="trail__stop" data-at="0.343">
             <span class="trail__stop-pin"></span>
             <div class="trail__stop-card">
-              <span class="trail__stop-year">2023 – 2025</span>
+              <span class="trail__stop-year">2023</span>
               <h3 class="trail__stop-role">Lead Product Designer</h3>
               <p class="trail__stop-org">ZXY Corp<span class="trail__stop-dot">·</span>Budapest</p>
+              <p class="trail__stop-note">
+                Développement d’une équipe web pour le groupe Ares SAS en Hongrie. Création de
+                designs d’interface, campagnes marketing.
+              </p>
             </div>
           </li>
           <li class="trail__stop" data-at="0.413">
@@ -263,10 +279,20 @@
               <span class="trail__stop-year">2025</span>
               <h3 class="trail__stop-role">Product Designer</h3>
               <p class="trail__stop-org">Freelance<span class="trail__stop-dot">·</span>France</p>
+              <p class="trail__stop-note">
+                Création d’identités visuelles, design et développement de pages de vente et de
+                sites internet.
+              </p>
             </div>
           </li>
         </ol>
       </div>
+
+      <!-- Le journal : le poste courant, posé à même la carte en bas à gauche. Il est
+           VIDE dans le HTML — le JS y clone les cartes d'étape ci-dessus, qui restent
+           la seule source de vérité (et ce que le mode réduit affiche en entier).
+           D'où `aria-hidden` : le lecteur d'écran lit la liste, pas son reflet. -->
+      <div class="trail__log" aria-hidden="true"></div>
 
       <div class="trail__hud">
         <p class="trail__hud-label" aria-hidden="true">Avancement</p>
@@ -286,8 +312,10 @@
 
   <section class="section" id="projets">
     <div class="section__head">
-      <p class="section__eyebrow">Projets</p>
-      <h2 class="section__title">Sélection de travaux</h2>
+      <p class="section__eyebrow">
+        <span class="section__eyebrow-num">03.</span> Quelques sommets
+      </p>
+      <h2 class="section__title">Cartographie des projets</h2>
       <p class="section__lede">
         <span class="todo">À compléter</span>
         Une phrase de cadrage&nbsp;: le type de projets que tu montres ici, et pourquoi
@@ -296,13 +324,21 @@
     </div>
 
     <div class="projects">
-      <article class="project project--todo">
+      <!-- La seule carte qui mène quelque part pour l'instant : la page projet vit à
+           la RACINE (projet-beepz.html) et non dans un sous-dossier, pour que tous les
+           chemins assets/ et css/ y restent identiques à ceux d'ici. -->
+      <a class="project project--todo project--link" href="projet-beepz.html">
         <div class="project__frame"><span>Visuel à venir</span></div>
         <p class="project__index">01</p>
-        <h3 class="project__title">Nom du projet</h3>
-        <p class="project__meta">Année<span class="project__dot">·</span>Client<span class="project__dot">·</span>Rôle</p>
-        <p class="project__desc">Le problème posé, ce que tu as fait, ce que ça a changé. Deux ou trois lignes.</p>
-      </article>
+        <h3 class="project__title">Beepz</h3>
+        <p class="project__meta">2025<span class="project__dot">·</span>Beepz<span class="project__dot">·</span>UI/UX Designer</p>
+        <p class="project__desc">Place de marché automobile californienne. Un design système, appliqué et éprouvé sur la landing page et les emails.</p>
+        <p class="project__more">Lire l’étude de cas
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true" focusable="false">
+            <path d="M1 9L9 1M9 1H2M9 1V8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </p>
+      </a>
 
       <article class="project project--todo">
         <div class="project__frame"><span>Visuel à venir</span></div>
@@ -332,7 +368,7 @@
 
   <section class="section contact" id="contact">
     <div class="section__head">
-      <p class="section__eyebrow">Contact</p>
+      <p class="section__eyebrow"><span class="section__eyebrow-num">04.</span> Contact</p>
       <h2 class="section__title">Discutons</h2>
       <p class="section__lede">
         <span class="todo">À compléter</span>

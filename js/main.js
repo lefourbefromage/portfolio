@@ -125,7 +125,38 @@
   const you = trail.querySelector('.trail__you');
   const value = trail.querySelector('.trail__progress-value');
   const stops = [...trail.querySelectorAll('.trail__stop')];
+  const log = trail.querySelector('.trail__log');
   if (!map || !track || !done) return;
+
+  /* ---------- Le journal, en bas à gauche ---------- */
+  // Les entrées sont CLONÉES depuis les cartes du tracé : le <li> reste la seule
+  // source de vérité, donc il n'y a pas deux textes à tenir à jour — et le mode
+  // réduit, qui affiche ces mêmes cartes en entier, ne peut pas diverger.
+  // Les cinq sont posées d'emblée et superposées ; le rendu ne fait que déplacer
+  // une classe, tout le fondu est en CSS.
+  const LOG_PARTS = [
+    ['.trail__stop-year', 'trail__log-year', 'span'],
+    ['.trail__stop-role', 'trail__log-role', 'p'],
+    ['.trail__stop-org', 'trail__log-org', 'p'],
+    ['.trail__stop-note', 'trail__log-note', 'p'],
+  ];
+
+  const logEntries = !log ? [] : stops.map((stop) => {
+    const entry = document.createElement('div');
+    entry.className = 'trail__log-entry';
+    for (const [from, cls, tag] of LOG_PARTS) {
+      const src = stop.querySelector(from);
+      if (!src) continue;
+      const el = document.createElement(tag);
+      el.className = cls;
+      el.innerHTML = src.innerHTML;
+      entry.append(el);
+    }
+    log.append(entry);
+    return entry;
+  });
+
+  let logCurrent = null;
 
   // How hard the going is, sampled along the route. 0 = flat stroll, 1 = grind.
   // This one profile drives the pace. The zoom is on its own, see approachAt.
@@ -382,9 +413,20 @@
     you.style.left = `${here.x.toFixed(1)}px`;
     you.style.top = `${here.y.toFixed(1)}px`;
 
-    stops.forEach((s) => {
-      s.classList.toggle('is-reached', p >= parseFloat(s.dataset.at) - CARD_LEAD);
+    // Le journal garde le DERNIER poste atteint : tant que l'étape suivante n'est
+    // pas débloquée, c'est le précédent qui reste affiché. Avant la première, le
+    // coin est vide — d'où le -1, qui ne correspond à aucune entrée.
+    let current = -1;
+    stops.forEach((s, i) => {
+      const reached = p >= parseFloat(s.dataset.at) - CARD_LEAD;
+      s.classList.toggle('is-reached', reached);
+      if (reached) current = i;
     });
+
+    if (current !== logCurrent) {
+      logEntries.forEach((e, i) => e.classList.toggle('is-current', i === current));
+      logCurrent = current;
+    }
 
     // Read out the scroll through the section, not the raw position on the
     // route — the route deliberately starts and ends outside the walk.
@@ -556,4 +598,74 @@
   still.addEventListener('change', () => window.location.reload());
 
   refresh();
+})();
+
+/* ---------- Pages projet : les blocs qui se révèlent ---------- */
+// Le JS ne décide de rien ici. Ce qui se révèle est écrit dans le HTML — un
+// attribut `data-reveal` par bloc, comme les `data-at` des étapes du parcours —
+// et la manière dont ça se dessine est dans le CSS. Il ne reste que le
+// déclencheur : poser `data-reveal-in` quand le bloc passe la ligne, une fois
+// pour toutes.
+//
+// Deux garde-fous tiennent la visibilité du contenu :
+//   — on ne fait rien si `.js-motion` n'est pas là (mouvement réduit, ou pas de
+//     JS du tout) : dans ce cas le CSS ne masque rien ;
+//   — on annonce `data-motion="ready"` au plus tôt, ce qui désamorce le
+//     garde-fou de 2,5 s posé en tête de page.
+(function () {
+  const html = document.documentElement;
+
+  // À faire même s'il n'y a rien à révéler : c'est la preuve que ce fichier a
+  // bien chargé, et c'est tout ce que le garde-fou de la page attend.
+  html.dataset.motion = 'ready';
+
+  if (!html.classList.contains('js-motion')) return;
+
+  const pending = [...document.querySelectorAll('[data-reveal]')];
+  if (!pending.length) return;
+
+  // La ligne de déclenchement, à 88 % de la hauteur de fenêtre : le bloc se
+  // révèle une fois franchement entré, pas au ras du bord bas.
+  const TRIGGER = 0.88;
+
+  // BALAYAGE GÉOMÉTRIQUE, et pas un `IntersectionObserver`. Ce n'est pas par
+  // méfiance envers l'API : c'est qu'elle ne signale que les FRANCHISSEMENTS.
+  // Un saut d'un seul rendu — molette à gros crans, `scrollTo`, position
+  // restaurée au rechargement, ancre du sommaire — peut faire passer un bloc de
+  // « sous la fenêtre » à « au-dessus » sans une seule image où il croise le
+  // bord : aucune notification, et le bloc reste masqué pour toujours. Ici on
+  // relit la position de ce qui reste, ce qui ne peut pas rater un bloc.
+  let frame = 0;
+
+  const sweep = () => {
+    frame = 0;
+    const line = window.innerHeight * TRIGGER;
+
+    for (let i = pending.length - 1; i >= 0; i--) {
+      const el = pending[i];
+      if (el.getBoundingClientRect().top >= line) continue;
+      el.setAttribute('data-reveal-in', '');   // une seule fois : une révélation
+      pending.splice(i, 1);                    // qui rejoue à chaque passage est
+    }                                          // une interface qui se bat avec
+                                               // son lecteur.
+    // Plus rien à révéler : on débranche. La page ne garde pas un écouteur de
+    // scroll pour surveiller une liste vide.
+    if (!pending.length) {
+      window.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
+    }
+  };
+
+  // Une lecture par image au plus : `scroll` tire à chaque cran, et lire une
+  // position force un calcul de mise en page.
+  const schedule = () => {
+    if (!frame) frame = requestAnimationFrame(sweep);
+  };
+
+  window.addEventListener('scroll', schedule, { passive: true });
+  window.addEventListener('resize', schedule);
+
+  // Au chargement : la page peut déjà être positionnée plus bas (ancre `#socle`,
+  // position restaurée), et ce qui est au-dessus de la ligne se révèle d'emblée.
+  sweep();
 })();

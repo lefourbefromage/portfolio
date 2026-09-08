@@ -38,7 +38,11 @@ html, body { margin: 0; padding: 0; }
 html,
 main { overflow-x: clip; }
 @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
-img { display: block; max-width: 100%; }
+/* `height: auto` n'est pas décoratif : dès qu'une balise porte ses attributs
+   `width`/`height` — ce qu'il faut faire, pour réserver la place au chargement et
+   éviter que la page saute — `max-width: 100%` réduit la largeur SANS toucher la
+   hauteur, et l'image s'affiche écrasée. Les deux vont ensemble, toujours. */
+img { display: block; max-width: 100%; height: auto; }
 a { text-decoration: none; color: inherit; }
 
 :root {
@@ -61,6 +65,13 @@ a { text-decoration: none; color: inherit; }
   --font-display: "Clash Display", system-ui, sans-serif;
   --font-body: "Inter", system-ui, sans-serif;
   --font-serif: "EB Garamond", Georgia, serif;   /* en italique seulement */
+
+  /* --- Motion ---
+     Une seule courbe, forte, pour tout ce qui ENTRE (apparitions, révélations).
+     Les easings intégrés du navigateur sont trop mous ; celle-ci démarre franc
+     et se pose long, ce qui se lit plus rapide à durée égale. Les mouvements
+     de survol gardent `ease` : à 180 ms la courbe ne se voit pas. */
+  --ease-out: cubic-bezier(.23, 1, .32, 1);
 }
 
 body {
@@ -501,6 +512,13 @@ body {
 
   --rot: 0deg;
   --zoom: 1;
+
+  /* Le ciel de la carte : un bleu qui s'assombrit doucement du haut vers le bas,
+     entièrement pris sur l'axe des bleus (teinte 226) — de `--navy` à `--ink`,
+     deux tokens existants, aucune cinquième couleur. Il finit exactement sur
+     l'encre du site : la fenêtre étant bordée d'une marge (`--frame`) qui laisse
+     voir la page, le raccord ne se voit pas au bas de la carte. */
+  --trail-sky: linear-gradient(163deg, var(--navy) 0%, var(--ink) 88%);
 }
 
 .trail__stage {
@@ -509,12 +527,17 @@ body {
   height: 100vh;
   overflow: hidden;
   isolation: isolate;
-  color: var(--ink);
+  color: var(--cream);
 
   /* Toute la géométrie de l'ouverture, que `--open` (hérité de .trail) interpole.
      `--card-w` est déclaré sur .trail, le fil pointillé en a besoin lui aussi. */
   --card-h: calc(var(--card-w) / 1.57);
   --frame: clamp(10px, 1vw, 18px);   /* la marge d'encre une fois grand ouvert */
+
+  /* La place que le HUD tient dans le coin bas droit. Le journal s'arrête avant :
+     c'est ce qui laisse les deux blocs sur la MÊME ligne du bas sans jamais se
+     rencontrer, au lieu d'obliger l'un à passer au-dessus de l'autre. */
+  --hud-reserve: clamp(148px, 15vw, 250px);
 }
 
 /* Pas de fond ici mais sur la fenêtre : hors d'elle, on doit voir l'encre de la
@@ -522,7 +545,7 @@ body {
 .trail__window {
   position: absolute;
   inset: 0;
-  background: var(--cream);
+  background: var(--trail-sky);
   /* Le masque, interpolé entièrement en CSS entre les deux états. Les % se
      résolvent sur la boîte de la fenêtre — hauteur pour haut/bas, largeur pour
      les côtés — donc le carton reste centré à toute taille d'écran. La carte
@@ -655,7 +678,7 @@ body {
 }
 
 .trail__track {
-  stroke: rgb(var(--ink-rgb) / .32);
+  stroke: rgb(var(--cream-rgb) / .38);
   stroke-width: 5;
   stroke-dasharray: 16 14;
 }
@@ -696,14 +719,24 @@ body {
   box-shadow: 0 2px 6px rgb(var(--ink-rgb) / .28);
 }
 
+/* La carte du tracé est réduite à l'ANNÉE : le poste, la boîte et la description
+   se lisent une seule fois, en bas à gauche, dans le journal. Le balisage complet
+   reste dans le <li> — c'est la source que le JS clone, et c'est ce que le mode
+   réduit réaffiche en entier. On masque donc les feuilles, jamais le conteneur. */
+.trail__stop-role,
+.trail__stop-org,
+.trail__stop-note { display: none; }
+
 .trail__stop-card {
   position: absolute;
   left: 0;
-  /* clears the walker's dot and pulse, which sit on the pin during the pause */
-  bottom: 40px;
+  /* Juste au-dessus de la pastille du marcheur (18px + 4px de bord, donc 13px de
+     rayon) : de quoi la dégager sans que l'année ne flotte loin de son point. La
+     valeur était à 40px du temps où la carte portait tout le texte. */
+  bottom: 22px;
   width: max-content;
   max-width: 30ch;
-  padding: 9px 15px 11px;
+  padding: 4px 12px 6px;
   border: 1px solid rgb(var(--ink-rgb) / .16);
   border-radius: 10px;
   background: #fffaf0;
@@ -802,6 +835,7 @@ body {
    progression. Le seul élément lié au scroll est le titre de couverture. */
 .trail__intro,
 .trail__hud,
+.trail__log,
 .trail__route,
 .trail__you,
 .trail__stops {
@@ -811,6 +845,7 @@ body {
 
 .trail.is-open .trail__intro,
 .trail.is-open .trail__hud,
+.trail.is-open .trail__log,
 .trail.is-open .trail__route,
 .trail.is-open .trail__you,
 .trail.is-open .trail__stops {
@@ -848,28 +883,134 @@ body {
   pointer-events: none;
 }
 
-/* Garamond italique et casse normale, comme l'œil d'À propos : ce sont les deux
-   têtes de section refaites, elles doivent se répondre. Le numéro en vert. */
-.trail__eyebrow {
-  font-family: var(--font-serif);
-  font-style: italic;
-  margin: 0 0 4px;
-  font-size: 18px;
-  letter-spacing: 0;
-  text-transform: none;
-  color: var(--navy);
+/* La tête du parcours est LA tête de section commune (voir « LA tête de section »
+   plus bas) : taille, famille et casse viennent de là. Ne restent ici que les
+   deux choses qui lui sont propres — l'œil légèrement retenu, parce qu'il est
+   posé sur la carte et non sur le fond de la page, et l'alignement à gauche, le
+   titre étant un calque dans le coin et non un bloc centré dans le flux. */
+.trail__eyebrow { color: rgb(var(--cream-rgb) / .82); }
+
+.trail__intro { text-align: left; }
+
+/* Le titre de couverture est le MÊME titre, en vignette : le carton fait au plus
+   330px de large, où 66px ne tiendrait évidemment pas. Il se règle donc sur la
+   largeur du CARTON et pas sur celle de l'écran — c'est un aperçu de la section,
+   pas une quatrième taille. Le rapport œil / titre y est le même, 0,62. */
+.trail__cover .trail__eyebrow {
+  margin-bottom: 2px;
+  font-size: calc(var(--card-w) * .055);
 }
 
-.trail__eyebrow-num { color: var(--green); }
+.trail__cover .trail__heading { font-size: calc(var(--card-w) * .089); }
 
-.trail__heading {
-  font-family: var(--font-display);
-  margin: 0;
-  font-size: clamp(21px, 1.65vw, 25px);
+/* --- le journal : le poste courant, en bas à gauche --- */
+/* Sur fond transparent, comme demandé : pas de carton, le texte est posé à même
+   la carte — le ciel du parcours est assez sombre pour porter du crème.
+   Les cinq entrées sont toutes dans le DOM, SUPERPOSÉES, et passer de l'une à
+   l'autre n'est qu'une bascule de classe : toute la transition est en CSS, il n'y
+   a aucun minuteur JS qui pourrait se croiser sur un scroll rapide. */
+.trail__log {
+  position: absolute;
+  z-index: 4;
+  /* Le retrait à gauche, plus serré que le padding du titre au-dessus : une seule
+     valeur, que le scrim relit, pour que les deux ne puissent pas se désaccorder. */
+  --log-inset: clamp(16px, 3vw, 42px);
+  left: var(--log-inset);
+  /* MÊME `bottom` que le HUD : les deux blocs partagent la ligne du bas, à
+     n'importe quelle largeur. `right` leur évite de se rencontrer quand le texte
+     est long, et `max-width` tient la mesure de lecture sur grand écran. */
+  right: var(--hud-reserve);
+  bottom: clamp(16px, 2.6vh, 38px);
+  width: auto;
+  max-width: 38ch;
+  /* Hauteur nulle : les entrées se recouvrent, donc la boîte n'a pas de hauteur
+     propre. On l'ancre par le bas et chaque entrée grandit VERS LE HAUT — d'où
+     une ligne du bas qui ne bouge pas d'un poste à l'autre, quelle que soit la
+     longueur de la description. */
+  height: 0;
+  pointer-events: none;
+}
+
+/* Le scrim : un dégradé d'encre né dans le coin bas gauche, qui meurt avant
+   d'atteindre le texte du HUD. Il est porté par le JOURNAL et pas par ses
+   entrées — sinon il s'effacerait et reparaîtrait à chaque changement de poste,
+   et le clignotement se verrait bien plus que le dégradé lui-même. Sa taille est
+   donc fixe et généreuse : elle couvre la description la plus longue sans que le
+   fond ne bouge quand on passe d'une étape à l'autre.
+   Pris sur `--ink`, donc sur l'axe des bleus : c'est le pied du ciel du parcours,
+   assombri, pas une nouvelle couleur. */
+.trail__log::before {
+  content: "";
+  position: absolute;
+  left: calc(-1 * var(--log-inset));
+  right: -22%;
+  bottom: calc(-1 * clamp(16px, 2.6vh, 38px));
+  height: min(430px, 52vh);
+  background: radial-gradient(
+    116% 100% at 0% 100%,
+    rgb(var(--ink-rgb) / .86) 0%,
+    rgb(var(--ink-rgb) / .62) 38%,
+    rgb(var(--ink-rgb) / .22) 64%,
+    rgb(var(--ink-rgb) / 0) 82%
+  );
+  pointer-events: none;
+}
+
+/* L'entrée qui PART ne fait que s'effacer : elle ne redescend pas. D'où la
+   translation sans durée, appliquée après le fondu — donc invisible. Celle qui
+   ARRIVE monte en apparaissant, la même grammaire que les cartes d'étape. */
+.trail__log-entry {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  opacity: 0;
+  translate: 0 10px;
+  transition: opacity .3s ease, translate 0s linear .3s;
+}
+
+.trail__log-entry.is-current {
+  opacity: 1;
+  translate: 0 0;
+  /* Le retard laisse la précédente finir de s'effacer avant que celle-ci ne
+     monte : les deux ne se croisent pas à mi-opacité. */
+  transition: opacity .5s ease .12s,
+              translate .6s cubic-bezier(.22, 1, .36, 1) .12s;
+}
+
+.trail__log-year {
+  font-family: var(--font-serif);
+  font-style: italic;
+  display: block;
+  font-size: clamp(14px, 1.15vw, 18px);
   font-weight: 700;
-  line-height: 1.15;
-  text-transform: none;
-  color: var(--navy);
+  color: var(--green);
+}
+
+.trail__log-role {
+  font-family: var(--font-display);
+  margin: 3px 0 0;
+  font-size: clamp(20px, 2vw, 32px);
+  font-weight: 700;
+  line-height: 1.12;
+  color: var(--cream);
+}
+
+.trail__log-org {
+  margin: 5px 0 0;
+  font-size: clamp(13px, 1.05vw, 16px);
+  color: rgb(var(--cream-rgb) / .72);
+}
+
+/* Le point séparateur est cloné avec le reste, et sa règle d'origine le peint en
+   encre — invisible ici. */
+.trail__log .trail__stop-dot { color: rgb(var(--cream-rgb) / .38); }
+
+.trail__log-note {
+  margin: 11px 0 0;
+  font-size: clamp(13px, 1vw, 15px);
+  line-height: 1.5;
+  color: rgb(var(--cream-rgb) / .62);
 }
 
 /* --- le HUD : une pastille d'encre posée sur la carte --- */
@@ -880,6 +1021,9 @@ body {
   z-index: 4;
   padding: clamp(10px, 1vw, 16px) clamp(16px, 1.6vw, 26px) clamp(8px, .8vw, 12px);
   border-radius: 14px;
+  /* Le fond du parcours étant passé au bleu, la pastille d'encre ne se détachait
+     plus de la carte : c'est le filet crème qui lui redonne son bord. */
+  border: 1px solid rgb(var(--cream-rgb) / .16);
   background: var(--ink);
   color: var(--cream);
   text-align: center;
@@ -943,24 +1087,62 @@ body {
   padding: clamp(72px, 11vh, 150px) clamp(20px, 2.6vw, 40px);
 }
 
-.section__eyebrow {
-  font-family: var(--font-display);
-  margin: 0 0 12px;
-  font-size: clamp(10px, .9vw, 13px);
-  letter-spacing: .2em;
-  text-transform: uppercase;
-  color: var(--pink);
-}
+/* ==========================================================================
+   LA tête de section — une seule pour toute la page
+   ==========================================================================
 
-.section__title {
-  font-family: var(--font-display);
-  margin: 0;
-  font-size: clamp(30px, 4.4vw, 62px);
-  font-weight: 700;
-  line-height: .98;
-  text-transform: uppercase;
+   Les quatre sections partagent exactement le même œil et le même titre. Il y a
+   eu trois têtes différentes ici (capitales espacées roses pour projets et
+   contact, Garamond 18/25px pour À propos et le parcours, la grande version de
+   la maquette pour les projets) : c'est fini, et il ne faut pas les faire
+   revenir. Les sélecteurs sont groupés EXPRÈS — une seule déclaration, donc rien
+   ne peut plus diverger sans qu'on le voie.
+
+   C'est le design de la maquette. Il annule la consigne précédente d'À propos,
+   qui voulait une tête volontairement PLUS PETITE que son texte : le titre y est
+   désormais le plus gros texte de la section, comme partout ailleurs.
+
+   Le rapport titre / œil vaut ~2,1, mesuré sur la maquette au rapport des deux
+   longueurs de texte : 3,05 contre 3,06. Les trois termes du `clamp` de l'œil
+   valent 0,62 fois ceux du titre — BORNE BASSE COMPRISE, sinon la proportion se
+   perd sous ~700px de large, là où les deux clamps se figent sur leur minimum.
+   Si tu retouches les tailles, garde le rapport plutôt que les valeurs. */
+.section__eyebrow,
+.about__eyebrow,
+.trail__eyebrow {
+  font-family: var(--font-serif);
+  font-style: italic;
+  margin: 0 0 8px;
+  font-size: clamp(20px, 2.9vw, 41px);
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--cream);
 }
+
+/* Le numéro d'ordre de la section, en vert. Les quatre en portent un. */
+.section__eyebrow-num,
+.about__eyebrow-num,
+.trail__eyebrow-num { color: var(--green); }
+
+.section__title,
+.about__title,
+.trail__heading {
+  font-family: var(--font-display);
+  margin: 0;
+  font-size: clamp(32px, 4.6vw, 66px);
+  font-weight: 700;
+  line-height: 1.04;
+  text-transform: none;
+  color: var(--cream);
+}
+
+/* Centrées, elles aussi, toutes les quatre. Le CORPS d'À propos, lui, reste à
+   gauche dans sa colonne de 1040px : c'est la tête qui est centrée, pas la
+   section. */
+.section__head,
+.about__head { text-align: center; }
+
+.section__head .section__lede { margin-inline: auto; }
 
 .section__lede {
   margin: 20px 0 0;
@@ -1057,6 +1239,27 @@ body {
   color: rgb(var(--cream-rgb) / .66);
 }
 
+/* La carte devient un lien dès que sa page projet existe. `<a>` et non `<article>` :
+   toute la carte est cliquable, plutôt qu'un lien perdu dans un coin. */
+a.project { display: block; transition: border-color .2s ease, background-color .2s ease; }
+
+a.project:hover {
+  border-color: rgb(var(--cream-rgb) / .3);
+  background: rgb(var(--navy-rgb) / .58);
+}
+
+.project__more {
+  font-family: var(--font-display);
+  display: inline-flex;
+  align-items: center;
+  gap: .6em;
+  margin: 16px 0 0;
+  font-size: clamp(12px, 1vw, 14px);
+  font-weight: 600;
+  letter-spacing: .04em;
+  color: var(--pink);
+}
+
 /* ---------- À propos ---------- */
 /* La seule section de la page qui centre son œil et son titre puis repasse le texte
    à gauche. Elle sert aussi de charnière : le tas de photos mord sur son haut, et le
@@ -1089,35 +1292,10 @@ body {
 .about__topo-tile--left { left: -7%; top: 4%; }
 .about__topo-tile--right { right: -6%; bottom: 6%; }
 
-/* --- L'œil et le titre, centrés --- */
-.about__head {
-  text-align: center;
-}
-
-/* Garamond, en italique et à taille de texte courant : c'est un chapô manuscrit,
-   pas un label en capitales espacées comme les autres `.section__eyebrow`. */
-.about__eyebrow {
-  font-family: var(--font-serif);
-  font-style: italic;
-  margin: 0 0 10px;
-  font-size: 18px;
-  letter-spacing: 0;
-  text-transform: none;
-  color: var(--cream);
-}
-
-.about__eyebrow-num { color: var(--green); }
-
-/* Casse normale, contrairement aux titres de section en capitales : la maquette
-   veut une phrase, pas une étiquette. */
-.about__title {
-  font-family: var(--font-display);
-  margin: 0;
-  font-size: clamp(21px, 1.65vw, 25px);
-  font-weight: 700;
-  line-height: 1.15;
-  color: var(--cream);
-}
+/* L'œil et le titre d'À propos n'ont plus de règles à eux : ils sont dans le
+   groupe de « LA tête de section », avec les trois autres. Ne leur redonne pas
+   une taille propre — c'est précisément ce qui avait produit trois têtes
+   différentes sur la même page. */
 
 /* --- Le texte --- */
 .about__body {
@@ -1272,7 +1450,8 @@ body {
 
   /* The map stays interactive on small screens — it is one composited
      transform, so it scrubs smoothly on touch. Just tighten the labels. */
-  .trail__stop-card { padding: 7px 12px 9px; border-radius: 8px; }
+  .trail__stop-card { padding: 4px 10px 5px; border-radius: 8px; }
+
   .trail__stop-role { font-size: 16px; }
   .trail__stop-org { font-size: 12px; }
   .trail__stop-year { font-size: 13px; }
@@ -1310,7 +1489,23 @@ body {
   }
 
   .trail__cover,
-  .trail__lead { display: none; }
+  .trail__lead,
+  .trail__log { display: none; }
+
+  /* Sans journal, la carte d'étape redevient la carte complète — c'est la frise
+     qui porte tout le texte. On rend les feuilles masquées, pas le conteneur. */
+  .trail__stop-role,
+  .trail__stop-org,
+  .trail__stop-note { display: revert; }
+
+  .trail__stop-card { padding: 9px 15px 11px; }
+
+  .trail__stop-note {
+    margin: 7px 0 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: rgb(var(--ink-rgb) / .66);
+  }
 
   .trail__intro,
   .trail__stops {
@@ -1328,7 +1523,10 @@ body {
     margin: 26px auto 0;
     padding-left: 26px;
     max-width: min(520px, 100% - 44px);
-    border-left: 2px dashed rgb(var(--ink-rgb) / .3);
+    /* Crème et non encre : la frise reste peinte sur le ciel du parcours — la
+       fenêtre garde son fond, elle contient toute la scène — donc un filet
+       d'encre y serait invisible. Même raison que le texte passé en crème. */
+    border-left: 2px dashed rgb(var(--cream-rgb) / .3);
   }
 
   .trail__stop {
@@ -1360,4 +1558,903 @@ body {
   .pile__photo,
   .pile__line,
   .pile__hint { animation: none; }
+}
+
+/* ==========================================================================
+   PAGE PROJET (étude de cas)
+   ==========================================================================
+
+   Une page par projet, à la racine (`projet-beepz.html`) et non dans un
+   sous-dossier : tous les chemins `assets/`, `css/` et `fonts/` restent
+   identiques à ceux d'index.html, et l'hébergement n'étant pas tranché, c'est
+   une inconnue de moins.
+
+   Le problème que cette page résout n'est pas décoratif : un projet qui couvre
+   plusieurs livrables (ici un design système, une landing page et des emails)
+   se lit comme trois mini-projets côte à côte si on les aligne. La page les
+   tient ensemble par trois moyens, et ce sont eux qu'il faut préserver :
+
+     1. `.case-pivot` énonce le fil rouge AVANT les volets — le socle d'abord,
+        les terrains ensuite ;
+     2. les trois `.versant` partagent exactement la même grammaire interne
+        (numéro, enjeu, texte, visuel, notes) — c'est la répétition qui les
+        fait lire comme un seul récit ;
+     3. `.versant__inherit` rend la dépendance VISIBLE sur les volets 02 et 03 :
+        ils citent ce qu'ils reprennent du socle au lieu de l'affirmer.
+
+   Fond sombre de bout en bout, comme le reste du site. Le ciel du parcours
+   (`--trail-sky`) et la tuile de relief ne reviennent que sur la couverture. */
+
+/* ---------- La couverture ---------- */
+.case-hero {
+  position: relative;
+  overflow: clip;
+  /* Le seul endroit de la page qui reprend le ciel de la carte. Il finit sur
+     l'encre, donc le raccord avec la section suivante ne se voit pas. */
+  background: linear-gradient(163deg, var(--navy) 0%, var(--ink) 92%);
+}
+
+.case-hero__sky {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* La tuile du parcours, en sourdine et fondue vers le bas : c'est le même
+   terrain que la carte, vu de loin. Un seul calque, comme `.trail__relief` —
+   ne le redécoupe pas (voir la note du parcours sur le compositeur). */
+.case-hero__relief {
+  position: absolute;
+  inset: 0;
+  opacity: .22;
+  background: url("../assets/trail-relief.svg") 0 0 / 1400px 1400px repeat;
+  -webkit-mask-image: linear-gradient(to bottom, rgb(0 0 0 / 1) 30%, rgb(0 0 0 / 0) 100%);
+          mask-image: linear-gradient(to bottom, rgb(0 0 0 / 1) 30%, rgb(0 0 0 / 0) 100%);
+}
+
+/* Calés en % de la LARGEUR, comme ceux d'À propos : la couverture grandit avec
+   le texte du chapô, un calage vertical en % dériverait. */
+.case-hero__topo {
+  position: absolute;
+  width: clamp(150px, 17vw, 266px);
+  opacity: .5;
+}
+
+.case-hero__topo--left { left: -5%; top: 8%; }
+.case-hero__topo--right { right: -6%; bottom: -10%; }
+
+.case-hero__inner {
+  position: relative;
+  max-width: 1512px;
+  margin-inline: auto;
+  padding: clamp(28px, 5vh, 60px) clamp(20px, 2.6vw, 40px) clamp(56px, 9vh, 110px);
+}
+
+.case-back {
+  font-family: var(--font-display);
+  display: inline-flex;
+  align-items: center;
+  gap: .6em;
+  font-size: clamp(11px, .9vw, 13px);
+  font-weight: 600;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--pink);
+  transition: color .2s ease;
+}
+
+.case-back:hover { color: var(--cream); }
+.case-back__arrow { flex: none; transition: translate .18s ease; }
+
+/* Même œil que ceux d'À propos et du parcours — Garamond italique à taille de
+   texte, avec la touche de vert. La différence : pas de numéro d'ordre ici (les
+   volets portent déjà 01/02/03, deux numérotations se marcheraient dessus), le
+   vert passe donc dans une pastille. */
+.case__eyebrow {
+  font-family: var(--font-serif);
+  font-style: italic;
+  display: flex;
+  align-items: center;
+  gap: .6em;
+  margin: clamp(30px, 5vh, 56px) 0 12px;
+  font-size: 18px;
+  color: var(--cream);
+}
+
+.case__eyebrow::before {
+  content: "";
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--green);
+}
+
+/* Deux colonnes : le texte à gauche, les plaques à droite. C'est ce qui met une
+   image au-dessus de la ligne de flottaison — sans elles, la première visible était
+   la planche du système, à 3,3 écrans de scroll. */
+.case-hero__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, .78fr);
+  gap: clamp(24px, 3.6vw, 60px);
+  align-items: center;
+}
+
+/* Le cadre de référence des plaques, comme `.pile__scene` de l'accueil : elles sont
+   posées en % de CE cadre, donc la composition se met à l'échelle d'un seul bloc. */
+.case-hero__plates {
+  position: relative;
+  aspect-ratio: 620 / 545;
+}
+
+/* La rotation de repos vit dans `--rot` de chaque plaque, jamais dans un `transform`
+   écrit à la main — même règle que les stickers du hero et le tas de photos. */
+.plate {
+  position: absolute;
+  border-radius: 14px;
+  border: 1px solid rgb(var(--cream-rgb) / .14);
+  box-shadow: 0 18px 40px rgb(var(--ink-rgb) / .5);
+  transform: rotate(var(--rot));
+}
+
+/* L'empilement est décidé ici, pas par l'ordre du DOM : la voiture au fond, la photo
+   par-dessus, la fiche App Store devant. */
+.plate--car  { z-index: 1; left:  0%; top:  4%; width: 56%; --rot: -4deg; }
+.plate--life { z-index: 2; left: 22%; top: 55%; width: 50%; --rot:  5deg; }
+.plate--app  { z-index: 3; left: 50%; top:  0%; width: 44%; --rot:  3deg; }
+
+.case-hero__title {
+  font-family: var(--font-display);
+  margin: 0;
+  font-size: clamp(48px, 7.4vw, 112px);
+  font-weight: 700;
+  line-height: .88;
+  letter-spacing: -.02em;
+  text-transform: uppercase;
+  color: var(--cream);
+}
+
+.case-hero__claim {
+  margin: clamp(18px, 2.6vh, 30px) 0 0;
+  max-width: 54ch;
+  font-size: clamp(17px, 1.5vw, 23px);
+  line-height: 1.5;
+  color: rgb(var(--cream-rgb) / .74);
+}
+
+/* ---------- La fiche de course ----------
+   Ce qu'un topo d'escalade porte en tête : ce qu'on lit avant de s'engager.
+   En ligne, avec un filet au-dessus de chaque case — c'est la seule mise en
+   page « tableau » de la page, et elle doit le rester. */
+.topo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(20px, 2.4vw, 40px);
+  margin: clamp(36px, 6vh, 68px) 0 0;
+}
+
+.topo__cell {
+  flex: 1 1 150px;
+  padding-top: 14px;
+  border-top: 1px solid rgb(var(--cream-rgb) / .22);
+}
+
+.topo__cell--wide { flex: 2 1 280px; }
+
+/* Même convention que `.project--todo` : le pointillé dit « pas encore rempli ».
+   À retirer quand les quatre cases portent de vraies valeurs. */
+.topo--todo .topo__cell { border-top-style: dashed; }
+.topo--todo .topo__value { color: rgb(var(--cream-rgb) / .45); }
+
+.topo__term {
+  font-family: var(--font-display);
+  margin: 0;
+  font-size: clamp(10px, .85vw, 12px);
+  font-weight: 600;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--pink);
+}
+
+.topo__value {
+  font-family: var(--font-display);
+  margin: 8px 0 0;
+  font-size: clamp(15px, 1.25vw, 19px);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--cream);
+}
+
+.topo__dot { margin: 0 7px; color: rgb(var(--cream-rgb) / .38); }
+
+/* ---------- Sections de la page ----------
+   Mêmes gabarits que `.section`, mais la hiérarchie y est NORMALE : le titre est
+   plus gros que son texte. C'est un écart assumé avec À propos et le parcours,
+   dont les têtes sont volontairement plus petites que leur corps — sur une page
+   longue, ces titres sont des repères de navigation, pas des étiquettes. */
+.case-section {
+  max-width: 1512px;
+  margin-inline: auto;
+  padding: clamp(60px, 9vh, 120px) clamp(20px, 2.6vw, 40px);
+}
+
+.case__title {
+  font-family: var(--font-display);
+  margin: 0;
+  font-size: clamp(27px, 3.1vw, 44px);
+  font-weight: 700;
+  line-height: 1.05;
+  color: var(--cream);
+}
+
+/* La colonne de lecture : mesure classique (~68 signes), pas les 1040px d'À
+   propos. Le texte y est long, il se lit en continu et pas en trois blocs. */
+.case-body {
+  max-width: 68ch;
+  margin-top: clamp(26px, 4vh, 44px);
+}
+
+.case-body p {
+  margin: 0 0 1.4em;
+  font-size: clamp(16px, 1.25vw, 19px);
+  line-height: 1.7;
+  color: rgb(var(--cream-rgb) / .72);
+}
+
+.case-body p:last-child { margin-bottom: 0; }
+
+/* Le chapô : en Clash et en crème pleine, comme `.about__lede`. */
+/* Sélecteur descendant, comme `.about__body .about__lede` : il faut battre la
+   spécificité de `.case-body p`, pas sortir le marteau `!important`. */
+.case-body .case-body__lede {
+  font-family: var(--font-display);
+  font-size: clamp(19px, 1.8vw, 27px);
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--cream);
+}
+
+/* Même dessin que `.about__hl` : Garamond italique, remonté de 1.08em parce que
+   son œil est plus petit que celui d'Inter. */
+.case-hl {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 700;
+  font-size: 1.08em;
+  color: var(--cream);
+}
+
+/* ---------- Le fil rouge ----------
+   Le pivot de la page : il dit pourquoi les trois volets n'en font qu'un, AVANT
+   qu'on les lise. Si tu le retires, la page redevient une liste de livrables. */
+.case-pivot {
+  position: relative;
+  overflow: clip;
+  max-width: 1512px;
+  margin-inline: auto;
+  padding: clamp(50px, 8vh, 100px) clamp(20px, 2.6vw, 40px);
+}
+
+/* Le terrain qui affleure sous le pivot : la même tuile que la couverture, en
+   sourdine et fondue aux deux bouts. Pas de cadre ni de fond plein — un encadré
+   ferait une boîte dans une boîte avec les trois balises du sommaire. */
+.case-pivot::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: .14;
+  background: url("../assets/trail-relief.svg") 0 0 / 1400px 1400px repeat;
+  -webkit-mask-image: linear-gradient(to bottom, rgb(0 0 0 / 0) 0%, rgb(0 0 0 / 1) 30%, rgb(0 0 0 / 1) 66%, rgb(0 0 0 / 0) 100%);
+          mask-image: linear-gradient(to bottom, rgb(0 0 0 / 0) 0%, rgb(0 0 0 / 1) 30%, rgb(0 0 0 / 1) 66%, rgb(0 0 0 / 0) 100%);
+}
+
+.case-pivot__kicker,
+.case-pivot__statement,
+.case-toc { position: relative; }
+
+.case-pivot__kicker {
+  font-family: var(--font-display);
+  margin: 0 0 clamp(14px, 2vh, 22px);
+  padding-top: 16px;
+  border-top: 2px solid var(--green);
+  display: inline-block;
+  font-size: clamp(10px, .9vw, 13px);
+  font-weight: 600;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--pink);
+}
+
+.case-pivot__statement {
+  font-family: var(--font-display);
+  margin: 0;
+  max-width: min(46ch, 860px);
+  font-size: clamp(22px, 2.7vw, 40px);
+  font-weight: 600;
+  line-height: 1.22;
+  color: var(--cream);
+}
+
+/* ---------- Le sommaire : trois balises ---------- */
+.case-toc {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(12px, 1.4vw, 20px);
+  margin-top: clamp(34px, 5vh, 60px);
+}
+
+.case-toc__item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: clamp(16px, 1.6vw, 24px);
+  border: 1px solid rgb(var(--cream-rgb) / .14);
+  border-radius: 16px;
+  background: rgb(var(--navy-rgb) / .38);
+  transition: background-color .2s ease, border-color .2s ease, translate .18s ease;
+}
+
+.case-toc__item:hover {
+  border-color: rgb(var(--cream-rgb) / .3);
+  background: rgb(var(--navy-rgb) / .62);
+}
+
+.case-toc__num {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .18em;
+  color: var(--green);
+}
+
+.case-toc__label {
+  font-family: var(--font-display);
+  font-size: clamp(16px, 1.35vw, 21px);
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--cream);
+}
+
+.case-toc__role {
+  font-size: 13px;
+  color: rgb(var(--cream-rgb) / .55);
+}
+
+/* ---------- Les trois volets ----------
+   Le fil pointillé qui les relie est le même dessin que la frise du parcours en
+   mode « mouvement réduit » : filet crème en pointillés, pastille crème cerclée
+   de vert. C'est ce qui raccroche la page à la carte du site. */
+.case-versants {
+  max-width: 1512px;
+  margin-inline: auto;
+  padding: clamp(30px, 5vh, 60px) clamp(20px, 2.6vw, 40px) clamp(60px, 9vh, 120px);
+}
+
+.versants {
+  --thread-pad: clamp(26px, 4vw, 56px);
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 var(--thread-pad);
+  border-left: 2px dashed rgb(var(--cream-rgb) / .22);
+}
+
+.versant {
+  position: relative;
+  padding-bottom: clamp(60px, 10vh, 120px);
+}
+
+/* Le filet s'arrête net sur le dernier volet plutôt que de courir dans le vide. */
+.versant:last-child { padding-bottom: 0; }
+
+/* La pastille, centrée sur le filet : 1px pour la moitié du trait, 7.5 pour la
+   moitié de la pastille. */
+.versant::before {
+  content: "";
+  position: absolute;
+  left: calc(-1 * var(--thread-pad) - 8.5px);
+  top: .3em;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--cream);
+  border: 3px solid var(--green);
+  box-shadow: 0 2px 6px rgb(var(--ink-rgb) / .28);
+}
+
+.versant__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 14px;
+}
+
+.versant__num {
+  order: 0;
+  font-family: var(--font-display);
+  margin: 0;
+  font-size: clamp(13px, 1.1vw, 16px);
+  font-weight: 600;
+  letter-spacing: .18em;
+  color: var(--green);
+}
+
+.versant__role {
+  order: 1;
+  margin: 0;
+  font-size: clamp(12px, .95vw, 14px);
+  letter-spacing: .04em;
+  color: rgb(var(--cream-rgb) / .55);
+}
+
+.versant__title {
+  order: 2;
+  flex-basis: 100%;
+  font-family: var(--font-display);
+  margin: 10px 0 0;
+  font-size: clamp(26px, 3.2vw, 46px);
+  font-weight: 700;
+  line-height: 1.05;
+  color: var(--cream);
+}
+
+/* L'enjeu : une seule ligne, adossée à un filet vert. C'est la promesse du
+   volet, et c'est ce qui permet de survoler la page sans tout lire. */
+.versant__stake {
+  margin: clamp(20px, 3vh, 32px) 0 0;
+  padding-left: clamp(14px, 1.4vw, 22px);
+  border-left: 2px solid var(--green);
+  max-width: 64ch;
+  font-size: clamp(15px, 1.2vw, 18px);
+  line-height: 1.6;
+  color: rgb(var(--cream-rgb) / .78);
+}
+
+.versant__stake-label {
+  font-family: var(--font-display);
+  display: block;
+  margin-bottom: 5px;
+  font-size: clamp(10px, .85vw, 12px);
+  font-weight: 600;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--pink);
+}
+
+/* La bande d'héritage — le mécanisme de cohérence de la page. Sur les volets 02
+   et 03 seulement : ils citent ce qu'ils reprennent du socle, ce qui rend la
+   dépendance lisible au lieu de la laisser à la charge du lecteur. */
+.versant__inherit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: clamp(20px, 3vh, 30px) 0 0;
+  padding: 14px clamp(14px, 1.4vw, 20px);
+  border: 1px dashed rgb(var(--cream-rgb) / .2);
+  border-radius: 14px;
+  background: rgb(var(--navy-rgb) / .28);
+}
+
+.versant__inherit-label {
+  font-family: var(--font-display);
+  margin-right: 4px;
+  font-size: clamp(10px, .85vw, 12px);
+  font-weight: 600;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--pink);
+}
+
+.chip {
+  font-family: var(--font-display);
+  padding: .35em .85em;
+  border: 1px solid rgb(var(--cream-rgb) / .2);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgb(var(--cream-rgb) / .78);
+}
+
+.versant__body {
+  max-width: 68ch;
+  margin: clamp(22px, 3.4vh, 36px) 0 0;
+}
+
+.versant__body p {
+  margin: 0 0 1.4em;
+  font-size: clamp(16px, 1.25vw, 19px);
+  line-height: 1.7;
+  color: rgb(var(--cream-rgb) / .72);
+}
+
+.versant__body p:last-child { margin-bottom: 0; }
+.versant__body em { font-style: italic; color: rgb(var(--cream-rgb) / .9); }
+
+/* ---------- Les visuels ----------
+   Deux états. Tant que l'image n'est pas là, `.versant__frame` est un cadre
+   sombre en pointillés, comme `.project__frame` de l'accueil — on n'ouvre pas
+   une grande surface claire pour ne rien montrer.
+
+   Quand la capture arrive, elle se pose dans `.versant__shot` : un carton crème,
+   même dessin que les cartes d'étape du parcours (#fffaf0, coins arrondis,
+   ombre portée). Ce sont les SEULES surfaces claires du site, et c'est justement
+   ce qui fait ressortir une interface claire sur une page d'encre. */
+.versant__figure {
+  margin: clamp(28px, 4.5vh, 52px) 0 0;
+}
+
+.versant__frame {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 10;
+  border: 1px dashed rgb(var(--cream-rgb) / .18);
+  border-radius: 14px;
+  background: rgb(var(--ink-rgb) / .5);
+}
+
+.versant__frame span {
+  padding: 0 16px;
+  font-family: var(--font-display);
+  font-size: clamp(11px, .9vw, 13px);
+  letter-spacing: .16em;
+  text-align: center;
+  text-transform: uppercase;
+  color: rgb(var(--cream-rgb) / .45);
+}
+
+.versant__shot {
+  overflow: hidden;
+  padding: clamp(8px, .8vw, 14px);
+  border: 1px solid rgb(var(--ink-rgb) / .16);
+  border-radius: 14px;
+  background: #fffaf0;
+  box-shadow: 0 18px 44px rgb(var(--ink-rgb) / .34);
+}
+
+.versant__shot img { width: 100%; border-radius: 6px; }
+
+/* Pour un visuel qui porte DÉJÀ son fond sombre — une planche de marque, une
+   maquette sur fond de nuit. Le carton crème lui ferait une collerette : on ne
+   garde que le filet et l'ombre, et l'image va bord à bord. */
+.versant__shot--dark {
+  padding: 0;
+  border-color: rgb(var(--cream-rgb) / .16);
+  background: rgb(var(--ink-rgb) / .5);
+}
+
+.versant__shot--dark img { border-radius: 13px; }
+
+.versant__figure--pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(12px, 1.4vw, 22px);
+}
+
+.versant__figure--pair .versant__caption { grid-column: 1 / -1; }
+
+.versant__caption {
+  margin: 14px 0 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: rgb(var(--cream-rgb) / .55);
+}
+
+/* ---------- Les pastilles de palette ----------
+   LA SEULE ENTORSE à la règle des quatre couleurs du site, et elle est bornée :
+   ce sont les couleurs du CLIENT, montrées comme contenu dans une page projet.
+   Une capture d'écran les charrie déjà ; les afficher en HTML plutôt qu'en image
+   les rend lisibles, sélectionnables et nettes à tout zoom.
+
+   Deux règles à tenir si tu ajoutes une autre page projet :
+     — une valeur étrangère ne vit QUE dans un `--hex` de `.swatch--*`, jamais
+       dans une propriété du chrome (fond, texte, bordure d'un composant du site) ;
+     — le reste du bloc (noms, hexas, filets) reste dans la palette du site. */
+.swatches {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(12px, 1.4vw, 22px);
+  list-style: none;
+  margin: clamp(28px, 4.5vh, 46px) 0 0;
+  padding: 0;
+}
+
+.swatch {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.swatch__chip {
+  height: clamp(56px, 6vw, 88px);
+  margin-bottom: 11px;
+  border-radius: 12px;
+  background: var(--hex);
+}
+
+/* Le blanc pur ne se détacherait pas tout seul sur l'encre : il lui faut un bord. */
+.swatch--white .swatch__chip { box-shadow: inset 0 0 0 1px rgb(var(--ink-rgb) / .28); }
+
+.swatch--sky    { --hex: #2164BA; }
+.swatch--seller { --hex: #0BA7FF; }
+.swatch--buyer  { --hex: #FBBC04; }
+.swatch--white  { --hex: #FFFFFF; }
+
+.swatch__name {
+  font-family: var(--font-display);
+  font-size: clamp(13px, 1.05vw, 15px);
+  font-weight: 600;
+  color: var(--cream);
+}
+
+.swatch__hex {
+  font-size: clamp(11px, .9vw, 13px);
+  letter-spacing: .06em;
+  color: rgb(var(--cream-rgb) / .55);
+}
+
+/* ---------- Les notes de terrain ----------
+   Trois détails annotés par volet : c'est là que se logent les décisions qui ne
+   méritent pas un paragraphe mais qu'on regretterait de ne pas dire. */
+/* `.outcomes` (les acquis du sommet) partage exactement cette grille : même rythme
+   en trois colonnes, même filet en tête. Seul l'œil change, il passe au vert. */
+.versant__notes,
+.outcomes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(16px, 2vw, 32px);
+  list-style: none;
+  margin: clamp(30px, 4.5vh, 52px) 0 0;
+  padding: 0;
+}
+
+.note { padding-top: 14px; border-top: 1px solid rgb(var(--cream-rgb) / .18); }
+
+.note__title {
+  font-family: var(--font-display);
+  margin: 0;
+  font-size: clamp(10px, .85vw, 12px);
+  font-weight: 600;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--pink);
+}
+
+.note__text {
+  margin: 8px 0 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: rgb(var(--cream-rgb) / .66);
+}
+
+/* ---------- Le sommet ---------- */
+.outcomes .note__title { color: var(--green); }
+.outcomes .note__text { color: rgb(var(--cream-rgb) / .74); }
+
+.case-summit .case-body { margin-top: clamp(34px, 5vh, 56px); }
+
+/* ---------- Le pied de page projet ---------- */
+.case-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: 1512px;
+  margin-inline: auto;
+  padding: clamp(24px, 3.4vh, 40px) clamp(20px, 2.6vw, 40px);
+  border-top: 1px solid rgb(var(--cream-rgb) / .14);
+}
+
+.case-foot__back {
+  font-family: var(--font-display);
+  display: inline-flex;
+  align-items: center;
+  gap: .6em;
+  font-size: clamp(13px, 1.1vw, 16px);
+  font-weight: 600;
+  color: var(--pink);
+  transition: color .2s ease;
+}
+
+.case-foot__back:hover { color: var(--cream); }
+
+.case-foot__next {
+  font-family: var(--font-display);
+  font-size: clamp(13px, 1.1vw, 16px);
+  font-weight: 600;
+  color: rgb(var(--cream-rgb) / .5);
+}
+
+/* ---------- La motion de la page projet ----------
+
+   Deux mouvements, et deux seulement :
+
+     1. la COUVERTURE se pose au chargement — une animation CSS jouée une fois,
+        comme le tas de photos de l'accueil ;
+     2. les BLOCS se révèlent au scroll, une fois chacun, quand ils entrent
+        dans les 88 % hauts de la fenêtre.
+
+   Rien d'autre ne bouge. Le corps de texte n'est jamais révélé paragraphe par
+   paragraphe : on ne fait pas apparaître sous les yeux de quelqu'un le texte
+   qu'il est en train de lire. Un bloc, une révélation.
+
+   LA SOURCE DE VÉRITÉ EST LE HTML : c'est l'attribut `data-reveal`, posé à la
+   main dans `projet-beepz.html`, qui décide de ce qui se révèle — même principe
+   que les `data-at` des étapes du parcours. Le JS ne fait que les observer, le
+   CSS que les dessiner. Trois valeurs :
+
+     `data-reveal`          le bloc monte de 10 px et se fond ;
+     `data-reveal="group"`  le conteneur ne bouge pas, ses enfants se posent
+                            l'un après l'autre (70 ms d'écart) ;
+     `data-reveal="pin"`    seule la pastille du volet (`::before`) éclot.
+
+   `.js-motion` est posée sur `<html>` par le script en tête de page, AVANT le
+   premier rendu : c'est ce qui évite de voir la page entière s'afficher puis se
+   cacher. Sans JS — et en mouvement réduit, où le script ne la pose pas — rien
+   n'est masqué et la page se lit telle quelle. C'est la règle à ne jamais
+   enfreindre ici : la VISIBILITÉ d'un contenu ne dépend pas du JS.
+
+   On anime `translate` et pas `transform`, comme `pile-land` sur l'accueil :
+   les deux se composent d'eux-mêmes, donc un `transform` posé ailleurs ne
+   serait pas écrasé. Et seuls `opacity` et `translate` bougent — ni l'un ni
+   l'autre ne déclenche de calcul de mise en page. */
+
+/* --- Les blocs révélés au scroll --- */
+.js-motion [data-reveal] {
+  opacity: 0;
+  translate: 0 10px;
+  transition: opacity .32s var(--ease-out), translate .46s var(--ease-out);
+}
+
+.js-motion [data-reveal][data-reveal-in] {
+  opacity: 1;
+  translate: none;
+}
+
+/* Un groupe et une pastille ne bougent pas eux-mêmes. À déclarer APRÈS la règle
+   ci-dessus : même spécificité, c'est l'ordre qui tranche. */
+.js-motion [data-reveal="group"],
+.js-motion [data-reveal="pin"] {
+  opacity: 1;
+  translate: none;
+}
+
+.js-motion [data-reveal="group"] > * {
+  opacity: 0;
+  translate: 0 10px;
+  transition: opacity .32s var(--ease-out), translate .46s var(--ease-out);
+}
+
+.js-motion [data-reveal="group"][data-reveal-in] > * {
+  opacity: 1;
+  translate: none;
+}
+
+/* 70 ms d'écart : assez pour qu'on lise une arrivée en cascade, trop peu pour
+   qu'on attende la dernière. Le retard n'est posé que sur l'état révélé, sinon
+   il jouerait aussi au repos. Quatre enfants au plus (les pastilles de palette). */
+.js-motion [data-reveal="group"][data-reveal-in] > :nth-child(2) { transition-delay: 70ms; }
+.js-motion [data-reveal="group"][data-reveal-in] > :nth-child(3) { transition-delay: 140ms; }
+.js-motion [data-reveal="group"][data-reveal-in] > :nth-child(4) { transition-delay: 210ms; }
+
+/* La pastille du volet, sur le fil pointillé : elle éclot au lieu de se fondre.
+   C'est le seul endroit de la page qui change d'échelle, et c'est voulu — elle
+   répond aux pastilles d'étape du parcours. Jamais depuis `scale: 0` : rien
+   n'apparaît de rien. */
+.js-motion [data-reveal="pin"]::before {
+  opacity: 0;
+  scale: .72;
+  transition: opacity .3s var(--ease-out), scale .42s var(--ease-out);
+}
+
+.js-motion [data-reveal="pin"][data-reveal-in]::before {
+  opacity: 1;
+  scale: 1;
+}
+
+/* --- La couverture, au chargement ---
+   Une animation CSS et non une transition : le mouvement est prédéterminé, et
+   une animation CSS continue de tourner hors du fil principal pendant que la
+   page charge ses polices et son image. `backwards` fait tenir l'état de départ
+   pendant le retard, sans quoi les cinq lignes clignoteraient avant de partir. */
+@keyframes case-hero-in {
+  from { opacity: 0; translate: 0 14px; }
+  to   { opacity: 1; translate: none; }
+}
+
+@keyframes case-sky-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Les cinq temps de la couverture, nommés un par un plutôt qu'en `nth-child` :
+   la structure du hero bouge encore, et un sélecteur de position se serait mis à
+   décaler les retards en silence au premier bloc ajouté. Si l'un de ces noms
+   disparaît, sa règle devient sans effet — l'élément s'affiche sans animation,
+   jamais masqué. */
+.js-motion .case-back,
+.js-motion .case-hero__text,
+.js-motion .plate,
+.js-motion .topo {
+  animation: case-hero-in .56s var(--ease-out) backwards;
+}
+
+.js-motion .case-hero__text { animation-delay: 70ms; }
+
+/* Les plaques se posent de l'arrière vers l'avant — même geste que le tas de
+   photos de l'accueil, et l'ordre de l'empilement les donne déjà dans cet ordre.
+   Un peu plus long qu'un bloc de texte : ce sont des images, elles arrivent de
+   plus loin. */
+.js-motion .plate { animation-duration: .62s; }
+.js-motion .plate--car  { animation-delay: 140ms; }
+.js-motion .plate--life { animation-delay: 210ms; }
+.js-motion .plate--app  { animation-delay: 280ms; }
+
+.js-motion .topo { animation-delay: 350ms; }
+
+/* Le décor arrive en fondu seul et plus lentement : il ne court pas après le
+   titre, il s'installe derrière lui. */
+.js-motion .case-hero__sky {
+  animation: case-sky-in .9s var(--ease-out) backwards;
+}
+
+/* --- Le survol ---
+   Deux mouvements de 2 px, et rien de plus : ce sont des éléments qu'on survole
+   des dizaines de fois, donc c'est imperceptible ou c'est rien. Sous
+   `hover: hover` et `pointer: fine` seulement — au doigt, un tap déclenche un
+   faux survol qui resterait collé. */
+@media (hover: hover) and (pointer: fine) {
+  .case-toc__item:hover { translate: 0 -2px; }
+
+  .case-back:hover .case-back__arrow,
+  .case-foot__back:hover .case-back__arrow { translate: -2px 0; }
+}
+
+/* --- Mouvement réduit ---
+   Le script en tête de page ne pose pas `.js-motion` dans ce mode : rien n'est
+   donc masqué, et ces règles ne servent qu'au cas où la préférence change APRÈS
+   le chargement. Filet de sécurité, pas mécanisme principal — mais du contenu
+   resté invisible serait la pire panne possible ici. */
+@media (prefers-reduced-motion: reduce) {
+  .js-motion [data-reveal],
+  .js-motion [data-reveal="group"] > *,
+  .js-motion .case-back,
+  .js-motion .case-hero__text,
+  .js-motion .plate,
+  .js-motion .topo {
+    opacity: 1;
+    translate: none;
+    animation: none;
+    transition: none;
+  }
+
+  .js-motion [data-reveal="pin"]::before { opacity: 1; scale: 1; }
+  .js-motion .case-hero__sky { animation: none; }
+}
+
+/* ---------- Responsive de la page projet ---------- */
+@media (max-width: 900px) {
+  .case-toc,
+  .versant__notes,
+  .outcomes { grid-template-columns: minmax(0, 1fr); }
+
+  /* Les pastilles restent en grille : quatre carrés de couleur empilés en colonne
+     ne se lisent plus comme une palette. Deux par deux, si. */
+  .swatches { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  .versant__figure--pair { grid-template-columns: minmax(0, 1fr); }
+
+  .versants { --thread-pad: 22px; }
+
+  .case-hero__topo { display: none; }
+
+  /* Une colonne : le texte d'abord, les plaques en dessous — elles restent, c'est
+     tout l'intérêt de la manœuvre. */
+  .case-hero__grid { grid-template-columns: minmax(0, 1fr); }
+  .case-hero__plates { margin-top: clamp(24px, 4vh, 40px); }
+}
+
+@media (max-width: 560px) {
+  .topo__cell,
+  .topo__cell--wide { flex: 1 1 100%; }
 }

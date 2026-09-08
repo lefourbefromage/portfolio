@@ -50,7 +50,7 @@ Tout est défini dans `:root`. **N'introduis pas de cinquième couleur** sans le
 
 | Token | Valeur | Usage |
 |---|---|---|
-| `--cream` | `#fef1da` | Blanc cassé : fond des sections claires, **ou** couleur de texte sur fond foncé |
+| `--cream` | `#fef1da` | Blanc cassé : couleur de texte sur fond foncé — c'est le cas partout — **ou** fond des rares surfaces claires (pastilles et cartes du parcours) |
 | `--navy` | `#172247` | Bleu foncé : couleur de texte, ou fond foncé |
 | `--green` | `#4f914f` | Touche de couleur sur certains éléments |
 | `--pink` | `#f8d0ee` | Touche de couleur, **sur fond foncé uniquement** |
@@ -65,7 +65,8 @@ varient, et la saturation *baisse* quand la couleur s'éclaircit — c'est ce qu
 bleus d'encre plutôt que des bleus électriques. Un bleu à saturation 80 % dans les tons
 moyens jure avec le reste du site ; c'est un écart mesuré et écarté délibérément.
 
-- `--ink` `#060d22` — `hsl(226 70% 8%)`. Fond du site, et encre de la carte topographique.
+- `--ink` `#060d22` — `hsl(226 70% 8%)`. Fond du site, et pied du ciel du parcours. Ce fut
+  aussi l'encre de la carte topographique, dont les courbes sont désormais tracées en crème.
 - `--ink-rgb` `6 13 34` — pour les opacités : `rgb(var(--ink-rgb) / .32)`.
 - `--cream-rgb`, `--navy-rgb` — même usage pour les deux autres.
 
@@ -83,9 +84,8 @@ Trois familles, toutes auto-hébergées dans `fonts/` en woff2 variable.
   sous-titres et les labels.
 - **Inter** (`--font-body`, graisses 100–900) — texte courant, en regular.
 - **EB Garamond** (`--font-serif`, graisses 400–800) — **en italique seulement**. Réservé à
-  quatre usages, tous décidés par la maquette : les œils de section refaits (À propos et
-  parcours), les mots mis en avant dans le texte d'À propos, l'année des cartes d'étape, et le
-  « Avancement » du HUD. C'est la respiration du reste : ne l'étends pas sans le demander.
+  quatre usages, tous décidés par la maquette : les œils des **quatre** sections, les mots mis
+  en avant dans le texte d'À propos, l'année des cartes d'étape, et le « Avancement » du HUD. C'est la respiration du reste : ne l'étends pas sans le demander.
 
 `body` porte `--font-body` ; `--font-display` est appliqué explicitement aux onze sélecteurs
 de titres et de labels. Un nouvel élément de texte hérite donc d'Inter par défaut, ce qui est
@@ -111,14 +111,48 @@ deux — la règle du root ne retient pas ce débordement-là, seul le clip du c
 largeur l'arrête. `clip` et non `hidden` : ni l'un ni l'autre ne crée de conteneur de
 défilement ici, donc le `position: sticky` du parcours n'est pas affecté (vérifié).
 
-Le fond du site est sombre (`--ink`) partout **sauf** le parcours, qui est crème : c'est le
-seul contraste fort de la page, et c'est ce qui fait ressortir la carte. Ne mets pas une
-deuxième section claire à côté.
+**Le fond du site est sombre de bout en bout**, parcours compris. Il l'a été *sauf* pour le
+parcours, qui était crème ; cette inversion a été retirée. La carte porte à la place son
+propre ciel (`--trail-sky`, voir plus bas), un dégradé de `--navy` vers `--ink` : le seul
+écart de valeur de la page, et il reste sur l'axe des bleus. Les seules surfaces claires
+restantes sont les cartes d'étape du parcours. N'introduis pas de section claire.
 
 Les sections plates partagent trois primitives — `.section` (largeur max et rythme vertical),
 `.section__eyebrow` / `.section__title` / `.section__lede` — et la pastille `.todo` qui
 signale un contenu encore à écrire. Le parcours garde ses propres `.trail__eyebrow` et
-`.trail__heading` parce qu'il est sur fond clair et que ses couleurs sont inversées.
+`.trail__heading` — non plus pour inverser ses couleurs, mais parce que sa tête est posée
+sur la carte et non dans le rythme vertical de `.section`.
+
+**Les quatre sections portent LA MÊME tête**, et c'est une consigne : œil en Garamond italique
+`clamp(20px, 2.9vw, 41px)`, numéro d'ordre en vert, titre en Clash bold et en casse normale
+`clamp(32px, 4.6vw, 66px)`, le tout centré. Il y a eu trois têtes différentes sur cette page —
+capitales espacées roses pour projets et contact, Garamond 18/25px pour À propos et le
+parcours, puis la grande version de la maquette arrivée par les projets. **Ne les fais pas
+revenir.**
+
+Les sélecteurs sont **groupés exprès** dans une seule déclaration
+(`.section__eyebrow, .about__eyebrow, .trail__eyebrow` et de même pour les titres) : plus rien
+ne peut diverger sans qu'on le voie. Ne redonne pas une taille propre à l'une des trois
+familles de classes — c'est exactement ce qui avait produit les trois têtes.
+
+**Le rapport titre / œil vaut ~2,1**, celui de la maquette : mesuré au rapport des deux
+longueurs de texte, 3,05 contre 3,06. Les trois termes du `clamp` de l'œil valent 0,62 fois
+ceux du titre, **borne basse comprise** — sinon la proportion se perd sous ~700px de large, là
+où les deux clamps se figent sur leur minimum. Si tu retouches les tailles, garde le rapport
+plutôt que les valeurs.
+
+Deux exceptions, et elles sont motivées :
+
+- **le parcours est aligné à gauche** (`.trail__intro`), son titre étant un calque dans le coin
+  de la carte et non un bloc dans le flux ; son œil est aussi légèrement retenu (crème à 82 %)
+  parce qu'il est posé sur le terrain ;
+- **le titre de couverture du parcours est une vignette** : le carton fait au plus 330px de
+  large, où 66px ne tiendrait pas. Il se règle donc sur `--card-w` et non sur la largeur de
+  l'écran (`calc(var(--card-w) * .089)`, et `.055` pour l'œil — le même rapport 0,62). Ce n'est
+  pas une quatrième taille, c'est le même titre en réduction.
+
+Les quatre œils portent un numéro d'ordre : `01.` À propos, `02.` parcours, `03.` projets,
+`04.` contact.
 
 `html` porte `scroll-behavior: smooth`, sous `prefers-reduced-motion: no-preference`. Cliquer
 une ancre qui traverse le parcours le fait donc défiler d'un trait : c'est voulu, la caméra
@@ -252,23 +286,19 @@ depuis Figma, vérifie que son alpha remplit toute l'image. Et le libellé est e
 titre sont **centrés**, le texte repasse **à gauche** dans une colonne de 1040px. Ne la
 réaligne pas sur les autres sections, qui sont entièrement à gauche.
 
-**Sa hiérarchie est inversée, et c'est une consigne, pas un accident** : la tête est PLUS
-PETITE que le texte qu'elle annonce. Œil à **18px fixe**, titre à **25px maximum**
-(`clamp(21px, 1.65vw, 25px)`), pendant que le corps monte à 30px
-(`clamp(17px, 1.98vw, 30px)`, contre 18px pour le reste du site) et le chapô à 32px. La tête
-est une étiquette discrète posée au-dessus d'un bloc de lecture large, à ~70 signes par ligne.
-Ne « rétablis » pas un titre plus gros que son texte. Si tu changes le corps, change la largeur
-de colonne avec : les deux tiennent la mesure.
+**Sa hiérarchie a longtemps été inversée** — tête volontairement plus petite que le texte
+qu'elle annonce, œil à 18px et titre à 25px au-dessus d'un corps à 30px. **Ce n'est plus le
+cas** : Vincent a demandé l'unification des quatre titres, et À propos porte désormais la tête
+commune (voir « Les quatre sections portent LA MÊME tête »). Le titre y est donc plus gros que
+son texte, comme partout ailleurs. `.about__eyebrow` et `.about__title` n'ont plus de règles à
+eux — ne leur en redonne pas.
 
-`.about__head` ne porte **aucune largeur maximale** : à 25px le titre ne court pas, et la
-brider recentrerait mal les titres plus longs.
+Ce qui reste vrai : le corps monte à 30px (`clamp(17px, 1.98vw, 30px)`, contre 18px pour le
+reste du site) et le chapô à 32px, dans une colonne calée sur ~70 signes par ligne. Si tu
+changes le corps, change la largeur de colonne avec : les deux tiennent la mesure.
 
-Deux entorses assumées aux primitives communes : `.about__eyebrow` n'est pas en capitales
-espacées comme `.section__eyebrow` (c'est du Garamond italique à taille de texte), et
-`.about__title` n'est pas en capitales comme `.section__title`. La maquette veut une phrase.
-**Le parcours porte exactement les mêmes réglages** (`.trail__eyebrow` / `.trail__heading`,
-18px et 25px max, numéro d'ordre en vert) : ce sont les deux têtes refaites, elles doivent se
-répondre. Si tu en retouches une, retouche l'autre.
+`.about__head` ne porte **aucune largeur maximale**, ce qui évite de mal recentrer les titres
+longs.
 
 **Le fond porte deux carrés topo** (`assets/topo-square-left.svg` et `-right.svg`, 266×266),
 posés dans un `.about__topo` en `z-index: -1` et `overflow: hidden` qui les laisse déborder
@@ -297,6 +327,21 @@ La partie la plus délicate du site. `js/main.js`, troisième IIFE.
 
 **Forme.** Une piste `.trail` très haute (`height: 717vh`) avec une scène en
 `position: sticky`.
+
+**Le parcours a son propre ciel.** `--trail-sky`, déclaré sur `.trail`, est un dégradé à 163°
+qui va de `--navy` à `--ink` (88 %) : deux tokens existants, aucune cinquième couleur, et toute
+la teinte reste sur l'axe 226. Il est peint sur `.trail__window` — c'est donc lui qu'on découvre
+en ouvrant le carton — et il finit exactement sur l'encre de la page, si bien que la marge
+`--frame` qui borde la carte ouverte ne laisse pas de couture en bas.
+
+Quatre corollaires, tous déjà appliqués ; si tu retouches le ciel, ils se tiennent :
+
+- le texte de la scène est **crème** (`color` sur `.trail__stage`), l'œil et le titre compris ;
+- le tracé encore à parcourir est crème à 38 % d'opacité, plus de l'encre à 32 % ;
+- le HUD est une pastille d'**encre sur un fond devenu sombre** : il ne se détachait plus, d'où
+  son filet crème à 16 % ;
+- les cartes d'étape, elles, restent claires (`#fffaf0`, texte encre) — ce sont les seules
+  surfaces claires de la page, et c'est ce qui les fait ressortir sur le terrain.
 
 **La section REMONTE sur le bas d'À propos** (`margin-top: calc(-1 * var(--pull))`, avec
 `--pull: max(0px, calc(50vh - 260px))`), et ce n'est pas un ajustement esthétique : c'est ce
@@ -461,6 +506,11 @@ tuile de 1400 px où chaque niveau de courbe est déjà remonté de `i × STEP` 
 lui-même — c'est ce qui donne l'empilement des cartes topographiques dessinées, sans aucune
 3D. Un seul `background`, un seul calque.
 
+**Et elle est dessinée en crème**, pas en encre, depuis que le parcours est passé sur fond
+sombre : `LINE_RGB` dans `gen_relief.py`. `ALPHA` (0,46) ramène au passage toutes les opacités
+au même poids visuel — elles avaient été calées pour de l'encre sur crème, et une ligne claire
+sur fond sombre paraît nettement plus forte. Garde les deux ensemble si tu régénères la tuile.
+
 **Ne redécoupe pas ce fond en calques.** Une version l'a fait — un `<div>` par niveau, décalé
 en `translateZ` dans un contexte `preserve-3d`, la carte inclinée en `rotateX`. Ça marchait
 visuellement, et c'était inutilisable : la surface composée (24 calques sur toute la carte,
@@ -474,7 +524,7 @@ Le prix de la cuisson, assumé : la direction de l'empilement est fixée dans l'
 suit la rotation cap-en-haut au lieu de rester verticale à l'écran. `ROT_DAMP` bornant la
 rotation à ±25°, le relief penche un peu au fil de la marche.
 
-Deux contraintes à respecter si tu retouches `tools/gen_relief.py` :
+Trois contraintes à respecter si tu retouches `tools/gen_relief.py` :
 
 - **`STEP` doit rester sous le quart de l'espacement horizontal des courbes** (~`TILE/LEVELS`).
   Au-delà, deux niveaux voisins se croisent au lieu de s'emboîter et le volume cesse de se
@@ -483,6 +533,8 @@ Deux contraintes à respecter si tu retouches `tools/gen_relief.py` :
 - **Chaque niveau est dessiné deux fois**, à `dy` et `dy + TILE`. C'est ce qui garde la couture
   invisible malgré le décalage vertical : sans la copie, chaque niveau laisserait une bande
   vide en bas de la tuile.
+- **`LINE_RGB` doit rester dans la palette** et `ALPHA` bouger avec lui : ce sont les deux
+  réglages qui accordent la tuile au fond du parcours.
 
 **Le rythme est non linéaire par construction.** `costAt(p)` renvoie un coût de scroll par
 unité de parcours : une base, plus une pénalité de pente issue du profil `GRADE` (« comme si
@@ -595,7 +647,9 @@ parcourue n'est *pas* en pointillés — si elle le redevenait, il faudrait un `
 tracé de révélation distinct.
 
 Ajouter ou déplacer une étape se fait en éditant `data-at` dans `index.html` ; les positions à
-l'écran sont calculées par `getPointAtLength`. Mais **quatre valeurs se recalculent ensemble**
+l'écran sont calculées par `getPointAtLength`. Une étape ajoutée doit porter les quatre
+éléments d'une carte — année, poste, boîte/lieu et `.trail__stop-note` — sans quoi le journal
+affichera une entrée tronquée. Mais **quatre valeurs se recalculent ensemble**
 dès qu'on touche à l'espacement, et les oublier se voit tout de suite :
 
 | valeur | contrainte |
@@ -608,6 +662,65 @@ dès qu'on touche à l'espacement, et les oublier se voit tout de suite :
 
 Les trois dernières se résolvent ensemble : le barème est intégré une fois, donc changer l'une
 déplace les autres. En pratique on les cherche numériquement plutôt qu'à la main.
+
+### Le journal, en bas à gauche
+
+Le poste courant s'écrit **à même la carte**, en bas à gauche : année, intitulé, boîte, lieu,
+puis une description. Comme le reste du parcours, ces cinq textes sont **du vrai contenu**,
+écrits par Vincent — ne les réécris pas sans le lui demander.
+
+**Pas de carton, mais un scrim.** Le fond reste transparent — aucune boîte dessinée — et la
+lisibilité est assurée par un dégradé d'encre né dans le coin bas gauche, qui meurt avant le
+HUD. Il est porté par **le journal et non par ses entrées** : sur une entrée il s'effacerait et
+reparaîtrait à chaque changement de poste, et ce clignotement se verrait bien plus que le
+dégradé lui-même. D'où une taille fixe et généreuse (`min(430px, 52vh)`), calculée pour couvrir
+la description la plus longue sans que le fond ne bouge d'une étape à l'autre. La couleur est
+`--ink` : le pied du ciel du parcours, assombri, pas une nouvelle couleur. Pas de carton ni de scrim — le ciel du parcours est assez sombre pour
+porter du crème, vérifié par-dessus les courbes les plus denses.
+
+**Il garde le dernier poste atteint.** Tant que l'étape suivante n'est pas débloquée, c'est le
+précédent qui reste affiché ; le journal ne se vide jamais entre deux cartes. Le seul état vide
+est celui d'avant la première étape, et il tombe pendant la révélation, donc il ne se voit
+pratiquement pas : la carte finit de s'ouvrir presque au moment où le marcheur atteint la
+première pastille (voir `REVEAL_VH`).
+
+**Les cartes du tracé sont réduites à l'ANNÉE**, exprès : sans ça on lisait deux fois la même
+chose à 30 cm d'écart. Le balisage complet reste pourtant dans chaque `<li>` — c'est la
+**seule source de vérité**, et le CSS n'en masque que les feuilles (`.trail__stop-role`,
+`-org`, `-note`). Deux raisons, toutes deux à respecter :
+
+- le JS **clone** ces éléments au démarrage pour fabriquer les entrées du journal, donc il n'y
+  a jamais deux textes à tenir à jour ;
+- le **mode réduit les réaffiche en entier** (`display: revert`), puisqu'il n'a pas de journal :
+  la frise verticale doit porter tout le texte, description comprise.
+
+Le journal est donc `aria-hidden` : le lecteur d'écran lit la liste des étapes, pas son reflet.
+
+**Les cinq entrées sont toutes dans le DOM, superposées**, et le rendu ne fait que déplacer la
+classe `is-current`. Toute la transition est en CSS — aucun minuteur JS qui pourrait se croiser
+sur un scroll rapide. L'entrée qui part **ne fait que s'effacer** : sa translation est remise à
+sa valeur de départ *après* le fondu (`transition: … translate 0s linear .3s`), donc elle ne
+redescend pas ; celle qui arrive monte de 10px, avec 120 ms de retard pour que les deux ne se
+croisent pas à mi-opacité.
+
+**Son retrait à gauche est plus serré que le padding du titre** posé au-dessus, et c'est
+demandé : `--log-inset` vaut `clamp(16px, 3vw, 42px)` contre `clamp(24px, 4.5vw, 64px)` pour
+`.trail__intro`, soit 22px d'écart en 1440. Les deux calques ne sont donc PAS alignés sur la
+même verticale — si tu veux les raccorder, c'est le padding de `.trail__intro` qu'il faut
+descendre, pas le journal qu'il faut repousser. Le scrim relit `--log-inset`, il n'y a qu'une
+valeur à changer.
+
+**Le journal et le HUD partagent la ligne du bas**, à toute largeur d'écran : même `bottom`,
+et le journal s'arrête avant le coin droit grâce à `--hud-reserve`, la place réservée au HUD.
+C'est ce qui évite qu'un texte long ne décale l'un par rapport à l'autre — une version
+précédente faisait passer le journal *au-dessus* du HUD en mobile, et l'alignement se perdait.
+
+La boîte est pour cela **de hauteur nulle et ancrée par le bas** : les entrées grandissent vers
+le haut, donc la ligne du bas ne bouge pas d'un poste à l'autre, quelle que soit la longueur de
+la description. Le prix de cet alignement se paie en mobile, où la colonne est étroite : la
+description la plus longue y monte sur sept lignes (214px de haut en 375 × 812, 17px de
+dégagement avec le HUD — mesuré). Si ça devient trop haut, c'est la longueur des textes qu'il
+faut revoir, pas l'alignement.
 
 **Le HUD est une pastille d'encre posée sur la carte**, en bas à droite : « Avancement » en
 Garamond italique, le pourcentage en gros Clash, et sous un filet le couple **Manuel / Auto**.
@@ -683,6 +796,61 @@ auto n'y est pas branché du tout, et le HUD (donc son bouton) y est masqué. Qu
 des morceaux de la carte, masque les éléments feuilles — masquer un conteneur a déjà emporté
 `.trail__stops` deux fois en silence.
 
+## La motion des pages projet (`js/main.js`, quatrième IIFE)
+
+Deux mouvements sur `projet-beepz.html`, et deux seulement : la **couverture se pose au
+chargement**, les **blocs se révèlent au scroll**. Le corps de texte n'est jamais révélé
+paragraphe par paragraphe — on ne fait pas apparaître sous les yeux de quelqu'un le texte
+qu'il est en train de lire. Un bloc, une révélation.
+
+**Une seule courbe pour tout ce qui entre** : `--ease-out`, `cubic-bezier(.23, 1, .32, 1)`,
+déclarée dans `:root`. C'est le premier token de motion du site — les 27 transitions
+antérieures utilisaient `ease` ou une courbe écrite en clair. Les mouvements de survol
+gardent `ease` : à 180 ms la courbe ne se voit pas.
+
+**La source de vérité est le HTML.** Ce qui se révèle est décidé par un attribut
+`data-reveal` posé à la main dans la page, comme les `data-at` des étapes du parcours. Le JS
+ne fait que le déclencher, le CSS que le dessiner. Trois valeurs :
+
+| valeur | effet |
+|---|---|
+| `data-reveal` | le bloc monte de 10 px et se fond |
+| `data-reveal="group"` | le conteneur ne bouge pas, ses enfants se posent l'un après l'autre (70 ms d'écart) |
+| `data-reveal="pin"` | seule la pastille du volet (`::before`) éclot, de 0,72 à 1 |
+
+**`.js-motion` porte tous les états masqués, et elle est posée par un script en TÊTE de
+page**, avant le premier rendu — pas depuis `main.js` en bas. C'est ce qui évite de voir la
+page s'afficher en entier puis se cacher. Corollaire à ne jamais enfreindre : **la
+visibilité d'un contenu ne dépend pas du JS**. Sans JS la classe n'existe pas, en mouvement
+réduit le script ne la pose pas, et dans les deux cas rien n'est masqué. Un garde-fou de
+2,5 s la retire si `main.js` ne s'est pas annoncé (`data-motion="ready"`) — réseau coupé,
+404 : le texte réapparaît au lieu de rester invisible.
+
+**Le déclencheur est un balayage géométrique, pas un `IntersectionObserver`**, et c'est
+délibéré : l'observateur ne signale que les FRANCHISSEMENTS. Un saut d'un seul rendu — gros
+crans de molette, `scrollTo`, position restaurée, ancre du sommaire — peut faire passer un
+bloc de « sous la fenêtre » à « au-dessus » sans une image intermédiaire où il croise le
+bord : aucune notification, et le bloc reste masqué pour toujours. On relit donc la position
+de ce qui reste à révéler, une fois par image (`requestAnimationFrame`), sur un écouteur de
+scroll passif qui **se débranche quand la liste est vide**.
+
+**La couverture s'anime par cinq règles nommées**, pas par des `nth-child` : la structure du
+hero bouge encore, et un sélecteur de position décalerait les retards en silence au premier
+bloc ajouté. `.case-back` (0), `.case-hero__text` (70 ms), les trois `.plate` de l'arrière
+vers l'avant (140/210/280 ms), `.topo` (350 ms). Si un de ces noms disparaît, sa règle
+devient sans effet et l'élément s'affiche **sans animation, jamais masqué**.
+
+On anime `translate` et `opacity`, jamais `transform` : les plaques portent déjà
+`transform: rotate(var(--rot))`, et les deux propriétés se composent d'elles-mêmes — même
+raison que `pile-land` sur l'accueil. Ni l'un ni l'autre ne déclenche de calcul de mise en
+page.
+
+**Ce qui n'a pas pu être vérifié dans le panneau** : la révélation au scroll elle-même. Le
+panneau navigateur ne rend rien quand il est masqué (`document.hidden`), donc ni
+`requestAnimationFrame` ni `IntersectionObserver` n'y tournent — un piège qui fait conclure
+à tort que le code est en cause. Les états, les courbes, les retards et le chemin « sans JS »
+ont été vérifiés en lisant le CSSOM et en posant les attributs à la main.
+
 ## Les assets générés
 
 `assets/hero-topo.svg`, `assets/trail-relief.svg` et l'attribut `d` du parcours sont tous
@@ -711,7 +879,8 @@ Ces points ne sont pas encore arbitrés — demande plutôt que de supposer :
 - **Le contenu de `#projets` et `#contact`.** Les sections existent et sont maquettées, mais
   leurs textes sont des **placeholders assumés**, marqués par la pastille `.todo`
   (« À compléter »). N'invente pas de projets ni de client à sa place : demande-lui le
-  contenu. À propos, elle, est écrite pour de bon. L'adresse de `#contact` est `adresse@a-completer.fr`, et les liens
+  contenu. À propos et le parcours, eux, sont écrits pour de bon.
+  L'adresse de `#contact` est `adresse@a-completer.fr`, et les liens
   réseaux sont des `<span>`, pas des `<a>`, pour ne pas laisser d'ancre morte.
 - **Le design des titres**, `.trail__intro` compris, qui doit être repris. En attendant, les
   cartes d'étape passent derrière « L'ASCENSION » et les deux textes se croisent : c'est

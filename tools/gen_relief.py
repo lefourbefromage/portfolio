@@ -40,6 +40,13 @@ LEVELS = 18
 STEP = 18            # px de carte entre deux niveaux
 INDEX_EVERY = 4
 
+# La tuile est dessinée en CRÈME, pas en encre : le parcours est passé sur fond
+# bleu, et sur fond sombre les traits sont crème comme le texte. ALPHA ramène les
+# opacités au même poids visuel : elles avaient été calées pour de l'encre sur
+# crème, et une ligne claire sur fond sombre paraît nettement plus forte.
+LINE_RGB = "254,241,218"   # --cream
+ALPHA = 0.46
+
 N = 220              # field resolution (before the wrap duplicate)
 MIN_LAKE_AREA = 900
 MAX_LAKE_AREA = 260000
@@ -107,14 +114,16 @@ for i, segs in enumerate(cs.allsegs):
     width = 2.0 if is_index else 1.1
     if paths:
         groups.append(
-            f'<g fill="none" stroke="rgba(6,13,34,{stroke:.3f})" stroke-width="{width}"'
+            f'<g fill="none" stroke="rgba({LINE_RGB},{stroke * ALPHA:.3f})"'
+            f' stroke-width="{width}"'
             ' stroke-linejoin="round" stroke-linecap="round">'
             + "".join(f'<path d="{d}"/>' for d in paths)
             + "</g>"
         )
     if lakes:
         groups.append(
-            '<g fill="rgba(6,13,34,.045)" stroke="rgba(6,13,34,.2)" stroke-width="1.6">'
+            f'<g fill="rgba({LINE_RGB},{.045 * ALPHA:.3f})"'
+            f' stroke="rgba({LINE_RGB},{.2 * ALPHA:.3f})" stroke-width="1.6">'
             + "".join(f'<path d="{d}"/>' for d in lakes)
             + "</g>"
         )

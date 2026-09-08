@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Beepz — Vincent Waldmann</title>
+<meta name="description" content="Étude de cas Beepz : place de marché automobile californienne. Un design système, appliqué et éprouvé sur la landing page et les emails.">
+<link rel="stylesheet" href="css/style.css">
+
+<!-- La motion de la page, en trois lignes et AVANT le premier rendu.
+
+     `js-motion` est la classe sous laquelle vivent tous les états masqués des
+     blocs révélés au scroll : la poser ici, et pas depuis `main.js` en bas de
+     page, est ce qui évite de voir la page s'afficher en entier puis se cacher.
+
+     Elle n'est pas posée du tout en mouvement réduit — rien n'est alors masqué,
+     et le JS de révélation ne démarre pas non plus.
+
+     Le garde-fou de 2,5 s : si `main.js` ne s'est pas annoncé (réseau coupé,
+     404, erreur), on retire la classe et tout le contenu réapparaît. Un texte
+     resté invisible parce qu'un fichier n'a pas chargé serait la pire panne
+     possible sur une page de portfolio. -->
+<script>
+  (function () {
+    var html = document.documentElement;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    html.classList.add('js-motion');
+    setTimeout(function () {
+      if (html.dataset.motion !== 'ready') html.classList.remove('js-motion');
+    }, 2500);
+  })();
+</script>
+</head>
+<body>
+
+<header class="site-header">
+  <a class="logo" href="index.html">
+    <span>Waldmann</span>
+    <span>Vincent</span>
+  </a>
+  <nav class="main-nav">
+    <a href="index.html#a-propos">à propos</a>
+    <a href="index.html#parcours">Parcours</a>
+    <a href="index.html#projets">Projets</a>
+  </nav>
+  <a href="index.html#contact" class="btn-contact">
+    Discutons
+    <svg class="btn-contact__arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M1 9L9 1M9 1H2M9 1V8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </a>
+</header>
+
+<main class="case">
+
+  <!-- ======================================================================
+       LA COUVERTURE
+
+       Le seul endroit de la page qui porte le ciel du parcours (`--trail-sky`)
+       et la tuile de relief : c'est la carte du site qu'on retrouve, en fond,
+       le temps d'annoncer le projet. Le reste de la page revient sur l'encre.
+       ====================================================================== -->
+  <section class="case-hero">
+    <div class="case-hero__sky" aria-hidden="true">
+      <span class="case-hero__relief"></span>
+      <img class="case-hero__topo case-hero__topo--left" src="assets/topo-square-left.svg" alt="" decoding="async">
+      <img class="case-hero__topo case-hero__topo--right" src="assets/topo-square-right.svg" alt="" decoding="async">
+    </div>
+
+    <div class="case-hero__inner">
+      <a class="case-back" href="index.html#projets">
+        <svg class="case-back__arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true" focusable="false">
+          <path d="M9 5H1M5 1L1 5L5 9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Tous les projets
+      </a>
+
+      <div class="case-hero__grid">
+        <div class="case-hero__text">
+          <!-- « Fiche de course » et non « Étude de cas » : en montagne, la fiche de course
+               décrit une voie — l'approche, les difficultés, le matériel. C'est exactement
+               ce que fait la page, et ça garde l'œil dans le registre du site, comme
+               « L'approche » et « Au sommet » plus bas. -->
+          <p class="case__eyebrow">Fiche de course</p>
+          <!-- La marque s'écrit « Beepz » : les capitales sont un effet de titre, elles
+               viennent du CSS (`text-transform`) et pas du contenu. -->
+          <h1 class="case-hero__title">Beepz</h1>
+
+          <p class="case-hero__claim">
+            Beepz permet d’acheter et de vendre une voiture sans vérification de crédit.
+            Trois mois pour unifier son identité sur l’ensemble de ses supports&nbsp;:
+            design système, landing page, emails.
+          </p>
+        </div>
+
+        <!-- Trois plaques découpées dans la planche de marque. Même vocabulaire que le
+             tas de photos de l'accueil : posées en % d'un cadre de référence, rotation
+             de repos dans `--rot`, empilement décidé par des `z-index` explicites et
+             non par l'ordre du DOM. C'est ce qui met une image au-dessus de la ligne
+             de flottaison : la planche complète est à trois écrans de scroll. -->
+        <div class="case-hero__plates">
+          <img class="plate plate--car" src="assets/beepz-car.webp" width="665" height="590" decoding="async"
+               alt="Une voiture présentée sur fond bleu, accompagnée d’un badge de vérification.">
+          <img class="plate plate--life" src="assets/beepz-lifestyle.webp" width="522" height="410" decoding="async"
+               alt="Photographie de marque : une personne face à un lac, vue depuis l’intérieur d’une voiture.">
+          <img class="plate plate--app" src="assets/beepz-app.webp" width="640" height="700" decoding="async"
+               alt="La fiche de l’application Beepz sur l’App Store : 98 000 notes, 4,9 sur 5, distinction Editors’ Choice.">
+        </div>
+      </div>
+
+      <!-- La fiche de course : ce qu'un topo d'escalade porte en tête, transposé.
+           `topo--todo` (le pointillé) a sauté, les quatre cases sont renseignées. -->
+      <dl class="topo">
+        <div class="topo__cell">
+          <dt class="topo__term">Année</dt>
+          <dd class="topo__value">2025</dd>
+        </div>
+        <div class="topo__cell">
+          <dt class="topo__term">Rôle</dt>
+          <dd class="topo__value">UI/UX Designer</dd>
+        </div>
+        <div class="topo__cell">
+          <dt class="topo__term">Durée</dt>
+          <dd class="topo__value">3 mois</dd>
+        </div>
+        <div class="topo__cell topo__cell--wide">
+          <dt class="topo__term">Livrables</dt>
+          <dd class="topo__value">Design système<span class="topo__dot">·</span>Landing page<span class="topo__dot">·</span>Emails</dd>
+        </div>
+      </dl>
+    </div>
+  </section>
+
+  <!-- ======================================================================
+       L'APPROCHE — le contexte et le problème, avant toute image.
+       ====================================================================== -->
+  <section class="case-section" id="approche">
+    <div class="case-head" data-reveal>
+      <p class="case__eyebrow">L’approche</p>
+      <h2 class="case__title">Ce qu’il y avait en arrivant</h2>
+    </div>
+
+    <div class="case-body" data-reveal>
+      <!-- Ce paragraphe-ci est du fait vérifiable, relevé sur getbeepz.com : il
+           décrit le client, pas la mission. Les chiffres viennent de leur site et
+           sont donc à redater si la page vieillit. -->
+      <p class="case-body__lede">
+        Beepz est une place de marché automobile née en Californie. Sa promesse&nbsp;:
+        acheter une voiture <span class="case-hl">sans vérification de crédit</span>, via
+        des frais d’activation uniques puis des paiements hebdomadaires. Un modèle qui
+        s’adresse à ceux qu’un score écarte du financement classique.
+      </p>
+
+      <p>
+        La société revendique plus de 100 000 téléchargements, 19 000 utilisateurs
+        actifs et 4 000 voitures vendues, et prépare son expansion hors de Californie.
+        Une croissance rapide, qui exige des fondations réutilisables.
+      </p>
+
+      <p>
+        À mon arrivée, <span class="case-hl">aucune ligne directrice</span> n’existait.
+        Chaque intervenant designait selon ses propres repères, et l’ADN de la marque se
+        diluait à chaque nouvel écran&nbsp;: le site ne correspondait pas à
+        l’application, les emails à aucun des deux.
+      </p>
+
+      <p>
+        <span class="todo">À compléter</span>
+        La contrainte qui a tout orienté&nbsp;— le délai, l’équipe, l’existant technique,
+        le fait de devoir livrer sur plusieurs supports à la fois.
+      </p>
+    </div>
+  </section>
+
+  <!-- ======================================================================
+       LE FIL ROUGE
+
+       C'est le pivot de la page, et sa raison d'être : il dit au lecteur, AVANT
+       les trois volets, pourquoi ils ne font qu'un. Sans lui, la page se lit
+       comme trois mini-projets qui partagent un logo.
+       ====================================================================== -->
+  <section class="case-pivot">
+    <p class="case-pivot__kicker" data-reveal>Le fil rouge</p>
+    <p class="case-pivot__statement" data-reveal>
+      Trois livrables, <span class="case-hl">un seul système</span>. La landing page et
+      les emails ne sont pas deux chantiers parallèles&nbsp;: ce sont les deux terrains
+      sur lesquels le socle a été appliqué, éprouvé, puis corrigé.
+    </p>
+
+    <nav class="case-toc" data-reveal aria-label="Les trois volets du projet">
+      <a class="case-toc__item" href="#socle">
+        <span class="case-toc__num">01</span>
+        <span class="case-toc__label">Le design système</span>
+        <span class="case-toc__role">Le socle</span>
+      </a>
+      <a class="case-toc__item" href="#landing">
+        <span class="case-toc__num">02</span>
+        <span class="case-toc__label">La landing page</span>
+        <span class="case-toc__role">La vitrine</span>
+      </a>
+      <a class="case-toc__item" href="#emails">
+        <span class="case-toc__num">03</span>
+        <span class="case-toc__label">Les emails</span>
+        <span class="case-toc__role">La relance</span>
+      </a>
+    </nav>
+  </section>
+
+  <!-- ======================================================================
+       LES TROIS VOLETS
+
+       Même grammaire interne pour les trois — numéro, titre, enjeu, texte,
+       visuel, notes de terrain — c'est cette répétition qui les fait lire comme
+       un seul projet. Les volets 02 et 03 portent en plus une bande « hérité du
+       socle » : c'est elle qui rend la dépendance visible plutôt qu'affirmée.
+       ====================================================================== -->
+  <section class="case-versants" aria-label="Les trois volets du projet">
+    <ol class="versants">
+
+      <li class="versant" id="socle" data-reveal="pin">
+        <div class="versant__head" data-reveal>
+          <p class="versant__num">01</p>
+          <h2 class="versant__title">Le design système</h2>
+          <p class="versant__role">Le socle</p>
+        </div>
+
+        <p class="versant__stake" data-reveal>
+          <span class="versant__stake-label">L’enjeu</span>
+          Formaliser l’ADN de la marque, pour qu’aucun intervenant n’ait plus à le
+          deviner.
+        </p>
+
+        <div class="versant__body" data-reveal>
+          <p>
+            J’ai repris la palette existante plutôt que de la remplacer&nbsp;: intentions
+            conservées, rapports assainis. Surtout, chaque couleur porte désormais le nom
+            de son usage — <em>Buyer Yellow</em>, <em>Seller Blue</em>. Les deux faces de
+            la place de marché ont chacune la leur, et le choix cesse d’être une question
+            de goût.
+          </p>
+          <p>
+            Albert Sans porte l’ensemble&nbsp;: une famille unique, lisible par les deux
+            publics de la plateforme — les professionnels d’un côté, vendeurs et
+            gestionnaires de flottes&nbsp;; les particuliers de l’autre. Sérieuse sans
+            être distante, elle tient du titre d’accroche à la mention légale.
+          </p>
+          <p>
+            Le système est livré sous deux formes&nbsp;: un fichier Figma qui rassemble
+            l’ensemble des guidelines, support de travail de l’équipe&nbsp;; et un PDF
+            autonome que Beepz transmet à ses partenaires lors d’une collaboration.
+          </p>
+        </div>
+
+        <!-- La palette du CLIENT, en dur, et c'est la seule entorse à la règle des
+             quatre couleurs du site. Elle est cantonnée aux `.swatches` d'une page
+             projet : ce sont des couleurs montrées comme CONTENU — au même titre
+             qu'une capture d'écran, qui les charrie déjà — jamais reprises dans le
+             chrome. Les valeurs vivent dans le CSS et pas dans un style en ligne,
+             pour qu'il n'y ait qu'un seul endroit à relire. -->
+        <ul class="swatches" data-reveal="group" aria-label="La palette Beepz">
+          <li class="swatch swatch--sky">
+            <span class="swatch__chip" aria-hidden="true"></span>
+            <span class="swatch__name">Blue Sky</span>
+            <span class="swatch__hex">#2164BA</span>
+          </li>
+          <li class="swatch swatch--seller">
+            <span class="swatch__chip" aria-hidden="true"></span>
+            <span class="swatch__name">Seller Blue</span>
+            <span class="swatch__hex">#0BA7FF</span>
+          </li>
+          <li class="swatch swatch--buyer">
+            <span class="swatch__chip" aria-hidden="true"></span>
+            <span class="swatch__name">Buyer Yellow</span>
+            <span class="swatch__hex">#FBBC04</span>
+          </li>
+          <li class="swatch swatch--white">
+            <span class="swatch__chip" aria-hidden="true"></span>
+            <span class="swatch__name">Pure white</span>
+            <span class="swatch__hex">#FFFFFF</span>
+          </li>
+        </ul>
+
+        <figure class="versant__figure" data-reveal>
+          <!-- `--dark` et non le carton crème : la planche a son propre fond bleu
+               nuit, un passe-partout clair autour serait une collerette. -->
+          <div class="versant__shot versant__shot--dark">
+            <img src="assets/beepz-system.webp" width="1800" height="1349" loading="lazy" decoding="async"
+                 alt="Planche du design système Beepz : le logo, la palette Blue Sky, Seller Blue, Buyer Yellow et blanc pur, la typographie Albert Sans, et des exemples de photographie et de mise en page.">
+          </div>
+          <figcaption class="versant__caption">
+            La planche du système&nbsp;: logo, palette nommée par usage, Albert Sans, et
+            la direction photographique.
+          </figcaption>
+        </figure>
+
+        <ul class="versant__notes" data-reveal="group">
+          <li class="note">
+            <h3 class="note__title">Nommage</h3>
+            <p class="note__text">Une couleur porte le nom de son destinataire, pas celui de sa teinte.</p>
+          </li>
+          <li class="note">
+            <h3 class="note__title">Typographie</h3>
+            <p class="note__text">Albert Sans, famille unique. Une seule voix pour deux publics.</p>
+          </li>
+          <li class="note">
+            <h3 class="note__title">Diffusion</h3>
+            <p class="note__text">Un Figma pour l’équipe, un PDF pour les partenaires. Deux usages, deux formats.</p>
+          </li>
+        </ul>
+      </li>
+
+      <li class="versant" id="landing" data-reveal="pin">
+        <div class="versant__head" data-reveal>
+          <p class="versant__num">02</p>
+          <h2 class="versant__title">La landing page</h2>
+          <p class="versant__role">La vitrine</p>
+        </div>
+
+        <p class="versant__stake" data-reveal>
+          <span class="versant__stake-label">L’enjeu</span>
+          <span class="todo">À compléter</span>
+          Une ligne&nbsp;: ce que la page devait faire, et ne faisait pas.
+        </p>
+
+        <p class="versant__inherit" data-reveal>
+          <span class="versant__inherit-label">Hérité du socle</span>
+          <span class="chip">Grille</span>
+          <span class="chip">Échelle typo</span>
+          <span class="chip">Boutons</span>
+          <span class="chip">Couleurs</span>
+        </p>
+
+        <div class="versant__body" data-reveal>
+          <p>
+            <span class="todo">À compléter</span>
+            La refonte&nbsp;: la structure retenue, l’ordre des sections, ce que tu as
+            coupé. Et le moment où le système a servi&nbsp;— ou résisté.
+          </p>
+          <p>
+            <span class="todo">À compléter</span>
+            Ce que le terrain a renvoyé au socle&nbsp;: les composants qu’il a fallu
+            créer ou revoir pour que la page tienne.
+          </p>
+        </div>
+
+        <figure class="versant__figure versant__figure--pair" data-reveal>
+          <div class="versant__frame"><span>Visuel à venir — avant</span></div>
+          <div class="versant__frame"><span>Visuel à venir — après</span></div>
+          <figcaption class="versant__caption">
+            <span class="todo">À compléter</span>
+            Avant / après, et ce qu’il faut regarder.
+          </figcaption>
+        </figure>
+
+        <ul class="versant__notes" data-reveal="group">
+          <li class="note">
+            <h3 class="note__title">Structure</h3>
+            <p class="note__text"><span class="todo">À compléter</span> La décision, en une phrase.</p>
+          </li>
+          <li class="note">
+            <h3 class="note__title">Responsive</h3>
+            <p class="note__text"><span class="todo">À compléter</span> La décision, en une phrase.</p>
+          </li>
+          <li class="note">
+            <h3 class="note__title">Intégration</h3>
+            <p class="note__text"><span class="todo">À compléter</span> La décision, en une phrase.</p>
+          </li>
+        </ul>
+      </li>
+
+      <li class="versant" id="emails" data-reveal="pin">
+        <div class="versant__head" data-reveal>
+          <p class="versant__num">03</p>
+          <h2 class="versant__title">Les emails</h2>
+          <p class="versant__role">La relance</p>
+        </div>
+
+        <p class="versant__stake" data-reveal>
+          <span class="versant__stake-label">L’enjeu</span>
+          <span class="todo">À compléter</span>
+          Une ligne&nbsp;: pourquoi les emails comptaient autant que le site.
+        </p>
+
+        <p class="versant__inherit" data-reveal>
+          <span class="versant__inherit-label">Hérité du socle</span>
+          <span class="chip">Échelle typo</span>
+          <span class="chip">Boutons</span>
+          <span class="chip">Couleurs</span>
+          <span class="chip">Ton</span>
+        </p>
+
+        <div class="versant__body" data-reveal>
+          <p>
+            <span class="todo">À compléter</span>
+            Le vrai sujet de l’email&nbsp;: faire tenir le système dans un support qui
+            n’en veut pas — tableaux, clients qui ignorent la moitié du CSS, largeur
+            contrainte. Raconte l’écart, c’est là que le savoir-faire se voit.
+          </p>
+          <p>
+            <span class="todo">À compléter</span>
+            Ce que tu as livré&nbsp;: le nombre de gabarits, comment ils se composent,
+            et qui les envoie ensuite.
+          </p>
+        </div>
+
+        <figure class="versant__figure" data-reveal>
+          <div class="versant__frame"><span>Visuel à venir — les gabarits d’email</span></div>
+          <figcaption class="versant__caption">
+            <span class="todo">À compléter</span>
+            Ce que le visuel montre, en une ligne.
+          </figcaption>
+        </figure>
+
+        <ul class="versant__notes" data-reveal="group">
+          <li class="note">
+            <h3 class="note__title">Contraintes</h3>
+            <p class="note__text"><span class="todo">À compléter</span> La décision, en une phrase.</p>
+          </li>
+          <li class="note">
+            <h3 class="note__title">Gabarits</h3>
+            <p class="note__text"><span class="todo">À compléter</span> La décision, en une phrase.</p>
+          </li>
+          <li class="note">
+            <h3 class="note__title">Tests</h3>
+            <p class="note__text"><span class="todo">À compléter</span> La décision, en une phrase.</p>
+          </li>
+        </ul>
+      </li>
+
+    </ol>
+  </section>
+
+  <!-- ======================================================================
+       LE SOMMET — ce que ça a changé. Trois repères, puis le mot de la fin.
+       ====================================================================== -->
+  <section class="case-section case-summit" id="sommet">
+    <div class="case-head" data-reveal>
+      <p class="case__eyebrow">Au sommet</p>
+      <h2 class="case__title">Ce que ça a changé</h2>
+    </div>
+
+    <!-- Pas de grands nombres ici : la mission n'en a pas produit d'exploitables, et
+         un chiffre inventé se voit. Trois acquis qualitatifs à la place — même rythme
+         en trois colonnes que les notes de terrain, mais l'œil passe au vert. -->
+    <ul class="outcomes" data-reveal="group">
+      <li class="note">
+        <h3 class="note__title">Pour l’équipe</h3>
+        <p class="note__text"><span class="todo">À compléter</span> Ce qu’elle fait maintenant sans toi.</p>
+      </li>
+      <li class="note">
+        <h3 class="note__title">Pour la marque</h3>
+        <p class="note__text"><span class="todo">À compléter</span> Ce qui se tient enfin d’un support à l’autre.</p>
+      </li>
+      <li class="note">
+        <h3 class="note__title">Pour la suite</h3>
+        <p class="note__text"><span class="todo">À compléter</span> Ce que le socle a rendu possible ensuite.</p>
+      </li>
+    </ul>
+
+    <div class="case-body" data-reveal>
+      <p class="case-body__lede">
+        <span class="todo">À compléter</span>
+        Le mot de la fin&nbsp;: ce que la mission a laissé derrière elle, en deux ou
+        trois phrases.
+      </p>
+
+      <p>
+        <span class="todo">À compléter</span>
+        Et ce que tu ferais autrement. C’est la ligne que les recruteurs lisent en
+        entier&nbsp;— un regard critique sur son propre travail vaut mieux qu’un
+        chiffre flatteur.
+      </p>
+    </div>
+  </section>
+
+  <nav class="case-foot" data-reveal aria-label="Navigation entre projets">
+    <a class="case-foot__back" href="index.html#projets">
+      <svg class="case-back__arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true" focusable="false">
+        <path d="M9 5H1M5 1L1 5L5 9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Tous les projets
+    </a>
+
+    <!-- Volontairement un <span> tant que le projet suivant n'existe pas : pas
+         d'ancre morte sur le site, même règle que les liens réseaux du contact. -->
+    <span class="case-foot__next">
+      Projet suivant <span class="todo">à venir</span>
+    </span>
+  </nav>
+
+</main>
+
+<footer class="site-footer">
+  <div class="site-footer__inner">
+    <a class="logo" href="index.html">
+      <span>Waldmann</span>
+      <span>Vincent</span>
+    </a>
+
+    <nav class="site-footer__nav">
+      <a href="index.html#a-propos">À propos</a>
+      <a href="index.html#parcours">Parcours</a>
+      <a href="index.html#projets">Projets</a>
+      <a href="index.html#contact">Contact</a>
+    </nav>
+
+    <p class="site-footer__note">© 2026 — écrit à la main, sans framework.</p>
+  </div>
+</footer>
+
+<script src="js/main.js"></script>
+
+</body>
+</html>
