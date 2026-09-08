@@ -325,8 +325,10 @@
     // Le lissage est ici et pas dans la marche : ouvrir un cadre supporte une
     // courbe, suivre un chemin non (voir la note sur le mode auto).
     const rev = revealFraction();
-    stage.style.setProperty('--open', smooth(rev).toFixed(4));
-    stage.classList.toggle('is-open', rev >= 0.999);
+    // Posés sur la SECTION et pas sur la scène : le fil pointillé, qui est un frère
+    // de la scène, doit les lire lui aussi (il s'escamote à l'ouverture).
+    trail.style.setProperty('--open', smooth(rev).toFixed(4));
+    trail.classList.toggle('is-open', rev >= 0.999);
 
     const scrolled = fraction();
     const p = progressFor(scrolled);

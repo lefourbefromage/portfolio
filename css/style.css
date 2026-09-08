@@ -360,11 +360,14 @@ body {
 .pile__line {
   position: absolute;
   z-index: 0;
-  /* Le tracé descend 100 unités PLUS BAS que le cadre, dans le padding haut
-     d'À propos, pour mourir juste au-dessus de l'œil de section comme sur la
-     maquette. Son viewBox fait donc 1472 × 590 : même échelle que le cadre,
-     donc les coordonnées du `d` restent celles du cadre. Rien ne le rogne —
-     `container-type` applique une containment de layout, pas de peinture. */
+  /* La BOÎTE descend 100 unités PLUS BAS que le cadre, dans le padding haut
+     d'À propos ; son viewBox fait donc 1472 × 590, même échelle que le cadre, si
+     bien que les coordonnées du `d` restent celles du cadre. Rien ne le rogne —
+     `container-type` applique une containment de layout, pas de peinture.
+     Le TRACÉ, lui, s'arrête à 510 et non à 590 : il doit laisser respirer l'œil de
+     section juste en dessous, sinon son dernier tiret vient buter dessus. Si tu
+     dois le raccourcir encore, corrige le `d` et PAS cet inset — réduire la boîte
+     remettrait tout le tracé à l'échelle au lieu de l'écourter. */
   inset: 0 0 -20.41% 0;
 }
 
@@ -485,9 +488,16 @@ body {
      La scène est transparente jusqu'à l'ouverture, donc le recouvrement ne cache
      rien : le texte d'À propos continue de défiler dessous, normalement. Toute
      position qui se mesure depuis le haut de la section doit en revanche ajouter
-     `--pull` — c'est le cas de `--lead-top` et `--lead-run`. */
+     `--pull` — c'est le cas de `--lead-top` et la hauteur du fil. */
   --pull: max(0px, calc(50vh - 260px));
   margin-top: calc(-1 * var(--pull));
+
+  /* --open : 0 = carton fermé, 1 = carte plein écran. C'est le SEUL nombre que le
+     JS écrit pour la révélation, et il est posé ICI plutôt que sur la scène parce
+     que le fil pointillé en a besoin lui aussi — et qu'il est son FRÈRE, donc il
+     ne peut pas le lire depuis elle. La classe `is-open` suit la même logique. */
+  --open: 0;
+  --card-w: clamp(200px, 24vw, 330px);
 
   --rot: 0deg;
   --zoom: 1;
@@ -501,10 +511,8 @@ body {
   isolation: isolate;
   color: var(--ink);
 
-  /* --open : 0 = carton fermé, 1 = carte plein écran. C'est le SEUL nombre que
-     le JS écrit ici ; toute la géométrie de l'ouverture est ci-dessous. */
-  --open: 0;
-  --card-w: clamp(200px, 24vw, 330px);
+  /* Toute la géométrie de l'ouverture, que `--open` (hérité de .trail) interpole.
+     `--card-w` est déclaré sur .trail, le fil pointillé en a besoin lui aussi. */
   --card-h: calc(var(--card-w) / 1.57);
   --frame: clamp(10px, 1vw, 18px);   /* la marge d'encre une fois grand ouvert */
 }
@@ -544,23 +552,18 @@ body {
   max-width: 1512px;
   margin-inline: auto;
   padding-inline: clamp(20px, 2.6vw, 40px);
-
-  --hook-w: clamp(400px, calc(55vw - 100px), 536px);
-  --hook-h: calc(var(--hook-w) * 280 / 486);
   /* Le haut du fil : sous le bouton, donc au-dessus du haut de la section de tout
      le padding bas d'À propos moins les 26px de dégagement — et moins la remontée
      de la section, qui rapproche les deux d'autant. */
   --lead-top: calc(26px - clamp(120px, 18vh, 240px) + var(--pull));
-  /* Ce que la descente droite doit couvrir. La distance totale se lit : remonter
-     jusqu'au bouton, redescendre au centre du carton (50vh), remonter sa
-     demi-hauteur pour tomber sur son bord haut (d'où le /3,14 — deux fois le
-     rapport 1,57 du carton), puis 70px de mieux pour finir DERRIÈRE lui. Le reste
-     est pour la boucle. */
-  --lead-run: max(0px, calc(
-    clamp(120px, 18vh, 240px) - 26px + 50vh
-    - clamp(200px, 24vw, 330px) / 3.14 + 70px - var(--hook-h) - var(--pull)
-  ));
 }
+
+/* Dès que la carte est ouverte, le fil n'a plus rien à relier — et il est déjà
+   caché derrière elle, donc l'escamoter ne se voit pas. C'est indispensable : son
+   bloc reste collant sur toute la hauteur de la section, alors sans ça il
+   réapparaissait par-dessus la section projets une fois la carte sortie par le
+   haut. */
+.trail.is-open .trail__lead { opacity: 0; }
 
 .trail__lead-inner {
   position: relative;
@@ -569,41 +572,37 @@ body {
   margin-inline: auto;
 }
 
-.trail__lead-run,
-.trail__lead-hook { position: absolute; }
-
-.trail__lead-run {
-  left: 62px;      /* dans l'axe du bouton, à un tiers de sa largeur */
+/* La boîte du SVG EST le trajet, puisque le tracé va d'un coin à l'autre.
+   En largeur : du bouton (62 + 2 = 64px, l'axe du trait) jusqu'au carton. La
+   colonne étant centrée comme lui, sa moitié est le centre du carton — d'où le
+   « 50 % » ; le terme en `--card-w` décale l'arrivée à 58 % de sa largeur, comme
+   sur la maquette.
+   En hauteur : jusqu'à 70px SOUS le bord haut du carton, pour finir derrière lui.
+   Le carton étant à 50vh du haut de la section, on retire sa demi-hauteur (d'où le
+   /3,14 — deux fois son rapport 1,57) puis le haut du fil. */
+.trail__lead-line {
+  position: absolute;
+  left: 64px;
   top: var(--lead-top);
-  width: 4px;
-  height: var(--lead-run);
+  width: calc(50% - 64px + var(--card-w) * 0.08);
+  height: max(0px, calc(
+    50vh - var(--card-w) / 3.14 + 70px - var(--lead-top)
+  ));
+  overflow: visible;   /* le ventre de la courbe sort de la boîte par la gauche */
 }
 
-.trail__lead-hook {
-  left: 56px;
-  top: calc(var(--lead-top) + var(--lead-run));
-  width: var(--hook-w);
-  aspect-ratio: 486 / 280;
-}
-
-.trail__lead-run path,
-.trail__lead-hook path {
+.trail__lead-line path {
   fill: none;
   stroke: var(--cream);
   stroke-linecap: round;
-  /* Épaisseur et tirets en PIXELS D'ÉCRAN, pas en unités de viewBox : ces SVG-ci
-     sont agrandis alors que celui du tas de photos est réduit (~0,7), si bien que
-     le même trait de 5 sortait à plus du double ici. Les valeurs sont calées sur le
-     rendu du fil du tas, pas sur les siennes.
-
-     C'est aussi ce qui rend la descente droite possible en `preserveAspectRatio
-     ="none"` : un segment vertical étiré verticalement reste un segment vertical,
-     donc ni bouts ronds en biseaux ni tirets écrasés. Ne mets PAS ce
-     preserveAspectRatio sur la boucle — sur un tracé courbe, l'étirement fait
-     partir les bouts en biseaux, non-scaling-stroke ou pas (essayé, retiré). */
+  /* Le trait est donné en PIXELS D'ÉCRAN, pas en unités du viewBox. C'est ce qui
+     rend la déformation possible : le SVG est étiré différemment en largeur et en
+     hauteur (jusqu'à 3,8x d'écart en mobile), et sans ça les bouts ronds partiraient
+     en biseaux et les tirets seraient écrasés d'un côté. Là, ils restent nets.
+     Les valeurs sont celles de `separator.svg`. */
   vector-effect: non-scaling-stroke;
-  stroke-width: 4;
-  stroke-dasharray: 11 13;
+  stroke-width: 5;
+  stroke-dasharray: 10 10;
 }
 
 /* --- the map that slides, turns and zooms under you --- */
@@ -810,18 +809,18 @@ body {
   transition: opacity .5s ease;
 }
 
-.trail__stage.is-open .trail__intro,
-.trail__stage.is-open .trail__hud,
-.trail__stage.is-open .trail__route,
-.trail__stage.is-open .trail__you,
-.trail__stage.is-open .trail__stops {
+.trail.is-open .trail__intro,
+.trail.is-open .trail__hud,
+.trail.is-open .trail__route,
+.trail.is-open .trail__you,
+.trail.is-open .trail__stops {
   opacity: 1;
 }
 
 /* Tant que la carte n'est pas ouverte, le bouton du HUD est invisible : il ne
    doit pas non plus être cliquable ni atteignable au clavier. */
 .trail__hud { pointer-events: none; }
-.trail__stage.is-open .trail__hud { pointer-events: auto; }
+.trail.is-open .trail__hud { pointer-events: auto; }
 
 /* Le titre de couverture, centré dans le carton. Il s'efface dans le premier
    tiers de l'ouverture — passé là, le cadre est trop grand pour qu'un texte
@@ -1270,15 +1269,6 @@ body {
   .decor--sticker, .decor--underline, .decor--path-left, .decor--path-right {
     display: none;
   }
-
-  /* La boucle fait 400px de large au minimum : elle sortirait de l'écran sans
-     jamais atteindre le carton. On la masque, et la descente droite fait tout le
-     trajet — recentrée, parce que le carton l'est aussi et que le bouton, large,
-     passe sous l'axe du milieu à cette largeur-là. Mettre `--hook-h` à zéro suffit
-     à rendre sa pleine longueur à `--lead-run`. */
-  .trail__lead-hook { display: none; }
-  .trail__lead { --hook-h: 0px; }
-  .trail__lead-run { left: 50%; }
 
   /* The map stays interactive on small screens — it is one composited
      transform, so it scrubs smoothly on touch. Just tighten the labels. */

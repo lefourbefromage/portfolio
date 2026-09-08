@@ -184,7 +184,10 @@ quatre couches de la maquette, et elles sont données :
 Le tracé est en `z-index: 0` (donc sous tout : il disparaît derrière la photo du randonneur et
 ressort en dessous) — et son `inset` porte un **bas négatif** (-20,41 %, soit 100 unités de
 cadre) pour qu'il descende dans le padding haut d'À propos et meure juste au-dessus de l'œil de
-section, comme sur la maquette. Rien ne le rogne : `container-type` applique une containment de
+section, comme sur la maquette. Le `d` s'arrête à **510** et pas à 590 : c'est ce qui laisse
+36px de dégagement au-dessus de l'œil, sans quoi le dernier tiret vient buter dessus. Pour le
+raccourcir, corrige le `d` et **pas** l'inset — réduire la boîte remet tout le tracé à
+l'échelle au lieu de l'écourter. Rien ne le rogne : `container-type` applique une containment de
 layout, pas de peinture. Son viewBox vaut donc 1472 × 590, pas 1472 × 490 et le « Scroll to explore » en `z-index: 5`, au-dessus de tout. L'ordre du
 DOM suit quand même ces couches — `1, 7, 4, 3, 6, 2, 5` — mais pour une autre raison : c'est
 lui que lit `:nth-of-type` pour décaler l'animation de chargement, qui doit poser les photos de
@@ -307,7 +310,7 @@ sur une fenêtre de moins de 520px de haut.
 Le recouvrement va jusqu'à 271px et ne cache rien : la scène est transparente tant que la
 fenêtre n'est pas ouverte, donc le texte d'À propos continue de défiler dessous, normalement.
 **Toute position mesurée depuis le haut de la section doit ajouter `--pull`** — c'est le cas de
-`--lead-top` et `--lead-run`.
+`--lead-top` et la hauteur du fil.
 
 ### La révélation : une fenêtre qui s'ouvre, une carte qui ne bouge pas
 
@@ -332,7 +335,10 @@ produirait ce saut : c'est le piège.
 
 Toute la géométrie de l'ouverture vit dans le CSS — taille du carton (`--card-w`, `--card-h`),
 marge finale (`--frame`), arrondi — et **le JS n'écrit qu'un nombre**, `--open`, comme pour les
-stickers du hero et le tas de photos. Les `%` du `inset()` se résolvent sur la boîte de la
+stickers du hero et le tas de photos. `--open` et la classe `is-open` sont posés sur **`.trail`
+et pas sur la scène** : le fil pointillé en a besoin lui aussi, et comme il est le FRÈRE de la
+scène il ne pourrait pas les lire depuis elle. Ne redéclare pas `--open: 0` sur `.trail__stage`
+— une déclaration sur l'élément l'emporte sur l'héritage, et la valeur du JS serait masquée. Les `%` du `inset()` se résolvent sur la boîte de la
 fenêtre, donc le carton reste centré à toute taille d'écran sans une ligne de JS.
 
 Trois choses attendent la **fin** de la révélation, et c'est une consigne : le chemin, le
@@ -366,7 +372,12 @@ hauteur nulle.
 **C'est ce sticky qui fait tout** : il se colle en haut de l'écran à l'instant précis où la
 scène s'épingle, donc **au début de la révélation**. Avant, le fil défile avec la page et reste
 accroché sous le bouton ; à partir de là **il ne bouge plus**, et le carton, en grandissant, le
-recouvre jusqu'à l'avoir mangé. C'est aussi pourquoi il ne peut pas rester dans `.about__body` :
+recouvre jusqu'à l'avoir mangé.
+
+**Et il s'escamote pour de bon dès que la carte est ouverte** (`.trail.is-open .trail__lead`).
+Ce n'est pas cosmétique : son bloc reste collant sur **toute** la hauteur de la section, donc
+sans ça il réapparaissait par-dessus la section projets une fois la carte sortie par le haut.
+À cet instant il est déjà caché derrière la carte, l'escamotage ne se voit donc pas. C'est aussi pourquoi il ne peut pas rester dans `.about__body` :
 un `sticky` ne sort pas de son bloc conteneur, et il doit tenir bien au-delà d'À propos.
 Hauteur nulle pour ne pas décaler la scène d'un pixel, et placé **avant** elle dans le DOM —
 tous deux en `z-index: auto` — pour que la fenêtre peigne par-dessus.
@@ -375,34 +386,37 @@ tous deux en `z-index: auto` — pour que la fenêtre peigne par-dessus.
 puis une colonne de 1040px) : le fil part ainsi exactement sous le bouton sans un seul calcul de
 centrage à refaire.
 
-**Il est en DEUX morceaux, et il faut garder ce partage.** `.trail__lead-run` est une descente
-droite de hauteur variable, `.trail__lead-hook` la boucle, de taille propre. La raison : la
-distance *verticale* à couvrir dépend de la hauteur de la fenêtre (le carton se tient à 50vh
-sous le haut de la section) alors que la distance *horizontale* est quasi constante — la colonne
-de texte et le carton sont l'un comme l'autre centrés. Une seule courbe à l'échelle uniforme
-liait les deux : sur un écran haut elle s'élargissait d'autant et sortait du carton par la
-droite (mesuré à 106 % de sa largeur en 1512 × 1200, hors cadre en 2560 × 1440). Avec le
-partage, l'arrivée reste entre 48 et 59 % de la largeur du carton de 900 × 600 à 2560 × 1440, et
-le fil finit toujours **70px derrière** son bord haut.
+**Un seul tracé, et il est DÉFORMÉ — c'est le point à comprendre.** Le fil doit couvrir deux
+distances qui ne varient pas ensemble : la *verticale* dépend de la hauteur de la fenêtre (le
+carton se tient à 50vh sous le haut de la section) alors que l'*horizontale* est quasi
+constante — la colonne de texte et le carton sont l'un comme l'autre centrés.
+`preserveAspectRatio="none"` laisse donc chaque axe se régler sur sa contrainte.
 
-**Le trait est en pixels d'écran** (`vector-effect: non-scaling-stroke`, épaisseur 4, tirets
-11/13) et pas en unités de viewBox : ces SVG-ci sont agrandis alors que celui du tas de photos
-est réduit (~0,7), si bien que le même trait de 5 sortait à plus du double ici. Les valeurs sont
-calées sur le rendu du fil du tas.
+Ça ne marche que grâce à `vector-effect: non-scaling-stroke`, qui refait le trait en **pixels
+d'écran** : bouts ronds et tirets restent nets quel que soit l'étirement. Mesuré à 0,91–1,17
+d'écart en desktop (invisible) et 0,26 en mobile — même à ce 3,8x d'écrasement le trait reste
+propre, vérifié côte à côte. Sans lui il faudrait deux éléments (une descente droite qui absorbe
+le vertical, une boucle à taille fixe), ce qui a été la version précédente : elle ajoutait une
+jointure à recaler en x ET en phase de tirets, pour rien.
 
-`preserveAspectRatio="none"` est sur la descente droite **seulement** : un segment vertical
-étiré verticalement reste un segment vertical. Ne le mets pas sur la boucle — sur un tracé
-courbe, l'étirement fait partir les bouts ronds en biseaux, `non-scaling-stroke` ou pas
-(essayé, retiré).
+**La boîte du SVG EST le trajet.** Le tracé vient d'`assets/separator.svg` (fourni par
+Vincent, gardé comme référence — rien ne le charge, il est recopié dans le HTML),
+renormalisé pour que son départ tombe en (0,0) et son arrivée en (486,415) : il n'y a donc plus
+rien à calculer pour placer ses deux bouts, on dimensionne la boîte et c'est tout.
 
-**La descente droite ne fait plus que 41 à 131px** depuis que la section remonte (voir
-« Forme ») : c'est `--pull` qui annule le terme en 50vh. Le fil finit toujours **70px derrière**
-le bord haut du carton, à toute taille d'écran.
+- en largeur, `calc(50% - 64px + var(--card-w) * 0.08)` : du bouton (62 + 2 = 64px, l'axe du
+  trait) jusqu'au carton. La colonne de 1040px étant centrée comme lui, **sa moitié EST le
+  centre du carton** — d'où le « 50 % », sans un seul calcul de centrage ;
+- en hauteur, jusqu'à 70px SOUS le bord haut du carton, pour finir derrière lui.
 
-En dessous de 900px la boucle fait 400px de large au minimum : elle sortirait de l'écran sans
-jamais atteindre le carton, donc **elle est masquée** et la descente droite fait tout le trajet,
-recentrée — le carton l'est aussi, et le bouton, large, passe sous l'axe du milieu à cette
-largeur-là. Mettre `--hook-h` à zéro suffit à rendre sa pleine longueur à `--lead-run`.
+Les points de contrôle sortent de la boîte (−222 et 749 en x), c'est voulu — c'est le ventre de
+la courbe vers la gauche, qui va lécher le bord gauche de la colonne de texte. D'où
+`overflow: visible` sur le SVG.
+
+**Ne réduis pas le padding bas d'À propos pour « rapprocher » les deux sections** : c'est lui
+qui donne sa hauteur au fil. À zéro, le trajet tombe de 370–439px à 199–240px et la courbe est
+écrasée de moitié en plus de son étirement horizontal. C'est la remontée de la section
+(`--pull`, voir « Forme ») qui règle cette distance, pas le padding.
 
 **Le mode auto est débrayé tant que la carte n'est pas ouverte.** La scène est déjà épinglée
 pendant la révélation, donc sans le garde `revealFraction() < 1` dans `targetFor()`, le premier

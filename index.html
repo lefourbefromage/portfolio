@@ -85,7 +85,7 @@
     <div class="pile__scene">
 
       <svg class="pile__line" viewBox="0 0 1472 590" fill="none" aria-hidden="true" focusable="false">
-        <path d="M 732 46 C 752 160, 712 380, 736 570"/>
+        <path d="M 732 46 C 752 160, 714 350, 734 510"/>
       </svg>
 
       <img class="pile__photo pile__photo--1" src="assets/photo1.png" alt="" decoding="async">
@@ -158,29 +158,32 @@
   <section class="trail" id="parcours">
 
     <!-- Le fil pointillé qui descend du bouton « CV » d'À propos et vient se poser
-         sur le carton. Il vit ICI et pas dans À propos, et son bloc est COLLANT :
-         il se fige donc à l'instant précis où la scène s'épingle, c'est-à-dire au
-         début de la révélation. Avant ça il défile avec la page, accroché sous le
-         bouton ; après, il ne bouge plus et le carton, en grandissant, le recouvre.
+         sur le carton. C'est le tracé de `separator.svg`, renormalisé pour que son
+         DÉPART tombe en (0,0) et son ARRIVÉE en (486,415) : la boîte du SVG est donc
+         exactement le trajet à couvrir, et il n'y a plus rien à calculer pour placer
+         ses deux bouts. Les points de contrôle sortent de la boîte, c'est normal et
+         voulu — c'est le ventre de la courbe vers la gauche —, d'où `overflow: visible`.
 
-         Le bloc reproduit la boîte d'À propos (max-width, padding, colonne de
-         1040px) pour que le fil parte exactement sous le bouton, sans calcul.
+         Il vit ICI et pas dans À propos, et son bloc est COLLANT : il se fige donc à
+         l'instant précis où la scène s'épingle, c'est-à-dire au début de la
+         révélation. Avant ça il défile avec la page, accroché sous le bouton ; après,
+         il ne bouge plus et le carton, en grandissant, le recouvre.
 
-         DEUX morceaux, et il faut garder ce partage : la distance VERTICALE à
-         couvrir dépend de la hauteur de la fenêtre (le carton est à 50vh sous le
-         haut de la section) alors que la distance HORIZONTALE est quasi constante,
-         colonne de texte et carton étant tous deux centrés. Une seule courbe à
-         l'échelle uniforme liait les deux et sortait du carton par la droite sur un
-         écran haut. La descente droite absorbe le vertical, la boucle garde sa
-         taille et vise le carton. -->
+         Le bloc reproduit la boîte d'À propos (max-width, padding, colonne de 1040px)
+         pour que le fil parte exactement sous le bouton — et comme cette colonne est
+         centrée, sa moitié EST le centre du carton, d'où une largeur qui se dit
+         simplement « 50 % ».
+
+         UN SEUL tracé, DÉFORMÉ : `preserveAspectRatio="none"` laisse la largeur et la
+         hauteur se régler chacune sur sa contrainte, qui ne varient pas ensemble (la
+         verticale suit la hauteur de la fenêtre, l'horizontale est quasi constante).
+         C'est possible parce que `non-scaling-stroke` refait le trait en pixels
+         d'écran : bouts ronds et tirets restent nets jusqu'à 3,8x d'écrasement (le
+         cas mobile), vérifié. Sans lui il faudrait deux morceaux. -->
     <div class="trail__lead" aria-hidden="true">
       <div class="trail__lead-inner">
-        <svg class="trail__lead-run" viewBox="0 0 4 100" preserveAspectRatio="none" fill="none" focusable="false">
-          <path d="M 2 0 L 2 100"/>
-        </svg>
-        <svg class="trail__lead-hook" viewBox="0 0 486 280" fill="none" focusable="false">
-          <path d="M 6 0 C 2 50, 24 130, 108 158 C 214 194, 252 78, 306 84
-                   C 404 96, 460 168, 440 232 C 432 258, 438 270, 446 280"/>
+        <svg class="trail__lead-line" viewBox="0 0 486 415" preserveAspectRatio="none" fill="none" focusable="false">
+          <path d="M 0 0 C -222 282, 175 303, 279 246 C 448 151, 749 288, 486 415"/>
         </svg>
       </div>
     </div>
