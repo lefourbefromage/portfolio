@@ -574,6 +574,40 @@ Le prix de la cuisson, assumé : la direction de l'empilement est fixée dans l'
 suit la rotation cap-en-haut au lieu de rester verticale à l'écran. `ROT_DAMP` bornant la
 rotation à ±25°, le relief penche un peu au fil de la marche.
 
+**Et la tuile est rastérisée une fois au chargement, dans un canvas** (`bakeRelief()`, dans
+la même IIFE). Ce n'est pas une micro-optimisation : sans elle la carte topo **clignote par
+moments** pendant la marche. Le mécanisme, mesuré et non supposé :
+
+- la tuile est un SVG de **192 tracés translucides**. Tant que l'échelle ne bouge pas, le
+  compositeur réutilise sa texture et tout va bien ;
+- mais `scale()` change à **chaque approche d'étape** (0,70 → 1,14), et Chrome doit alors
+  redessiner ces 192 tracés pour **chaque tuile visible** : **58 ms la tuile de 1400 px**,
+  contre 16 ms de budget par image. Le rasteur décroche et affiche des tuiles vides ;
+- d'où un clignotement **intermittent** — seulement près des cartes, là où le zoom bouge —
+  et **invisible au profilage du fil principal**, qui reste à 8,3 ms médians de bout en bout.
+  Si tu cherches ce genre de défaut, ne perds pas de temps sur le JS : il n'y est pas.
+
+La même tuile déjà rastérisée coûte **12 ms**, soit 4,7x moins. On la dessine donc une fois
+dans un canvas et on passe la bitmap en fond.
+
+Trois choses à respecter :
+
+- **le SVG reste la source de vérité.** C'est lui que produit `gen_relief.py`, et c'est lui
+  que `bakeRelief()` lit — via le fond **déjà déclaré en CSS**, pour ne pas tenir le chemin à
+  deux endroits. Ne code pas le chemin en dur dans le JS.
+- **rien ne dépend de cette optimisation.** Si le canvas échoue, le fond CSS d'origine reste
+  en place et la section fonctionne comme avant, en moins fluide. Garde ce repli.
+- **la densité est plafonnée à 2** (`min(2, dpr × ZOOM_STOP)`), soit une tuile de 2800 px et
+  30 Mo de texture sur un écran retina. Le pire cas affiché vaut 3192 px, donc la bitmap est
+  très légèrement remontée au zoom maximum : mesuré, l'encre totale est **identique** (alpha
+  moyen 3,31 des deux côtés), la surface de trait varie de 1 % et seul le pixel le plus
+  brillant perd 4 % (144 → 138). Invisible. Ne monte pas ce plafond sans regarder la mémoire :
+  à densité 3 la tuile passerait à 4788 px et 91 Mo, ce qui rendrait sur mobile le mal qu'on
+  vient de guérir.
+
+À ne pas confondre avec l'avertissement du dessus : découper le fond en **calques** est
+interdit, le rastériser en **une image** est justement le remède.
+
 Trois contraintes à respecter si tu retouches `tools/gen_relief.py` :
 
 - **`STEP` doit rester sous le quart de l'espacement horizontal des courbes** (~`TILE/LEVELS`).

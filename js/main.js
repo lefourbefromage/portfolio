@@ -447,6 +447,58 @@
     render();
   }
 
+  /* ---------- La tuile de relief, rastérisée une fois ----------
+     La carte topo clignotait par moments pendant la marche, et c'est un
+     problème de RASTÉRISATION, pas de code : le fil principal tient ses 8,3 ms
+     médians de bout en bout.
+
+     `assets/trail-relief.svg` est une tuile de 192 tracés translucides. Tant
+     que l'échelle ne bouge pas, le compositeur réutilise sa texture — mais
+     `scale()` change à chaque approche d'étape (0,70 → 1,14), et Chrome doit
+     alors redessiner ces 192 tracés pour CHAQUE tuile visible. Mesuré à 58 ms
+     la tuile de 1400px, contre 12 ms pour la même image déjà rastérisée et
+     16 ms de budget par image. Le rasteur décroche, affiche des tuiles vides,
+     et c'est le clignotement — de temps en temps seulement, puisque le zoom ne
+     bouge qu'à l'approche des cartes.
+
+     On dessine donc la tuile UNE fois dans un canvas et on passe la bitmap en
+     fond. Le SVG reste la source de vérité : c'est lui que produit
+     gen_relief.py, c'est lui qu'on lit ici — via le fond déjà déclaré en CSS,
+     pour ne pas tenir le chemin à deux endroits — et si quoi que ce soit
+     échoue, le fond d'origine reste en place. Rien ne dépend de cette
+     optimisation, elle ne fait qu'accélérer. */
+  function bakeRelief() {
+    const relief = map.querySelector('.trail__relief');
+    if (!relief || typeof HTMLCanvasElement === 'undefined') return;
+
+    const cs = getComputedStyle(relief);
+    const src = cs.backgroundImage.match(/url\(["']?([^"')]+)["']?\)/);
+    const tile = parseFloat(cs.backgroundSize);
+    if (!src || !(tile > 0)) return;
+
+    // La tuile est vue jusqu'à ZOOM_STOP sur un écran qui peut être retina : on
+    // rastérise à la densité maximale réellement affichée. Plafonnée à 2 — au-delà
+    // la bitmap coûte plus de mémoire qu'elle ne rend de finesse sur un trait à
+    // 4 % d'opacité.
+    const density = Math.min(2, (window.devicePixelRatio || 1) * ZOOM_STOP);
+    const size = Math.round(tile * density);
+
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const c = document.createElement('canvas');
+        c.width = c.height = size;
+        c.getContext('2d').drawImage(img, 0, 0, size, size);
+        c.toBlob((blob) => {
+          if (blob) relief.style.backgroundImage = `url("${URL.createObjectURL(blob)}")`;
+        }, 'image/png');
+      } catch (e) {
+        /* canvas indisponible ou saturé : le SVG reste en place */
+      }
+    };
+    img.src = src[1];
+  }
+
   /* ---------- Mode « étape par étape » ---------- */
   // Un cran de molette ne fait pas défiler : il déclenche la marche jusqu'à
   // l'étape suivante, chemin compris, que la caméra suit toute seule. Le geste
@@ -588,6 +640,7 @@
   setAuto(true);
 
   if (!still.matches) {
+    bakeRelief();
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', refresh);
     window.addEventListener('wheel', onWheel, { passive: false });
