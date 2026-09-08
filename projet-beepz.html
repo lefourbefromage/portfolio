@@ -140,6 +140,7 @@
       <h2 class="case__title">Ce qu’il y avait en arrivant</h2>
     </div>
 
+    <div class="case-split">
     <div class="case-body" data-reveal>
       <!-- Ce paragraphe-ci est du fait vérifiable, relevé sur getbeepz.com : il
            décrit le client, pas la mission. Les chiffres viennent de leur site et
@@ -164,11 +165,65 @@
         l’application, les emails à aucun des deux.
       </p>
 
-      <p>
-        <span class="todo">À compléter</span>
-        La contrainte qui a tout orienté&nbsp;— le délai, l’équipe, l’existant technique,
-        le fait de devoir livrer sur plusieurs supports à la fois.
-      </p>
+    </div>
+
+    <!-- L'illustration du dernier paragraphe, et rien d'autre : trois surfaces
+         dessinées chacune dans un langage différent — trait plein, tireté, pointillé —
+         avec un accent de couleur différent, et un fil qui tente de les relier sans y
+         arriver. C'est l'exact envers du « fil rouge » de la section suivante, où le
+         même trait devient continu. À remplacer sans hésiter par une capture de
+         l'ancienne landing page le jour où tu en retrouves une. -->
+    <figure class="case-aside" data-reveal>
+      <svg class="gap-diagram" viewBox="0 0 420 480" role="img"
+           aria-label="Trois surfaces — un site, une application, un email — dessinées chacune dans un style différent, qu’aucun fil ne relie.">
+
+        <!-- le site -->
+        <g transform="rotate(-3 115 95)">
+          <rect class="gap-frame gap-frame--solid" x="8" y="24" width="214" height="142" rx="8"/>
+          <path class="gap-frame gap-frame--solid" d="M8 52H222"/>
+          <circle class="gap-accent-green" cx="26" cy="38" r="3.5"/>
+          <circle class="gap-dot" cx="39" cy="38" r="3.5"/>
+          <circle class="gap-dot" cx="52" cy="38" r="3.5"/>
+          <rect class="gap-bar" x="26" y="72" width="124" height="8" rx="4"/>
+          <rect class="gap-bar" x="26" y="90" width="172" height="8" rx="4"/>
+          <rect class="gap-bar" x="26" y="108" width="88" height="8" rx="4"/>
+        </g>
+
+        <!-- l'application -->
+        <g transform="rotate(5 327 201)">
+          <rect class="gap-frame gap-frame--dashed" x="268" y="96" width="118" height="210" rx="24"/>
+          <rect class="gap-accent-pink" x="310" y="106" width="34" height="7" rx="3.5"/>
+          <rect class="gap-bar" x="282" y="132" width="90" height="54" rx="9"/>
+          <rect class="gap-bar" x="282" y="198" width="66" height="7" rx="3.5"/>
+          <rect class="gap-bar" x="282" y="213" width="90" height="7" rx="3.5"/>
+        </g>
+
+        <!-- l'email -->
+        <g transform="rotate(-6 146 366)">
+          <rect class="gap-frame gap-frame--dotted" x="48" y="300" width="196" height="132" rx="3"/>
+          <path class="gap-frame gap-frame--dotted" d="M48 300L146 372L244 300"/>
+          <rect class="gap-bar" x="66" y="392" width="112" height="7" rx="3.5"/>
+          <rect class="gap-bar" x="66" y="407" width="72" height="7" rx="3.5"/>
+        </g>
+
+        <!-- le fil qui n'arrive pas : deux moignons, et le vide entre les deux -->
+        <path class="gap-thread" d="M232 128C248 136 256 148 259 162"/>
+        <path class="gap-thread" d="M276 232C282 248 280 262 272 274"/>
+        <path class="gap-thread" d="M262 322C244 338 222 344 204 344"/>
+        <circle class="gap-break" cx="259" cy="162" r="2.6"/>
+        <circle class="gap-break" cx="276" cy="232" r="2.6"/>
+        <circle class="gap-break" cx="272" cy="274" r="2.6"/>
+        <circle class="gap-break" cx="262" cy="322" r="2.6"/>
+
+        <text class="gap-label" x="10" y="192">Le site</text>
+        <text class="gap-label" x="268" y="332">L’app</text>
+        <text class="gap-label" x="44" y="462">Les emails</text>
+      </svg>
+
+      <figcaption class="case-aside__caption">
+        Trois surfaces, trois langages&nbsp;— et rien qui les relie.
+      </figcaption>
+    </figure>
     </div>
   </section>
 
@@ -318,8 +373,8 @@
 
         <p class="versant__stake" data-reveal>
           <span class="versant__stake-label">L’enjeu</span>
-          <span class="todo">À compléter</span>
-          Une ligne&nbsp;: ce que la page devait faire, et ne faisait pas.
+          Remplacer une page montée pour réserver le nom de domaine par une page qui
+          dise enfin ce que Beepz a de particulier.
         </p>
 
         <p class="versant__inherit" data-reveal>
@@ -332,14 +387,20 @@
 
         <div class="versant__body" data-reveal>
           <p>
-            <span class="todo">À compléter</span>
-            La refonte&nbsp;: la structure retenue, l’ordre des sections, ce que tu as
-            coupé. Et le moment où le système a servi&nbsp;— ou résisté.
+            La page en place n’avait jamais été pensée comme une page&nbsp;: un template
+            générique, monté pour que le nom de domaine ne reste pas vide. Rien n’y
+            mettait en avant ce qui distingue Beepz. Il n’y avait donc pas de refonte à
+            faire au sens strict — il fallait écrire la page.
           </p>
           <p>
             <span class="todo">À compléter</span>
-            Ce que le terrain a renvoyé au socle&nbsp;: les composants qu’il a fallu
-            créer ou revoir pour que la page tienne.
+            Ce que tu as construit à la place&nbsp;: l’ordre des sections retenu, ce que
+            tu as choisi de montrer en premier, et pourquoi cet ordre-là.
+          </p>
+          <p>
+            <span class="todo">À compléter</span>
+            Le moment où le socle a servi&nbsp;— ou résisté&nbsp;: les composants qu’il a
+            fallu créer ou revoir pour que la page tienne.
           </p>
         </div>
 
