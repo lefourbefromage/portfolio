@@ -42,6 +42,35 @@ clair dans une URL de remote propose la clé *professionnelle* et échoue sur
 Les skills vendorisées (`.agents/`, et les liens symboliques de `.claude/skills/`) sont
 ignorées par git — 5,4 Mo que `skills-lock.json`, lui versionné, permet de restaurer.
 
+`assets/beepz-system.png` est ignorée elle aussi : c'est la source haute définition du
+schéma de la page Beepz, 6,5 Mo, et le site ne charge que le `.webp` de 139 Ko qui en est
+tiré. Garde ce partage si tu ajoutes d'autres visuels — les sources lourdes restent hors du
+dépôt, seules les images servies sont versionnées.
+
+## La mise en ligne
+
+Le site est publié sur **GitHub Pages** à chaque push sur `main`, par
+`.github/workflows/pages.yml`. Comme il n'y a ni build ni dépendances, le workflow ne fait
+que téléverser le dépôt tel quel : **le dépôt EST le site**. Un fichier ajouté à la racine
+est en ligne au push suivant, sans rien déclarer nulle part.
+
+`actions/configure-pages` porte `enablement: true`, donc le premier passage active Pages
+lui-même — il n'y a rien à cocher dans les réglages du dépôt.
+
+Deux conséquences à ne pas oublier :
+
+- **le dépôt est public**, c'est ce qui rend Pages gratuit. Tout ce qui est commité ici est
+  lisible de tous, historique compris : pas de clé, pas d'adresse privée, pas de brouillon
+  qu'on ne veut pas voir ;
+- **le site est servi depuis un sous-chemin**, `/portfolio/`, et non depuis la racine du
+  domaine. **Tous les chemins doivent donc rester relatifs** (`assets/photo1.png`, pas
+  `/assets/photo1.png`) : un chemin absolu marche en local et casse en ligne. C'est déjà le
+  cas partout, garde-le.
+
+Jekyll ne tourne pas — le déploiement passe par `upload-pages-artifact`, pas par la
+publication depuis une branche — donc pas besoin de `.nojekyll` et un fichier commençant par
+un souligné serait servi normalement.
+
 ## Système de design
 
 ### Palette : quatre couleurs
