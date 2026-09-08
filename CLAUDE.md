@@ -49,15 +49,19 @@ dépôt, seules les images servies sont versionnées.
 
 ## La mise en ligne
 
-Le site est publié sur **GitHub Pages** à chaque push sur `main`, par
-`.github/workflows/pages.yml`. Comme il n'y a ni build ni dépendances, le workflow ne fait
-que téléverser le dépôt tel quel : **le dépôt EST le site**. Un fichier ajouté à la racine
-est en ligne au push suivant, sans rien déclarer nulle part.
+Le site est publié sur **GitHub Pages**, en *Deploy from a branch* : branche `main`, dossier
+racine. Il n'y a **ni workflow ni étape de build** — GitHub sert le dépôt tel quel, donc
+**le dépôt EST le site**. Un fichier ajouté à la racine est en ligne peu après le push, sans
+rien déclarer nulle part.
 
-`actions/configure-pages` porte `enablement: true`, donc le premier passage active Pages
-lui-même — il n'y a rien à cocher dans les réglages du dépôt.
+Il y a eu un workflow `.github/workflows/pages.yml` ici, retiré : il misait sur
+`actions/configure-pages` avec `enablement: true` pour activer Pages tout seul, et cette
+étape échoue sur `Create Pages site failed. Error: Resource not accessible by integration`.
+Le `GITHUB_TOKEN` d'un workflow ne peut pas **créer** un site Pages qui n'existe pas encore,
+même avec la permission `pages: write`. Le passage par Settings → Pages est obligatoire de
+toute façon, donc la source par branche fait le même travail sans rien à maintenir.
 
-Deux conséquences à ne pas oublier :
+Trois conséquences à ne pas oublier :
 
 - **le dépôt est public**, c'est ce qui rend Pages gratuit. Tout ce qui est commité ici est
   lisible de tous, historique compris : pas de clé, pas d'adresse privée, pas de brouillon
@@ -65,11 +69,10 @@ Deux conséquences à ne pas oublier :
 - **le site est servi depuis un sous-chemin**, `/portfolio/`, et non depuis la racine du
   domaine. **Tous les chemins doivent donc rester relatifs** (`assets/photo1.png`, pas
   `/assets/photo1.png`) : un chemin absolu marche en local et casse en ligne. C'est déjà le
-  cas partout, garde-le.
-
-Jekyll ne tourne pas — le déploiement passe par `upload-pages-artifact`, pas par la
-publication depuis une branche — donc pas besoin de `.nojekyll` et un fichier commençant par
-un souligné serait servi normalement.
+  cas partout, garde-le ;
+- **Jekyll tourne** sur ce mode de publication, d'où le `.nojekyll` à la racine. Sans lui, un
+  fichier ou un dossier commençant par un souligné serait ignoré et ne serait jamais servi.
+  Ne le supprime pas.
 
 ## Système de design
 
@@ -152,9 +155,18 @@ signale un contenu encore à écrire. Le parcours garde ses propres `.trail__eye
 `.trail__heading` — non plus pour inverser ses couleurs, mais parce que sa tête est posée
 sur la carte et non dans le rythme vertical de `.section`.
 
+**Trois plafonds tiennent toute la typographie du site**, demandés par Vincent après que
+l'échelle a paru zoomée : **titres 50px, œils et sous-titres 30px, textes 20px**. Ils valent
+partout — accueil, parcours et pages projet — avec **une seule exception, les deux titres de
+couverture** (`.hero__title-line` de l'accueil, ≈113px en `cqw` et calé sur la maquette Figma ;
+`.case-hero__title`, 112px), qui sont du display et restent hors barème. Quand tu abaisses un
+plafond, **remets le coefficient `vw` à l'échelle** (`k × plafond / ancien max`) au lieu de
+couper le seul maximum : la rampe atteint alors son plafond à la même largeur de fenêtre
+qu'avant, et le responsive ne bouge pas.
+
 **Les quatre sections portent LA MÊME tête**, et c'est une consigne : œil en Garamond italique
-`clamp(20px, 2.9vw, 41px)`, numéro d'ordre en vert, titre en Clash bold et en casse normale
-`clamp(32px, 4.6vw, 66px)`, le tout centré. Il y a eu trois têtes différentes sur cette page —
+`clamp(20px, 2.12vw, 30px)`, numéro d'ordre en vert, titre en Clash bold et en casse normale
+`clamp(32px, 3.48vw, 50px)`, le tout centré. Il y a eu trois têtes différentes sur cette page —
 capitales espacées roses pour projets et contact, Garamond 18/25px pour À propos et le
 parcours, puis la grande version de la maquette arrivée par les projets. **Ne les fais pas
 revenir.**
@@ -164,11 +176,11 @@ Les sélecteurs sont **groupés exprès** dans une seule déclaration
 ne peut diverger sans qu'on le voie. Ne redonne pas une taille propre à l'une des trois
 familles de classes — c'est exactement ce qui avait produit les trois têtes.
 
-**Le rapport titre / œil vaut ~2,1**, celui de la maquette : mesuré au rapport des deux
-longueurs de texte, 3,05 contre 3,06. Les trois termes du `clamp` de l'œil valent 0,62 fois
-ceux du titre, **borne basse comprise** — sinon la proportion se perd sous ~700px de large, là
-où les deux clamps se figent sur leur minimum. Si tu retouches les tailles, garde le rapport
-plutôt que les valeurs.
+**Le rapport titre / œil vaut ~1,7**, et les termes du `clamp` de l'œil valent 0,60 fois ceux
+du titre — **borne basse comprise** (20/32 = 0,625), sinon la proportion se perd sous ~700px de
+large, là où les deux clamps se figent sur leur minimum. C'était 0,62 quand la tête montait à
+66/41 ; les deux plafonds (50 et 30) le ramènent à 0,60, un écart de 3 % qui ne se voit pas.
+Si tu retouches les tailles, garde le rapport plutôt que les valeurs.
 
 Deux exceptions, et elles sont motivées :
 
@@ -176,7 +188,7 @@ Deux exceptions, et elles sont motivées :
   de la carte et non un bloc dans le flux ; son œil est aussi légèrement retenu (crème à 82 %)
   parce qu'il est posé sur le terrain ;
 - **le titre de couverture du parcours est une vignette** : le carton fait au plus 330px de
-  large, où 66px ne tiendrait pas. Il se règle donc sur `--card-w` et non sur la largeur de
+  large, où 50px ne tiendrait pas. Il se règle donc sur `--card-w` et non sur la largeur de
   l'écran (`calc(var(--card-w) * .089)`, et `.055` pour l'œil — le même rapport 0,62). Ce n'est
   pas une quatrième taille, c'est le même titre en réduction.
 
@@ -312,7 +324,7 @@ depuis Figma, vérifie que son alpha remplit toute l'image. Et le libellé est e
 ## La section À propos (`#a-propos`)
 
 **C'est la seule section bâtie comme ça, et c'est voulu** : l'œil (`.about__eyebrow`) et le
-titre sont **centrés**, le texte repasse **à gauche** dans une colonne de 1040px. Ne la
+titre sont **centrés**, le texte repasse **à gauche** dans une colonne de 780px. Ne la
 réaligne pas sur les autres sections, qui sont entièrement à gauche.
 
 **Sa hiérarchie a longtemps été inversée** — tête volontairement plus petite que le texte
@@ -322,9 +334,18 @@ commune (voir « Les quatre sections portent LA MÊME tête »). Le titre y est 
 son texte, comme partout ailleurs. `.about__eyebrow` et `.about__title` n'ont plus de règles à
 eux — ne leur en redonne pas.
 
-Ce qui reste vrai : le corps monte à 30px (`clamp(17px, 1.98vw, 30px)`, contre 18px pour le
-reste du site) et le chapô à 32px, dans une colonne calée sur ~70 signes par ligne. Si tu
-changes le corps, change la largeur de colonne avec : les deux tiennent la mesure.
+Ce qui reste vrai : le corps est un peu plus grand qu'ailleurs — `clamp(18px, 1.32vw, 20px)`,
+contre 18px fixes pour le reste du site — et le chapô monte à 30px, dans une colonne calée sur
+**~74 signes par ligne**. Si tu changes le corps, change la largeur de colonne avec : les deux
+tiennent la mesure, et c'est une règle qui a déjà servi. En passant le corps de 30 à 20px, la
+colonne de 1040px donnait 93 signes par ligne, très au-delà des 60-75 lisibles ; elle est
+descendue à 780px dans le même mouvement.
+
+**Cette largeur est un token, `--about-col`, et pas un nombre écrit deux fois.**
+`.trail__lead-inner` DOIT porter exactement la même valeur : le fil pointillé du parcours part
+de sous le bouton CV, donc il recopie la boîte d'À propos (vérifié après le changement — l'axe
+du trait tombe à 64px du bord du bouton, la valeur documentée). Deux nombres en dur auraient
+fini par diverger.
 
 `.about__head` ne porte **aucune largeur maximale**, ce qui évite de mal recentrer les titres
 longs.
@@ -457,7 +478,7 @@ Hauteur nulle pour ne pas décaler la scène d'un pixel, et placé **avant** ell
 tous deux en `z-index: auto` — pour que la fenêtre peigne par-dessus.
 
 `.trail__lead` **recopie les boîtes d'À propos** (`max-width: 1512px`, le même `padding-inline`,
-puis une colonne de 1040px) : le fil part ainsi exactement sous le bouton sans un seul calcul de
+puis la même colonne, `--about-col`) : le fil part ainsi exactement sous le bouton sans un seul calcul de
 centrage à refaire.
 
 **Un seul tracé, et il est DÉFORMÉ — c'est le point à comprendre.** Le fil doit couvrir deux
@@ -479,7 +500,7 @@ renormalisé pour que son départ tombe en (0,0) et son arrivée en (486,415) : 
 rien à calculer pour placer ses deux bouts, on dimensionne la boîte et c'est tout.
 
 - en largeur, `calc(50% - 64px + var(--card-w) * 0.08)` : du bouton (62 + 2 = 64px, l'axe du
-  trait) jusqu'au carton. La colonne de 1040px étant centrée comme lui, **sa moitié EST le
+  trait) jusqu'au carton. La colonne (`--about-col`) étant centrée comme lui, **sa moitié EST le
   centre du carton** — d'où le « 50 % », sans un seul calcul de centrage ;
 - en hauteur, jusqu'à 70px SOUS le bord haut du carton, pour finir derrière lui.
 
