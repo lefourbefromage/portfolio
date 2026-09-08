@@ -1831,6 +1831,80 @@ a.project:hover {
   color: var(--cream);
 }
 
+/* ---------- Une section à deux colonnes : le texte, et son illustration ---------- */
+.case-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, .62fr);
+  gap: clamp(28px, 4vw, 72px);
+  align-items: start;
+  /* L'écart sous la tête de section vivait sur `.case-body` ; il remonte ici, sinon
+     annuler la marge du corps (ci-dessous) collerait le chapô au titre. */
+  margin-top: clamp(26px, 4vh, 44px);
+}
+
+/* La colonne de lecture garde sa mesure : à 1440px elle tombe à ~70 signes, donc
+   `max-width: 68ch` ne mord pas. C'est la contrainte à revérifier si tu changes le
+   rapport des colonnes. */
+.case-split .case-body { margin-top: 0; }
+
+.case-aside { margin: 0; }
+
+.case-aside__caption {
+  margin: 16px 0 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: rgb(var(--cream-rgb) / .55);
+}
+
+/* --- Le schéma des trois surfaces --- */
+/* Il illustre le dernier paragraphe et rien d'autre : chaque surface est dessinée
+   dans un langage différent — trait plein, tireté, pointillé — avec un accent de
+   couleur différent. C'est l'envers du fil rouge : le trait qui les relie est ici
+   rompu, et il devient continu à la section suivante. Tout est dans la palette. */
+.gap-diagram {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.gap-frame {
+  fill: none;
+  stroke: rgb(var(--cream-rgb) / .55);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.gap-frame--dashed { stroke-dasharray: 7 5; stroke: rgb(var(--cream-rgb) / .45); }
+.gap-frame--dotted { stroke-dasharray: 1 6;  stroke: rgb(var(--cream-rgb) / .38); }
+
+.gap-bar { fill: rgb(var(--cream-rgb) / .16); }
+.gap-dot { fill: rgb(var(--cream-rgb) / .3); }
+
+/* Trois accents différents pour trois surfaces qui ne parlent pas la même langue. */
+.gap-accent-green { fill: var(--green); }
+.gap-accent-pink { fill: var(--pink); }
+
+/* Le fil rompu : des moignons, et le vide entre eux. */
+.gap-thread {
+  fill: none;
+  stroke: rgb(var(--cream-rgb) / .3);
+  stroke-width: 2;
+  stroke-dasharray: 5 5;
+  stroke-linecap: round;
+}
+
+.gap-break { fill: rgb(var(--cream-rgb) / .3); }
+
+.gap-label {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  fill: rgb(var(--cream-rgb) / .5);
+}
+
 /* ---------- Le fil rouge ----------
    Le pivot de la page : il dit pourquoi les trois volets n'en font qu'un, AVANT
    qu'on les lise. Si tu le retires, la page redevient une liste de livrables. */
@@ -2457,7 +2531,12 @@ a.project:hover {
 
   /* Une colonne : le texte d'abord, les plaques en dessous — elles restent, c'est
      tout l'intérêt de la manœuvre. */
-  .case-hero__grid { grid-template-columns: minmax(0, 1fr); }
+  .case-hero__grid,
+  .case-split { grid-template-columns: minmax(0, 1fr); }
+
+  /* Le schéma ne prend pas toute la largeur en dessous du texte : il est petit par
+     nature, l'étirer le rendrait grêle. */
+  .case-aside { max-width: 420px; margin-top: clamp(24px, 4vh, 40px); }
   .case-hero__plates { margin-top: clamp(24px, 4vh, 40px); }
 }
 
