@@ -66,6 +66,13 @@ a { text-decoration: none; color: inherit; }
   --font-body: "Inter", system-ui, sans-serif;
   --font-serif: "EB Garamond", Georgia, serif;   /* en italique seulement */
 
+  /* --- La colonne de lecture d'À propos ---
+     Elle tient la mesure avec la taille du corps : à 20px, 1040px donnait 93
+     signes par ligne, très au-delà des 60-75 lisibles. `.trail__lead-inner`
+     DOIT porter la même valeur — le fil pointillé part de son bouton — d'où le
+     token plutôt que deux nombres à tenir d'accord. */
+  --about-col: 780px;
+
   /* --- Motion ---
      Une seule courbe, forte, pour tout ce qui ENTRE (apparitions, révélations).
      Les easings intégrés du navigateur sont trop mous ; celle-ci démarre franc
@@ -591,7 +598,7 @@ body {
 .trail__lead-inner {
   position: relative;
   height: 0;
-  max-width: 1040px;
+  max-width: var(--about-col);
   margin-inline: auto;
 }
 
@@ -1113,7 +1120,7 @@ body {
   font-family: var(--font-serif);
   font-style: italic;
   margin: 0 0 8px;
-  font-size: clamp(20px, 2.9vw, 41px);
+  font-size: clamp(20px, 2.12vw, 30px);
   letter-spacing: 0;
   text-transform: none;
   color: var(--cream);
@@ -1129,7 +1136,7 @@ body {
 .trail__heading {
   font-family: var(--font-display);
   margin: 0;
-  font-size: clamp(32px, 4.6vw, 66px);
+  font-size: clamp(32px, 3.48vw, 50px);
   font-weight: 700;
   line-height: 1.04;
   text-transform: none;
@@ -1300,13 +1307,13 @@ a.project:hover {
 /* --- Le texte --- */
 .about__body {
   position: relative;
-  max-width: 1040px;
+  max-width: var(--about-col);
   margin: clamp(40px, 6vh, 76px) auto 0;
 }
 
 .about__body p {
   margin: 0 0 clamp(22px, 2.6vw, 38px);
-  font-size: clamp(17px, 1.98vw, 30px);
+  font-size: clamp(18px, 1.32vw, 20px);
   line-height: 1.4;
   color: rgb(var(--cream-rgb) / .72);
 }
@@ -1314,7 +1321,7 @@ a.project:hover {
 /* Le chapô : même colonne, mais en Clash et en crème pleine. */
 .about__body .about__lede {
   font-family: var(--font-display);
-  font-size: clamp(20px, 2.1vw, 32px);
+  font-size: clamp(20px, 1.97vw, 30px);
   font-weight: 600;
   line-height: 1.25;
   color: var(--cream);
@@ -1717,7 +1724,7 @@ a.project:hover {
 .case-hero__claim {
   margin: clamp(18px, 2.6vh, 30px) 0 0;
   max-width: 54ch;
-  font-size: clamp(17px, 1.5vw, 23px);
+  font-size: clamp(17px, 1.3vw, 20px);
   line-height: 1.5;
   color: rgb(var(--cream-rgb) / .74);
 }
