@@ -16,9 +16,27 @@
   font-display: swap;
 }
 
+/* Uniquement l'italique : c'est le seul dessin employé (œils de section et mots en
+   avant). Sous-ensemble latin + accents français, l'axe wght va de 400 à 800. */
+@font-face {
+  font-family: "EB Garamond";
+  src: url("../fonts/EBGaramond-Italic-Variable.woff2") format("woff2-variations");
+  font-weight: 400 800;
+  font-style: italic;
+  font-display: swap;
+}
+
 /* ---------- Reset ---------- */
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
+/* En s'en allant, les photos du tas grossissent et dérivent hors du cadre :
+   sans ça, un ascenseur horizontal apparaît. `clip` et non `hidden` — ni l'un
+   ni l'autre ne crée de conteneur de défilement ici, donc le sticky du parcours
+   n'est pas affecté (vérifié). Il en faut sur `main` et pas seulement sur
+   `html` : la règle du root ne retient pas ce débordement-là, seul le clip du
+   conteneur pleine largeur l'arrête. */
+html,
+main { overflow-x: clip; }
 @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
 img { display: block; max-width: 100%; }
 a { text-decoration: none; color: inherit; }
@@ -42,6 +60,7 @@ a { text-decoration: none; color: inherit; }
   /* --- Typographie : Clash pour les titres et labels, Inter pour le texte --- */
   --font-display: "Clash Display", system-ui, sans-serif;
   --font-body: "Inter", system-ui, sans-serif;
+  --font-serif: "EB Garamond", Georgia, serif;   /* en italique seulement */
 }
 
 body {
@@ -110,7 +129,14 @@ body {
   position: relative;
   container-type: inline-size;
   container-name: panel;
-  aspect-ratio: 1472 / 599;
+  /* Le panneau fait presque 2/1 (2,016), mais le CADRE FIGMA reste 1472 × 599 :
+     c'est lui, et pas la hauteur du panneau, qui sert de repère aux % du décor
+     et aux `cqw`. La hauteur en plus s'ouvre EN DESSOUS, sans rien déplacer —
+     c'est ce qui laisse la place au « Scroll to explore » et au tas de photos.
+     Ne remets pas le décor sur la hauteur du panneau : les onze éléments de
+     .hero__decor descendraient tous proportionnellement. */
+  --frame: 1472 / 599;
+  aspect-ratio: 1472 / 730;
   border-radius: 20px;
   overflow: hidden;
   background: linear-gradient(to bottom, var(--navy), var(--ink));
@@ -140,10 +166,16 @@ body {
 }
 
 /* ---------- Hero content (text stack) ---------- */
+/* Le contenu et le décor occupent le cadre Figma, calé en haut du panneau. */
+.hero__content,
+.hero__decor {
+  position: absolute;
+  inset: 0 0 auto 0;
+  aspect-ratio: var(--frame);
+}
+
 .hero__content {
-  position: relative;
   z-index: 2;
-  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -223,8 +255,6 @@ body {
 
 /* ---------- Decorative stickers ---------- */
 .hero__decor {
-  position: absolute;
-  inset: 0;
   z-index: 3;
   pointer-events: none;
 }
@@ -240,9 +270,15 @@ body {
 }
 
 .decor--path-left {
-  left: 11.61%;
-  top: 43.66%;
-  width: 10.19%;
+  /* Le d de path-3.svg a été redessiné pour que son DÉPART tombe sous le
+     sticker Figma (18,01 % / 47,50 %) et son ARRIVÉE derrière Affinity
+     (17,40 % / 68,89 %). Le départ est désormais à DROITE de l'arrivée, ce
+     qu'aucun réglage de boîte ne pouvait produire : les deux extrémités du
+     tracé d'origine allaient dans l'autre sens. Ces trois valeurs et le d
+     vont ensemble — régénère les deux, ne retouche pas l'une seule. */
+  left: 10.81%;
+  top: 43.58%;
+  width: 7.40%;
   height: auto;
 }
 
@@ -269,28 +305,190 @@ body {
   cursor: grabbing;
 }
 
-.sticker-1 { left: 19.5%;  top: 21%;    width: 7%;   aspect-ratio: 1/1;     --rot: -15.96deg; }
-.sticker-2 { left: 76.04%; top: 32%;    width: 6%;   aspect-ratio: 300/348; --rot: -13.36deg; }
-.sticker-3 { left: 82.18%; top: 65.32%; width: 5.2%; aspect-ratio: 300/353; --rot: -15deg; }
-.sticker-4 { left: 75.18%; top: 66.32%; width: 4.2%; aspect-ratio: 300/351; --rot: -20.14deg; }
-.sticker-5 { left: 36%;    top: 43%;    width: 4.5%; aspect-ratio: 300/353; --rot: 12.37deg; }
-.sticker-6 { left: 28.5%;  top: 63%;    width: 3.8%; aspect-ratio: 300/351; --rot: -12.11deg; }
-.sticker-7 { left: 77.36%; top: 65.99%; width: 6%;   aspect-ratio: 400/482; --rot: 9.87deg; }
-.sticker-8 { left: 22.14%; top: 57%;    width: 5%;   aspect-ratio: 400/488; --rot: 0deg; }
-.sticker-9 { left: 61%;    top: 42%;    width: 5.5%; aspect-ratio: 400/425; --rot: 8.22deg; }
-.sticker-10 { left: 18.14%; top: 46%;   width: 4.2%; aspect-ratio: 300/352; --rot: 15.73deg; }
+/* Sept stickers, positionnés en % du cadre 1472x599 (cf. CLAUDE.md, « Le hero »).
+   L'aspect-ratio de chacun est celui de son webp détouré : les images sont
+   rognées au plus près, donc la boîte CSS colle au dessin, sans marge morte. */
+.sticker-1 { left: 16.06%; top: 40.23%; width: 3.9%;  aspect-ratio: 461/700; --rot:  -6deg; }   /* Figma, centré sur le départ de .decor--path-left */
+.sticker-2 { left: 78.5%;  top: 32%;   width: 5.8%;  aspect-ratio: 19/20;   --rot: -11deg; }   /* HTML */
+.sticker-3 { left: 79%;    top: 63%;   width: 10.1%; aspect-ratio: 350/239; --rot:  10deg; }   /* Sass & Less */
+.sticker-4 { left: 28.5%;  top: 49.2%; width: 8.3%;  aspect-ratio: 700/423; --rot: -10deg; }   /* Adobe */
+.sticker-5 { left: 57.3%;  top: 55.7%; width: 5.9%;  aspect-ratio: 699/700; --rot:   8deg; }   /* Github */
+.sticker-6 { left: 14.47%; top: 64.58%; width: 5.85%; aspect-ratio: 700/607; --rot:  -6deg; }   /* Affinity */
+.sticker-7 { left: 41.5%;  top:  6%;   width: 5.2%;  aspect-ratio: 489/700; --rot:  -8deg; }   /* UI/UX */
+
+/* ---------- Le tas de photos : à cheval sur le hero et À propos ----------
+   Même façon de faire que les stickers du hero : tout est posé en pourcentage
+   d'un cadre de référence — ici 1472 × 490, calé sur la maquette Figma. Le
+   « Scroll to explore », le tracé pointillé et les sept photos vivent dans ce
+   même cadre, donc la composition se met à l'échelle d'un seul bloc.
+
+   Les PNG sont à plat : plus de rotation ni d'ombre cuites dedans, seulement le
+   cadre crème. La rotation de repos vit donc dans `--rot` de chaque règle
+   `.pile__photo--N` (jamais dans un `transform`, comme pour les stickers) et
+   l'ombre est portée par `box-shadow`. */
+.pile {
+  position: relative;
+  z-index: 2;
+  max-width: 1512px;
+  margin-inline: auto;
+  padding-inline: clamp(10px, 1.3vw, 20px);
+  pointer-events: none;
+  /* De combien le tas remonte sur le hero, en % de la largeur du cadre :
+     181 / 1472. Ça pose le « Scroll to explore » dans les 259px que le hero
+     laisse libres SOUS ses badges (90px de dégagement) et fait mordre le haut
+     des photos de 75px sur le bord bas du panneau. Une seule marge porte la remontée (voir .pile__scene) — deux
+     marges négatives empilées s'effondreraient en une, la plus grande. */
+  --bite: 12.3%;
+}
+
+.pile__scene {
+  position: relative;
+  container-type: inline-size;
+  aspect-ratio: 1472 / 490;
+  /* La morsure, plus le padding bas du hero qu'il faut annuler pour repartir du
+     bas du cadre lui-même. Le % est mesuré sur .pile — plafonné à 1472, pas sur
+     la fenêtre — donc le raccord suit l'échelle du hero à toute largeur. */
+  margin-top: calc(-1 * var(--bite) - clamp(20px, 3vw, 40px));
+  --out: 0;
+}
+
+/* Le tracé pointillé descend du « Scroll to explore » jusqu'à la section
+   suivante. `z-index: 0` le met sous les quatre couches de photos : il
+   disparaît derrière celle du randonneur puis ressort en dessous, comme sur la
+   maquette. Le viewBox est celui du cadre, au même rapport : pas de
+   déformation, et les coordonnées du `d` sont donc celles du cadre. */
+.pile__line {
+  position: absolute;
+  z-index: 0;
+  /* Le tracé descend 100 unités PLUS BAS que le cadre, dans le padding haut
+     d'À propos, pour mourir juste au-dessus de l'œil de section comme sur la
+     maquette. Son viewBox fait donc 1472 × 590 : même échelle que le cadre,
+     donc les coordonnées du `d` restent celles du cadre. Rien ne le rogne —
+     `container-type` applique une containment de layout, pas de peinture. */
+  inset: 0 0 -20.41% 0;
+}
+
+.pile__line path {
+  fill: none;
+  stroke: var(--cream);
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-dasharray: 15 17;
+}
+
+.pile__hint {
+  position: absolute;
+  z-index: 5;
+  left: 0;
+  right: 0;
+  top: 2.45%;
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: clamp(12px, 1.16cqw, 18px);
+  font-weight: 600;
+  color: var(--pink);
+}
+
+.pile__photo {
+  position: absolute;
+  height: auto;
+  /* L'ombre remplace celle qui était cuite dans les PNG. Elle ne se voit
+     presque pas sur le fond d'encre — c'est sur les photos de dessous qu'elle
+     travaille, et c'est ce qui fait tenir l'empilement. */
+  box-shadow:
+    0 2px 6px rgb(var(--ink-rgb) / .35),
+    0 16px 34px rgb(var(--ink-rgb) / .5);
+  /* Une seule transformation composée : la photo tourne — sa rotation de repos
+     plus le peu qu'elle prend en s'en allant — puis monte. Rien d'autre : pas
+     de zoom, pas de dérive latérale, la sortie est une remontée. Au repos
+     (--out: 0) il ne reste que `--rot`. */
+  transform:
+    translateY(calc(var(--away-y) * var(--out)))
+    rotate(calc(var(--rot) + var(--away-rot) * var(--out)));
+  /* effacée sur le dernier tiers de la sortie */
+  opacity: calc(1 - max(0, var(--out) - .58) * 2.4);
+}
+
+/* left / top / width : % du cadre 1472 × 490.  L'ensemble du collage fait 954
+   de large, soit la largeur du titre du hero (949) — c'est l'échelle voulue,
+   et c'est elle qui a fait diviser les tailles par 1,5 après une première
+   lecture beaucoup trop grande de la maquette.
+
+   --rot : la rotation de repos — tout penche dans le même sens sauf la photo 7,
+   qui contre.  z-index : les quatre couches de la maquette, 1 au fond, 4
+   devant ; ce sont elles qui décident de l'empilement, pas l'ordre du DOM, qui
+   les suit seulement pour que l'animation de chargement pose les photos de
+   l'arrière vers l'avant.  --away-y : de combien la photo monte en s'en allant.
+   Elles ne montent PAS à la même vitesse — de -6vh au fond à -21vh devant — et
+   c'est ce seul décalage qui fait le parallaxe. Les valeurs sont volontairement
+   basses : on doit voir les photos s'échapper doucement, pas décoller. */
+.pile__photo--1 { z-index: 1; left: 18.63%; top: 29.16%; width: 22.23%; --rot:  -8deg; --away-y:  -6vh; --away-rot: -2deg; }
+.pile__photo--7 { z-index: 1; left: 59.76%; top: 27.90%; width: 21.39%; --rot:  12deg; --away-y:  -8vh; --away-rot:  2deg; }
+.pile__photo--4 { z-index: 2; left: 38.85%; top: 31.55%; width: 19.52%; --rot:  -2deg; --away-y: -11vh; --away-rot: -2deg; }
+.pile__photo--3 { z-index: 3; left: 32.38%; top: 42.63%; width:  9.80%; --rot: -15deg; --away-y: -15vh; --away-rot:  3deg; }
+.pile__photo--6 { z-index: 3; left: 58.61%; top: 48.02%; width: 10.14%; --rot: -10deg; --away-y: -14vh; --away-rot:  4deg; }
+.pile__photo--2 { z-index: 4; left: 27.32%; top: 58.76%; width:  7.81%; --rot: -12deg; --away-y: -19vh; --away-rot: -4deg; }
+.pile__photo--5 { z-index: 4; left: 54.18%; top: 44.37%; width:  7.34%; --rot: -15deg; --away-y: -21vh; --away-rot:  5deg; }
+
+/* Le tas est en place dès le chargement — il n'est PAS monté au scroll. La
+   seule animation d'arrivée est celle-ci, jouée une fois au chargement : les
+   photos se posent de l'arrière vers l'avant. Elle passe par la propriété
+   `translate`, pas par `transform`, pour ne pas écraser la transformation
+   composée ci-dessus — les deux se composent d'elles-mêmes. */
+@keyframes pile-land {
+  from { opacity: 0; translate: 0 26px; }
+  to { opacity: 1; translate: 0 0; }
+}
+
+@keyframes pile-appear {
+  from { opacity: 0; }
+}
+
+.pile__photo { animation: pile-land .75s cubic-bezier(.16, .84, .34, 1) backwards; }
+.pile__photo:nth-of-type(1) { animation-delay: 80ms; }
+.pile__photo:nth-of-type(2) { animation-delay: 150ms; }
+.pile__photo:nth-of-type(3) { animation-delay: 220ms; }
+.pile__photo:nth-of-type(4) { animation-delay: 290ms; }
+.pile__photo:nth-of-type(5) { animation-delay: 360ms; }
+.pile__photo:nth-of-type(6) { animation-delay: 430ms; }
+.pile__photo:nth-of-type(7) { animation-delay: 500ms; }
+
+.pile__line,
+.pile__hint { animation: pile-appear .6s ease 620ms backwards; }
 
 /* ---------- Parcours : la carte topographique ---------- */
 .trail {
   position: relative;
-  /* 100vh d'entrée + 417vh de piste épinglée + 100vh de sortie. Ce rapport cale
-     deux rendez-vous : l'entrée dans l'aimant de la PREMIÈRE carte à l'instant
-     où la section achève de se poser, et la sortie de l'aimant de la DERNIÈRE
-     quand elle commence à se retirer. La vitesse, elle, ne dépend pas de cette
-     valeur — fraction() mesure sur toute la traversée — donc la changer décale
-     seulement ces deux rendez-vous, sans casser la continuité. Pas de hauteur
-     réduite en mobile : les 100vh d'entrée et de sortie ne rétrécissent pas. */
-  height: 617vh;
+  /* La traversée se lit 100 + 717 = 817vh, et la hauteur de la piste en vaut 717 :
+       100vh — la section entre par le bas, le carton monte jusqu'au centre ;
+       717vh — la marche, épinglée puis en sortie, exactement le budget d'origine.
+     La RÉVÉLATION n'a pas de budget à elle : elle se superpose aux 80 premiers vh
+     de la marche (voir REVEAL_VH dans le JS). Le marcheur avance donc pendant que
+     la fenêtre s'ouvre, et il est presque sur la première carte quand elle finit
+     de s'ouvrir — c'est ce que règle l'écart entre REVEAL_VH et les 100vh que coûte
+     l'amorce. Changer REVEAL_VH ne change PAS cette hauteur : ce sont deux choses
+     indépendantes depuis que la marche démarre à l'épinglage. */
+  height: 717vh;
+
+  /* Le parcours REMONTE sur le bas d'À propos, et ce n'est pas un ajustement
+     esthétique : c'est ce qui rend le fil pointillé de longueur constante.
+
+     Le carton se tient à 50vh sous le haut de la section, donc sans ça le trajet
+     du bouton « CV » jusqu'à lui grandissait avec la hauteur de la fenêtre — 465px
+     sur un portable, plus de 1000 sur un grand écran, dont 640 de descente droite.
+     En remontant la section de `50vh − 260px`, ce terme disparaît du calcul : la
+     descente droite tombe à 60–130px de 900 × 600 à 2560 × 1440, quelle que soit la
+     hauteur. Le `max(0px, ...)` évite de POUSSER la section vers le bas sur une
+     fenêtre de moins de 520px de haut.
+
+     La scène est transparente jusqu'à l'ouverture, donc le recouvrement ne cache
+     rien : le texte d'À propos continue de défiler dessous, normalement. Toute
+     position qui se mesure depuis le haut de la section doit en revanche ajouter
+     `--pull` — c'est le cas de `--lead-top` et `--lead-run`. */
+  --pull: max(0px, calc(50vh - 260px));
+  margin-top: calc(-1 * var(--pull));
+
   --rot: 0deg;
   --zoom: 1;
 }
@@ -301,8 +499,111 @@ body {
   height: 100vh;
   overflow: hidden;
   isolation: isolate;
-  background: var(--cream);
   color: var(--ink);
+
+  /* --open : 0 = carton fermé, 1 = carte plein écran. C'est le SEUL nombre que
+     le JS écrit ici ; toute la géométrie de l'ouverture est ci-dessous. */
+  --open: 0;
+  --card-w: clamp(200px, 24vw, 330px);
+  --card-h: calc(var(--card-w) / 1.57);
+  --frame: clamp(10px, 1vw, 18px);   /* la marge d'encre une fois grand ouvert */
+}
+
+/* Pas de fond ici mais sur la fenêtre : hors d'elle, on doit voir l'encre de la
+   page, sinon le carton ne se détache de rien. */
+.trail__window {
+  position: absolute;
+  inset: 0;
+  background: var(--cream);
+  /* Le masque, interpolé entièrement en CSS entre les deux états. Les % se
+     résolvent sur la boîte de la fenêtre — hauteur pour haut/bas, largeur pour
+     les côtés — donc le carton reste centré à toute taille d'écran. La carte
+     dessous n'est pas transformée : c'est bien la fenêtre qui s'ouvre. */
+  clip-path: inset(
+    calc((50% - var(--card-h) / 2) * (1 - var(--open)) + var(--frame) * var(--open))
+    calc((50% - var(--card-w) / 2) * (1 - var(--open)) + var(--frame) * var(--open))
+    round calc(10px + 12px * var(--open))
+  );
+}
+
+/* --- le fil qui vient d'À propos, et qui se fige avec la scène --- */
+/* `sticky` sur un bloc de hauteur nulle, posé en tête de section : il se colle en
+   haut de l'écran à l'instant PRÉCIS où la scène s'épingle, donc au début de la
+   révélation. Avant, il défile avec la page et reste accroché sous le bouton « CV »
+   d'À propos ; après, il ne bouge plus, et le carton le recouvre en grandissant.
+   Hauteur nulle : il ne décale pas la scène d'un pixel. Il est avant elle dans le
+   DOM et tous deux sont en `z-index: auto`, donc la fenêtre peint par-dessus — ne
+   les réordonne pas. */
+.trail__lead {
+  position: sticky;
+  top: 0;
+  height: 0;
+  /* Mêmes boîtes qu'À propos (.section puis .about__body) : le fil part ainsi
+     exactement sous le bouton, sans un seul calcul de centrage à refaire. */
+  box-sizing: border-box;
+  max-width: 1512px;
+  margin-inline: auto;
+  padding-inline: clamp(20px, 2.6vw, 40px);
+
+  --hook-w: clamp(400px, calc(55vw - 100px), 536px);
+  --hook-h: calc(var(--hook-w) * 280 / 486);
+  /* Le haut du fil : sous le bouton, donc au-dessus du haut de la section de tout
+     le padding bas d'À propos moins les 26px de dégagement — et moins la remontée
+     de la section, qui rapproche les deux d'autant. */
+  --lead-top: calc(26px - clamp(120px, 18vh, 240px) + var(--pull));
+  /* Ce que la descente droite doit couvrir. La distance totale se lit : remonter
+     jusqu'au bouton, redescendre au centre du carton (50vh), remonter sa
+     demi-hauteur pour tomber sur son bord haut (d'où le /3,14 — deux fois le
+     rapport 1,57 du carton), puis 70px de mieux pour finir DERRIÈRE lui. Le reste
+     est pour la boucle. */
+  --lead-run: max(0px, calc(
+    clamp(120px, 18vh, 240px) - 26px + 50vh
+    - clamp(200px, 24vw, 330px) / 3.14 + 70px - var(--hook-h) - var(--pull)
+  ));
+}
+
+.trail__lead-inner {
+  position: relative;
+  height: 0;
+  max-width: 1040px;
+  margin-inline: auto;
+}
+
+.trail__lead-run,
+.trail__lead-hook { position: absolute; }
+
+.trail__lead-run {
+  left: 62px;      /* dans l'axe du bouton, à un tiers de sa largeur */
+  top: var(--lead-top);
+  width: 4px;
+  height: var(--lead-run);
+}
+
+.trail__lead-hook {
+  left: 56px;
+  top: calc(var(--lead-top) + var(--lead-run));
+  width: var(--hook-w);
+  aspect-ratio: 486 / 280;
+}
+
+.trail__lead-run path,
+.trail__lead-hook path {
+  fill: none;
+  stroke: var(--cream);
+  stroke-linecap: round;
+  /* Épaisseur et tirets en PIXELS D'ÉCRAN, pas en unités de viewBox : ces SVG-ci
+     sont agrandis alors que celui du tas de photos est réduit (~0,7), si bien que
+     le même trait de 5 sortait à plus du double ici. Les valeurs sont calées sur le
+     rendu du fil du tas, pas sur les siennes.
+
+     C'est aussi ce qui rend la descente droite possible en `preserveAspectRatio
+     ="none"` : un segment vertical étiré verticalement reste un segment vertical,
+     donc ni bouts ronds en biseaux ni tirets écrasés. Ne mets PAS ce
+     preserveAspectRatio sur la boucle — sur un tracé courbe, l'étirement fait
+     partir les bouts en biseaux, non-scaling-stroke ou pas (essayé, retiré). */
+  vector-effect: non-scaling-stroke;
+  stroke-width: 4;
+  stroke-dasharray: 11 13;
 }
 
 /* --- the map that slides, turns and zooms under you --- */
@@ -420,11 +721,12 @@ body {
 }
 
 .trail__stop-year {
-  font-family: var(--font-display);
+  font-family: var(--font-serif);
+  font-style: italic;
   display: block;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: .16em;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0;
   color: var(--green);
 }
 
@@ -494,66 +796,130 @@ body {
 }
 
 /* --- overlays --- */
+/* Rien de tout ça ne paraît avant que la carte ne soit ENTIÈREMENT ouverte : le
+   chemin, le marcheur, les étapes, le HUD et le titre en haut à gauche attendent
+   la classe `is-open`, posée par le JS au terme de la révélation. Le fondu est
+   une transition, pas un calcul au scroll : c'est un rendez-vous, pas une
+   progression. Le seul élément lié au scroll est le titre de couverture. */
+.trail__intro,
+.trail__hud,
+.trail__route,
+.trail__you,
+.trail__stops {
+  opacity: 0;
+  transition: opacity .5s ease;
+}
+
+.trail__stage.is-open .trail__intro,
+.trail__stage.is-open .trail__hud,
+.trail__stage.is-open .trail__route,
+.trail__stage.is-open .trail__you,
+.trail__stage.is-open .trail__stops {
+  opacity: 1;
+}
+
+/* Tant que la carte n'est pas ouverte, le bouton du HUD est invisible : il ne
+   doit pas non plus être cliquable ni atteignable au clavier. */
+.trail__hud { pointer-events: none; }
+.trail__stage.is-open .trail__hud { pointer-events: auto; }
+
+/* Le titre de couverture, centré dans le carton. Il s'efface dans le premier
+   tiers de l'ouverture — passé là, le cadre est trop grand pour qu'un texte
+   centré tienne encore lieu de titre, et c'est celui d'en haut à gauche qui
+   prend le relais. L'opacité étant bornée par le navigateur, pas de clamp. */
+.trail__cover {
+  position: absolute;
+  z-index: 4;
+  left: 0;
+  right: 0;
+  top: 50%;
+  translate: 0 -50%;
+  text-align: center;
+  pointer-events: none;
+  opacity: calc(1 - var(--open) * 2.8);
+}
+
 .trail__intro {
   position: absolute;
   left: 0;
   right: 0;
   top: 0;
   z-index: 4;
-  padding: clamp(22px, 4vh, 48px) clamp(20px, 4vw, 56px) 0;
+  padding: clamp(26px, 5vh, 56px) clamp(24px, 4.5vw, 64px) 0;
   pointer-events: none;
 }
 
+/* Garamond italique et casse normale, comme l'œil d'À propos : ce sont les deux
+   têtes de section refaites, elles doivent se répondre. Le numéro en vert. */
 .trail__eyebrow {
-  font-family: var(--font-display);
+  font-family: var(--font-serif);
+  font-style: italic;
   margin: 0 0 4px;
-  font-size: clamp(10px, .9vw, 13px);
-  letter-spacing: .2em;
-  text-transform: uppercase;
-  color: rgb(var(--ink-rgb) / .55);
+  font-size: 18px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--navy);
 }
+
+.trail__eyebrow-num { color: var(--green); }
 
 .trail__heading {
   font-family: var(--font-display);
   margin: 0;
-  font-size: clamp(30px, 4.4vw, 62px);
+  font-size: clamp(21px, 1.65vw, 25px);
   font-weight: 700;
-  line-height: .95;
-  text-transform: uppercase;
-  color: var(--ink);
+  line-height: 1.15;
+  text-transform: none;
+  color: var(--navy);
 }
 
+/* --- le HUD : une pastille d'encre posée sur la carte --- */
 .trail__hud {
   position: absolute;
-  right: clamp(18px, 3vw, 48px);
-  bottom: clamp(18px, 3vh, 40px);
+  right: clamp(16px, 2.4vw, 38px);
+  bottom: clamp(16px, 2.6vh, 38px);
   z-index: 4;
-  display: flex;
-  align-items: center;
-  gap: 14px;
+  padding: clamp(10px, 1vw, 16px) clamp(16px, 1.6vw, 26px) clamp(8px, .8vw, 12px);
+  border-radius: 14px;
+  background: var(--ink);
+  color: var(--cream);
+  text-align: center;
 }
 
+.trail__hud-label {
+  font-family: var(--font-serif);
+  font-style: italic;
+  margin: 0;
+  font-size: clamp(14px, 1.15vw, 19px);
+  line-height: 1.2;
+  color: rgb(var(--cream-rgb) / .88);
+}
+
+.trail__progress-label {
+  font-family: var(--font-display);
+  margin: 0 0 clamp(6px, .7vw, 10px);
+  font-size: clamp(30px, 2.9vw, 46px);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--cream);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Un seul bouton qui montre ses deux états côte à côte — l'état réel est porté
+   par `aria-pressed`, les deux libellés ne sont que du décor. */
 .trail__auto {
   font-family: var(--font-display);
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  padding: 9px 16px;
-  border: 1px solid rgb(var(--ink-rgb) / .22);
-  border-radius: 999px;
-  background: rgb(var(--cream-rgb) / .72);
-  color: rgb(var(--ink-rgb) / .78);
-  font-size: clamp(11px, .9vw, 13px);
+  display: flex;
+  justify-content: center;
+  gap: clamp(10px, 1vw, 16px);
+  width: 100%;
+  padding: clamp(7px, .7vw, 10px) 2px 0;
+  border: 0;
+  border-top: 1px solid rgb(var(--cream-rgb) / .22);
+  background: none;
+  font-size: clamp(11px, .95vw, 14px);
   font-weight: 600;
-  letter-spacing: .08em;
-  text-transform: uppercase;
   cursor: pointer;
-  transition: border-color .2s ease, color .2s ease;
-}
-
-.trail__auto:hover {
-  border-color: rgb(var(--ink-rgb) / .45);
-  color: var(--ink);
 }
 
 .trail__auto:focus-visible {
@@ -561,24 +927,14 @@ body {
   outline-offset: 3px;
 }
 
-.trail__auto-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: rgb(var(--ink-rgb) / .28);
-  transition: background-color .2s ease;
+.trail__auto-opt {
+  color: rgb(var(--cream-rgb) / .45);
+  transition: color .2s ease;
 }
 
-.trail__auto[aria-pressed="true"] .trail__auto-dot { background: var(--green); }
-
-.trail__progress-label {
-  font-family: var(--font-display);
-  margin: 0;
-  font-size: clamp(26px, 3.2vw, 46px);
-  font-weight: 700;
-  color: rgb(var(--ink-rgb) / .2);
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
+.trail__auto[aria-pressed="false"] .trail__auto-opt--manual,
+.trail__auto[aria-pressed="true"] .trail__auto-opt--auto {
+  color: var(--green);
 }
 
 /* ---------- Sections communes ---------- */
@@ -703,49 +1059,116 @@ body {
 }
 
 /* ---------- À propos ---------- */
-.about__grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
-  gap: clamp(28px, 4vw, 72px);
-  margin-top: clamp(36px, 6vh, 68px);
+/* La seule section de la page qui centre son œil et son titre puis repasse le texte
+   à gauche. Elle sert aussi de charnière : le tas de photos mord sur son haut, et le
+   fil pointillé la traverse pour repartir vers le parcours. */
+.about {
+  position: relative;
+  isolation: isolate;
+  padding-top: clamp(40px, 6vh, 84px);      /* le tas occupe déjà le haut, pas de vide en plus */
+  padding-bottom: clamp(120px, 18vh, 240px); /* de la place pour que le fil pointillé s'achève */
 }
 
-.about__text p {
-  margin: 0 0 18px;
-  font-size: clamp(15px, 1.15vw, 18px);
-  line-height: 1.7;
+/* Les deux carrés topo. Ils débordent des deux bords et sont posés en % de la
+   LARGEUR de la section, pas de sa hauteur : le texte est du contenu réel, donc la
+   section grandit quand on l'édite, et un calage vertical en % dériverait. D'où le
+   `top` en px, mesuré depuis le haut pour la gauche et depuis le bas pour la droite. */
+.about__topo {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.about__topo-tile {
+  position: absolute;
+  width: clamp(240px, 36%, 560px);
+  height: auto;
+}
+
+.about__topo-tile--left { left: -7%; top: 4%; }
+.about__topo-tile--right { right: -6%; bottom: 6%; }
+
+/* --- L'œil et le titre, centrés --- */
+.about__head {
+  text-align: center;
+}
+
+/* Garamond, en italique et à taille de texte courant : c'est un chapô manuscrit,
+   pas un label en capitales espacées comme les autres `.section__eyebrow`. */
+.about__eyebrow {
+  font-family: var(--font-serif);
+  font-style: italic;
+  margin: 0 0 10px;
+  font-size: 18px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--cream);
+}
+
+.about__eyebrow-num { color: var(--green); }
+
+/* Casse normale, contrairement aux titres de section en capitales : la maquette
+   veut une phrase, pas une étiquette. */
+.about__title {
+  font-family: var(--font-display);
+  margin: 0;
+  font-size: clamp(21px, 1.65vw, 25px);
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--cream);
+}
+
+/* --- Le texte --- */
+.about__body {
+  position: relative;
+  max-width: 1040px;
+  margin: clamp(40px, 6vh, 76px) auto 0;
+}
+
+.about__body p {
+  margin: 0 0 clamp(22px, 2.6vw, 38px);
+  font-size: clamp(17px, 1.98vw, 30px);
+  line-height: 1.4;
   color: rgb(var(--cream-rgb) / .72);
 }
 
-.about__skills {
-  margin: 0;
-  border-top: 1px solid rgb(var(--cream-rgb) / .14);
-}
-
-.about__skill {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
-  gap: 16px;
-  padding: 16px 0;
-  border-bottom: 1px solid rgb(var(--cream-rgb) / .14);
-}
-
-.about__skill dt {
+/* Le chapô : même colonne, mais en Clash et en crème pleine. */
+.about__body .about__lede {
   font-family: var(--font-display);
-  font-size: 12px;
+  font-size: clamp(20px, 2.1vw, 32px);
   font-weight: 600;
-  letter-spacing: .16em;
-  text-transform: uppercase;
-  color: var(--green);
+  line-height: 1.25;
+  color: var(--cream);
 }
 
-.about__skill dd {
-  margin: 0;
-  font-size: 15px;
-  color: rgb(var(--cream-rgb) / .78);
+/* Les mots mis en avant. Garamond a un œil plus petit qu'Inter : le `1.08em` les
+   remet à la même hauteur apparente, sans quoi ils paraissent en retrait. */
+.about__hl {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 700;
+  font-size: 1.08em;
+  color: var(--cream);
 }
 
-.about__sep { margin: 0 7px; color: rgb(var(--cream-rgb) / .38); }
+/* --- Le bouton CV --- */
+.about__cv {
+  font-family: var(--font-display);
+  display: inline-flex;
+  align-items: center;
+  gap: .7em;
+  margin-top: clamp(6px, 1vh, 14px);
+  padding: 1em 1.8em;
+  border: 1px solid rgb(var(--cream-rgb) / .5);
+  border-radius: 999px;
+  font-size: clamp(14px, 1.35vw, 20px);
+  font-weight: 600;
+  color: var(--cream);
+}
+
+.about__cv-arrow { color: var(--pink); flex: none; }
 
 /* ---------- Contact ---------- */
 .contact__mail {
@@ -826,11 +1249,20 @@ body {
   .site-header { flex-wrap: wrap; row-gap: 12px; }
   .main-nav { order: 3; width: 100%; justify-content: center; }
 
+  /* Le collage déborde des deux côtés plutôt que de rétrécir : la scène fait
+     170 % de large, donc son cadre en aspect-ratio grandit d'autant et les
+     hauteurs suivent. Le débord est clos par le `overflow-x: clip` de html.
+     La morsure sur le hero est remise à l'échelle : -4,62 % × 1,7. */
+  .pile { padding-inline: 0; --bite: 20.9%; }
+  .pile__scene { width: 170%; margin-left: -35%; }
+
   .projects { grid-template-columns: minmax(0, 1fr); }
-  .about__grid { grid-template-columns: minmax(0, 1fr); }
   .site-footer__inner { justify-content: flex-start; }
 
+  /* Pas de cadre fixe en dessous : le panneau reprend une hauteur libre et le
+     contenu le remplit. Le décor y est masqué de toute façon. */
   .hero__panel { aspect-ratio: auto; min-height: 480px; }
+  .hero__content { position: relative; inset: auto; aspect-ratio: auto; height: 100%; }
   .hero__title-line { font-size: 10cqw; }
   .hero__intro { font-size: 3cqw; }
   .hero__badges { font-size: 2.2cqw; }
@@ -839,12 +1271,21 @@ body {
     display: none;
   }
 
+  /* La boucle fait 400px de large au minimum : elle sortirait de l'écran sans
+     jamais atteindre le carton. On la masque, et la descente droite fait tout le
+     trajet — recentrée, parce que le carton l'est aussi et que le bouton, large,
+     passe sous l'axe du milieu à cette largeur-là. Mettre `--hook-h` à zéro suffit
+     à rendre sa pleine longueur à `--lead-run`. */
+  .trail__lead-hook { display: none; }
+  .trail__lead { --hook-h: 0px; }
+  .trail__lead-run { left: 50%; }
+
   /* The map stays interactive on small screens — it is one composited
      transform, so it scrubs smoothly on touch. Just tighten the labels. */
   .trail__stop-card { padding: 7px 12px 9px; border-radius: 8px; }
   .trail__stop-role { font-size: 16px; }
   .trail__stop-org { font-size: 12px; }
-  .trail__stop-year { font-size: 10px; }
+  .trail__stop-year { font-size: 13px; }
   .trail__stop-pin { width: 13px; height: 13px; margin: -6.5px 0 0 -6.5px; }
 }
 
@@ -869,6 +1310,23 @@ body {
   .trail__route,
   .trail__you,
   .trail__hud { display: none; }
+
+  /* Ni fenêtre qui s'ouvre, ni titre de couverture : la frise est là d'emblée.
+     Les fondus pilotés par `is-open` sont annulés — le JS ne pose pas la classe
+     dans ce mode, donc sans ça tout resterait à opacité 0. */
+  .trail__window {
+    position: static;
+    clip-path: none;
+  }
+
+  .trail__cover,
+  .trail__lead { display: none; }
+
+  .trail__intro,
+  .trail__stops {
+    opacity: 1;
+    transition: none;
+  }
 
   .trail__intro {
     position: static;
@@ -906,4 +1364,10 @@ body {
   }
 
   .trail__you-pulse { animation: none; }
+
+  /* Le tas est déjà en place : il n'y a rien à jouer, ni au chargement ni au
+     scroll (le JS ne s'accroche pas non plus). */
+  .pile__photo,
+  .pile__line,
+  .pile__hint { animation: none; }
 }

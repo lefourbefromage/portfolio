@@ -56,6 +56,63 @@
   });
 })();
 
+/* ---------- Le tas de photos : emporté en parallaxe ---------- */
+// Le tas est en place dès le chargement — son arrivée est une animation CSS
+// jouée une fois, pas un montage au scroll. Il ne reste ici que la SORTIE, où
+// les photos s'échappent vers le haut : le JS pose `--out` sur la scène (0
+// posée, 1 partie) et la transformation composée vit dans `.pile__photo`,
+// comme pour les stickers du hero.
+(function () {
+  const scene = document.querySelector('.pile__scene');
+  if (!scene) return;
+
+  // Bornes en fractions de la TRAVERSÉE du tas — du moment où son bord haut
+  // entre par le bas de l'écran à celui où son bord bas sort par le haut.
+  // Mesurer sur la traversée, et non sur la position du tas dans la fenêtre,
+  // est ce qui tient à toute hauteur d'écran : le tas est haut dans la page,
+  // donc sur une grande fenêtre il est déjà entier à l'écran au chargement.
+  // Son bord haut quitte l'écran aux deux tiers de la traversée, d'où des
+  // bornes qui finissent avant — plus tard, la sortie se jouait hors champ.
+  const EXIT_IN = 0.50;
+  const EXIT_OUT = 0.90;
+
+  const still = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const clamp01 = (n) => (n < 0 ? 0 : n > 1 ? 1 : n);
+
+  let ticking = false;
+
+  function render() {
+    ticking = false;
+
+    const box = scene.getBoundingClientRect();
+    const top = box.top + window.scrollY;
+    // `from` est borné à 0 : sous le hero, le tas est déjà à l'écran au
+    // chargement sur la plupart des fenêtres, il n'entre pas par le bas.
+    const from = Math.max(0, top - window.innerHeight);
+    const crossed = clamp01((window.scrollY - from) / (top + box.height - from));
+
+    // Linéaire, et ça doit le rester : c'est un parallaxe, donc proportionnel
+    // au scroll. L'effet vient du seul écart entre les photos (--away-y va de
+    // -6vh au fond à -21vh devant : elles montent toutes, mais pas à la même
+    // vitesse), pas d'une courbe. Une accélération mangeait la moitié visible
+    // de la sortie.
+    scene.style.setProperty('--out', clamp01((crossed - EXIT_IN) / (EXIT_OUT - EXIT_IN)).toFixed(4));
+  }
+
+  function onScroll() {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(render);
+  }
+
+  if (!still.matches) {
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll, { passive: true });
+    render();
+  }
+  still.addEventListener('change', () => window.location.reload());
+})();
+
 /* ---------- Parcours : la carte qui défile sous vos pas ---------- */
 (function () {
   const trail = document.querySelector('.trail');
@@ -210,28 +267,41 @@
   const MARKS = stopPositions.map(scrollFor);
   const LAST_MARK = MARKS[MARKS.length - 1];
 
-  const runwayOf = () => trail.offsetHeight - window.innerHeight;
-
-  // La progression court sur *toute* la traversée de la section : de l'instant
-  // où son bord haut entre par le bas de l'écran, à celui où son bord bas sort
-  // par le haut. Ni l'épinglage ni le dépinglage ne l'interrompent — le marcheur
-  // avance déjà pendant que la scène se met en place, et continue d'avancer
-  // pendant qu'elle s'en va. Ce sont ces deux fois 100vh qui suppriment les
-  // deux ruptures, à l'entrée comme à la sortie.
+  /* ---------- La révélation, par-dessus le début de la marche ---------- */
+  // Les deux courent EN MÊME TEMPS, et c'est voulu : dès que la scène s'épingle,
+  // la fenêtre s'ouvre du petit carton au plein écran pendant que le marcheur
+  // entame son amorce. Quand la carte finit de s'ouvrir, il est presque sur la
+  // première étape — on découvre le chemin juste avant d'y arriver, plutôt que de
+  // rester 100vh sans rien faire une fois le cadre ouvert.
   //
-  // Une seule division, donc densité de scroll uniforme par construction et
-  // aucune couture à recoller. Une version antérieure calculait le point de
-  // couture à l'avance : elle dérivait de 5 % sur mobile, où `vh` et
-  // `window.innerHeight` ne sont pas d'accord à cause de la barre d'URL.
-  const spanOf = () => trail.offsetHeight + window.innerHeight;
+  // REVEAL_VH est donc à régler contre le coût de l'amorce, qui vaut 100vh : à
+  // 0,8 il reste 20vh de marche visible après l'ouverture, le temps de voir le
+  // marcheur couvrir les derniers mètres et la carte d'étape apparaître. Monter
+  // à 1 le colle sur l'étape à l'instant même où le cadre s'ouvre.
+  //
+  // Il n'a PAS de budget de scroll à lui : la hauteur CSS ne dépend plus de lui.
+  const REVEAL_VH = 0.8;
 
-  const fraction = () => {
-    const span = spanOf();
-    return span > 0 ? clamp01((window.innerHeight - trail.getBoundingClientRect().top) / span) : 0;
-  };
+  const trailTop = () => trail.getBoundingClientRect().top + window.scrollY;
+  const revealPx = () => window.innerHeight * REVEAL_VH;
+
+  // La marche court de l'épinglage au bord bas de la section — 717vh, soit
+  // exactement le budget d'origine, dont les 100 derniers vh se jouent pendant
+  // que la scène ressort par le haut (la traîne).
+  const walkPx = () => Math.max(1, trail.offsetHeight);
+  const walkStart = () => trailTop();
+
+  const revealFraction = () => clamp01((window.scrollY - trailTop()) / revealPx());
+  // Où en sera la marche quand la fenêtre finira de s'ouvrir.
+  const revealEnd = () => clamp01(revealPx() / walkPx());
+
+  // Comme avant, c'est UNE division sur une longueur de scroll réelle en pixels :
+  // pas de couture calculée à l'avance, pas de dérive sur mobile où `vh` et
+  // `window.innerHeight` ne sont pas d'accord à cause de la barre d'URL.
+  const fraction = () => clamp01((window.scrollY - walkStart()) / walkPx());
 
   // ... et sa réciproque, dont le mode auto a besoin pour viser une étape.
-  const pageYFor = (frac) => trail.offsetTop - window.innerHeight + spanOf() * frac;
+  const pageYFor = (frac) => walkStart() + walkPx() * frac;
 
   let total = track.getTotalLength();
   let prevHeading = null;
@@ -250,19 +320,36 @@
   function render() {
     ticking = false;
 
+    // La fenêtre d'abord. Le JS n'écrit qu'un nombre — toute la géométrie de
+    // l'ouverture (taille du carton, marge finale, arrondi) vit dans le CSS.
+    // Le lissage est ici et pas dans la marche : ouvrir un cadre supporte une
+    // courbe, suivre un chemin non (voir la note sur le mode auto).
+    const rev = revealFraction();
+    stage.style.setProperty('--open', smooth(rev).toFixed(4));
+    stage.classList.toggle('is-open', rev >= 0.999);
+
     const scrolled = fraction();
     const p = progressFor(scrolled);
     const walked = total * p;
 
     done.style.strokeDasharray = `${walked} ${total}`;
 
-    const here = at(walked);
+    // Le marcheur avance dès l'épinglage, mais la CAMÉRA ne le suit qu'une fois le
+    // chemin visible. Pendant l'ouverture elle est tenue à la position qu'il aura
+    // à la FIN de la révélation : le terrain reste donc parfaitement immobile sous
+    // le cadre qui s'ouvre — c'est ce qui fait lire l'ouverture comme un masque —
+    // et comme les deux se rejoignent à l'instant du raccord, il n'y a aucun saut.
+    // Viser la position de départ à la place produirait ce saut.
+    const pCam = rev < 1 ? progressFor(revealEnd()) : p;
+    const seen = total * pCam;
+
+    const here = at(seen);
 
     // Heading, sampled either side so the turn is smooth, then damped so a
     // fast scroll does not send the map spinning.
     const lead = total * LEAD;
-    const back = at(walked - lead);
-    const fwd = at(walked + lead);
+    const back = at(seen - lead);
+    const fwd = at(seen + lead);
     let heading = -90 - (Math.atan2(fwd.y - back.y, fwd.x - back.x) * 180) / Math.PI;
     if (prevHeading !== null) {
       while (heading - prevHeading > 180) heading -= 360;
@@ -271,12 +358,12 @@
     prevHeading = heading;
     const rot = heading * ROT_DAMP;
 
-    const zoom = ZOOM_TRAVEL + (ZOOM_STOP - ZOOM_TRAVEL) * approachAt(p);
+    const zoom = ZOOM_TRAVEL + (ZOOM_STOP - ZOOM_TRAVEL) * approachAt(pCam);
 
     const stageW = stage.clientWidth;
     const stageH = stage.clientHeight;
-    const cx = stageW / 2 + Math.sin(p * Math.PI * 3.1) * stageW * DRIFT_X;
-    const cy = stageH / 2 + Math.sin(p * Math.PI * 2.3 + 1.1) * stageH * DRIFT_Y;
+    const cx = stageW / 2 + Math.sin(pCam * Math.PI * 3.1) * stageW * DRIFT_X;
+    const cy = stageH / 2 + Math.sin(pCam * Math.PI * 2.3 + 1.1) * stageH * DRIFT_Y;
 
     // Origin is 0 0, so this reads right-to-left: bring the walker's point to
     // the origin, scale, turn, then drop it where we want it on screen.
@@ -337,7 +424,6 @@
   const MARK_EPS = 0.004;
 
   const toggle = trail.querySelector('.trail__auto');
-  const toggleLabel = trail.querySelector('.trail__auto-label');
   let auto = true;
   let glide = null;
   let lockUntil = 0;
@@ -386,6 +472,10 @@
   // La marque visée par un geste, ou null si la section doit rendre la main.
   function targetFor(dir) {
     if (!auto || still.matches || !pinned()) return null;
+    // Pendant la révélation la scène est déjà épinglée : sans ce garde, le
+    // premier cran de molette filerait droit sur la première carte et on ne
+    // verrait jamais la fenêtre s'ouvrir.
+    if (revealFraction() < 1) return null;
     // Passé la dernière carte, on est dans la traîne : le mode auto ne s'en mêle
     // plus, dans aucun des deux sens, et le scroll redevient manuel.
     if (fraction() > LAST_MARK + MARK_EPS) return null;
@@ -442,8 +532,12 @@
     glide = null;
     wheelAcc = 0;
     lockUntil = 0;
-    if (toggle) toggle.setAttribute('aria-pressed', String(on));
-    if (toggleLabel) toggleLabel.textContent = on ? 'Étape par étape' : 'Défilement libre';
+    // Les deux libellés « Manuel / Auto » sont décoratifs : l'état réel passe par
+    // aria-pressed, et le nom accessible dit ce que fait le bouton maintenant.
+    if (toggle) {
+      toggle.setAttribute('aria-pressed', String(on));
+      toggle.setAttribute('aria-label', on ? 'Avancer étape par étape' : 'Défilement libre');
+    }
   }
 
   if (toggle) toggle.addEventListener('click', () => setAuto(!auto));

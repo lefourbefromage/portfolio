@@ -23,9 +23,9 @@
     <span>Vincent</span>
   </div>
   <nav class="main-nav">
-    <a href="#projets">Projets</a>
     <a href="#a-propos">à propos</a>
     <a href="#parcours">Parcours</a>
+    <a href="#projets">Projets</a>
   </nav>
   <a href="#contact" class="btn-contact">
     Discutons
@@ -64,107 +64,149 @@
         <img src="assets/path-3.svg" alt="" class="decor decor--path-left">
         <img src="assets/path-4.svg" alt="" class="decor decor--path-right">
 
-        <img src="assets/sticker-figma-big.webp" alt="" class="decor decor--sticker sticker-1">
+        <img src="assets/sticker-figma.webp" alt="" class="decor decor--sticker sticker-1">
         <img src="assets/sticker-html.webp" alt="" class="decor decor--sticker sticker-2">
-        <img src="assets/sticker-less.webp" alt="" class="decor decor--sticker sticker-3">
-        <img src="assets/sticker-scss.webp" alt="" class="decor decor--sticker sticker-4">
-        <img src="assets/sticker-adobe.webp" alt="" class="decor decor--sticker sticker-5">
-        <img src="assets/sticker-ui.webp" alt="" class="decor decor--sticker sticker-6">
-        <img src="assets/sticker-ux.webp" alt="" class="decor decor--sticker sticker-10">
-        <img src="assets/sticker-css-big.webp" alt="" class="decor decor--sticker sticker-7">
-        <img src="assets/sticker-affinity-big.webp" alt="" class="decor decor--sticker sticker-8">
-        <img src="assets/sticker-github-big.webp" alt="" class="decor decor--sticker sticker-9">
+        <img src="assets/sticker-sassless.webp" alt="" class="decor decor--sticker sticker-3">
+        <img src="assets/sticker-adobe.webp" alt="" class="decor decor--sticker sticker-4">
+        <img src="assets/sticker-github.webp" alt="" class="decor decor--sticker sticker-5">
+        <img src="assets/sticker-affinity.webp" alt="" class="decor decor--sticker sticker-6">
+        <img src="assets/sticker-uiux.webp" alt="" class="decor decor--sticker sticker-7">
       </div>
 
     </div>
   </section>
 
+  <!-- Le tas de photos, sous le hero et à cheval sur le haut d'À propos.
+       L'empilement est décidé par les `z-index` du CSS (quatre couches, celles
+       de la maquette), pas par l'ordre du DOM. Celui-ci les suit quand même —
+       1, 7, 4, 3, 6, 2, 5 — pour que l'animation de chargement pose les photos
+       de l'arrière vers l'avant : le décalage se lit sur `:nth-of-type`. -->
+  <div class="pile">
+    <div class="pile__scene">
 
-  <section class="section" id="projets">
-    <div class="section__head">
-      <p class="section__eyebrow">Projets</p>
-      <h2 class="section__title">Sélection de travaux</h2>
-      <p class="section__lede">
-        <span class="todo">À compléter</span>
-        Une phrase de cadrage&nbsp;: le type de projets que tu montres ici, et pourquoi
-        ceux-là plutôt que d’autres.
-      </p>
+      <svg class="pile__line" viewBox="0 0 1472 590" fill="none" aria-hidden="true" focusable="false">
+        <path d="M 732 46 C 752 160, 712 380, 736 570"/>
+      </svg>
+
+      <img class="pile__photo pile__photo--1" src="assets/photo1.png" alt="" decoding="async">
+      <img class="pile__photo pile__photo--7" src="assets/photo7.png" alt="" decoding="async">
+      <img class="pile__photo pile__photo--4" src="assets/photo4.png" alt="" decoding="async">
+      <img class="pile__photo pile__photo--3" src="assets/photo3.png" alt="" decoding="async">
+      <img class="pile__photo pile__photo--6" src="assets/photo6.png" alt="" decoding="async">
+      <img class="pile__photo pile__photo--2" src="assets/photo2.png" alt="" decoding="async">
+      <img class="pile__photo pile__photo--5" src="assets/photo5.png" alt="" decoding="async">
+
+      <p class="pile__hint">Scroll to explore</p>
+
     </div>
+  </div>
 
-    <div class="projects">
-      <article class="project project--todo">
-        <div class="project__frame"><span>Visuel à venir</span></div>
-        <p class="project__index">01</p>
-        <h3 class="project__title">Nom du projet</h3>
-        <p class="project__meta">Année<span class="project__dot">·</span>Client<span class="project__dot">·</span>Rôle</p>
-        <p class="project__desc">Le problème posé, ce que tu as fait, ce que ça a changé. Deux ou trois lignes.</p>
-      </article>
-
-      <article class="project project--todo">
-        <div class="project__frame"><span>Visuel à venir</span></div>
-        <p class="project__index">02</p>
-        <h3 class="project__title">Nom du projet</h3>
-        <p class="project__meta">Année<span class="project__dot">·</span>Client<span class="project__dot">·</span>Rôle</p>
-        <p class="project__desc">Le problème posé, ce que tu as fait, ce que ça a changé. Deux ou trois lignes.</p>
-      </article>
-
-      <article class="project project--todo">
-        <div class="project__frame"><span>Visuel à venir</span></div>
-        <p class="project__index">03</p>
-        <h3 class="project__title">Nom du projet</h3>
-        <p class="project__meta">Année<span class="project__dot">·</span>Client<span class="project__dot">·</span>Rôle</p>
-        <p class="project__desc">Le problème posé, ce que tu as fait, ce que ça a changé. Deux ou trois lignes.</p>
-      </article>
-
-      <article class="project project--todo">
-        <div class="project__frame"><span>Visuel à venir</span></div>
-        <p class="project__index">04</p>
-        <h3 class="project__title">Nom du projet</h3>
-        <p class="project__meta">Année<span class="project__dot">·</span>Client<span class="project__dot">·</span>Rôle</p>
-        <p class="project__desc">Le problème posé, ce que tu as fait, ce que ça a changé. Deux ou trois lignes.</p>
-      </article>
-    </div>
-  </section>
-
+  <!-- À propos. Œil de section et titre CENTRÉS, texte à gauche dans une colonne
+       étroite : c'est la seule section de la page bâtie comme ça, la maquette le veut.
+       Le fond porte les deux carrés topo, et le fil pointillé reprend celui du tas de
+       photos pour descendre vers le parcours. -->
   <section class="section about" id="a-propos">
-    <div class="section__head">
-      <p class="section__eyebrow">À propos</p>
-      <h2 class="section__title">Design et intégration,<br>bout en bout</h2>
+
+    <div class="about__topo" aria-hidden="true">
+      <img class="about__topo-tile about__topo-tile--left" src="assets/topo-square-left.svg" alt="" decoding="async">
+      <img class="about__topo-tile about__topo-tile--right" src="assets/topo-square-right.svg" alt="" decoding="async">
     </div>
 
-    <div class="about__grid">
-      <div class="about__text">
-        <p>
-          <span class="todo">À compléter</span>
-          Deux ou trois phrases sur ta façon de travailler&nbsp;: d’où tu viens, ce que tu
-          cherches dans un projet, et ce que ça change pour les gens avec qui tu bosses.
-        </p>
-        <p>
-          <span class="todo">À compléter</span>
-          Un paragraphe plus personnel si tu veux&nbsp;— la montagne, le dessin, ce qui
-          explique la carte topographique juste en dessous.
-        </p>
-      </div>
-
-      <dl class="about__skills">
-        <div class="about__skill">
-          <dt>Design</dt>
-          <dd>Figma<span class="about__sep">·</span>UI<span class="about__sep">·</span>UX<span class="about__sep">·</span>Adobe<span class="about__sep">·</span>Affinity</dd>
-        </div>
-        <div class="about__skill">
-          <dt>Intégration</dt>
-          <dd>HTML<span class="about__sep">·</span>CSS<span class="about__sep">·</span>SCSS<span class="about__sep">·</span>LESS</dd>
-        </div>
-        <div class="about__skill">
-          <dt>Outils</dt>
-          <dd>Git<span class="about__sep">·</span>GitHub</dd>
-        </div>
-      </dl>
+    <div class="about__head">
+      <p class="about__eyebrow"><span class="about__eyebrow-num">01.</span> Sur les sentiers</p>
+      <h2 class="about__title">Ce qui guide mes pas</h2>
     </div>
+
+    <div class="about__body">
+      <!-- Treize ans = 2026 − 2013 : à incrémenter au passage de chaque année. -->
+      <p class="about__lede">
+        Treize ans d’expérience, et un web qui s’est réinventé plusieurs fois entre-temps.
+        Depuis 2013, les sites ont changé de forme, de rythme et de support&nbsp;— j’ai
+        grandi et je me suis adapté avec eux.
+      </p>
+
+      <p>
+        L’essentiel de ces années s’est joué sur des sites à <span class="about__hl">très forte
+        audience</span>, là où un écran validé le matin est vu par des centaines de milliers de
+        personnes le soir. On y apprend vite une chose&nbsp;: rien n’est un détail. Un
+        espacement, un libellé, une seconde de chargement — quand tout se voit, chaque
+        décision compte, et c’est une excellente raison de faire les choses bien.
+      </p>
+
+      <p>
+        On me surnomme le <span class="about__hl">couteau suisse</span>, et ça me va plutôt
+        bien&nbsp;: webdesign, création print, intégration — je passe d’un bout à l’autre de la
+        chaîne sans changer de casquette. Et dès que le sujet part côté back, je préfère
+        comprendre comment ça marche&nbsp;; ça rend les conversations avec les développeurs
+        nettement plus courtes.
+      </p>
+
+      <!-- Bouton volontairement en <span> : le PDF n'existe pas encore, et on ne laisse
+           pas d'ancre morte sur le site. À repasser en
+           <a href="assets/cv-vincent-waldmann.pdf" download> le jour où il est là. -->
+      <span class="about__cv">
+        Télécharger mon CV
+        <svg class="about__cv-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true" focusable="false">
+          <path d="M1 9L9 1M9 1H2M9 1V8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+
+    </div>
+
   </section>
 
   <section class="trail" id="parcours">
+
+    <!-- Le fil pointillé qui descend du bouton « CV » d'À propos et vient se poser
+         sur le carton. Il vit ICI et pas dans À propos, et son bloc est COLLANT :
+         il se fige donc à l'instant précis où la scène s'épingle, c'est-à-dire au
+         début de la révélation. Avant ça il défile avec la page, accroché sous le
+         bouton ; après, il ne bouge plus et le carton, en grandissant, le recouvre.
+
+         Le bloc reproduit la boîte d'À propos (max-width, padding, colonne de
+         1040px) pour que le fil parte exactement sous le bouton, sans calcul.
+
+         DEUX morceaux, et il faut garder ce partage : la distance VERTICALE à
+         couvrir dépend de la hauteur de la fenêtre (le carton est à 50vh sous le
+         haut de la section) alors que la distance HORIZONTALE est quasi constante,
+         colonne de texte et carton étant tous deux centrés. Une seule courbe à
+         l'échelle uniforme liait les deux et sortait du carton par la droite sur un
+         écran haut. La descente droite absorbe le vertical, la boucle garde sa
+         taille et vise le carton. -->
+    <div class="trail__lead" aria-hidden="true">
+      <div class="trail__lead-inner">
+        <svg class="trail__lead-run" viewBox="0 0 4 100" preserveAspectRatio="none" fill="none" focusable="false">
+          <path d="M 2 0 L 2 100"/>
+        </svg>
+        <svg class="trail__lead-hook" viewBox="0 0 486 280" fill="none" focusable="false">
+          <path d="M 6 0 C 2 50, 24 130, 108 158 C 214 194, 252 78, 306 84
+                   C 404 96, 460 168, 440 232 C 432 258, 438 270, 446 280"/>
+        </svg>
+      </div>
+    </div>
+
     <div class="trail__stage">
+
+      <!-- La fenêtre-masque. Elle s'ouvre du petit carton centré jusqu'au plein
+           écran ; la carte qu'elle contient, elle, ne bouge pas d'un pixel —
+           c'est le cadre qui grandit et découvre le terrain. Tout ce qui doit
+           être découpé par le carton vit dedans, titre de couverture compris. -->
+      <div class="trail__window">
+
+      <!-- Le titre de couverture : centré dans le carton, il s'efface à mesure
+           que celui-ci s'ouvre. Décoratif et masqué aux lecteurs d'écran — le
+           vrai <h2> est celui d'en dessous, pour ne pas doubler le titre. -->
+      <div class="trail__cover" aria-hidden="true">
+        <p class="trail__eyebrow"><span class="trail__eyebrow-num">02.</span> Suivez le guide</p>
+        <p class="trail__heading">Carnet de routes</p>
+      </div>
+
+      <!-- ... et le titre définitif, en haut à gauche, qui ne paraît qu'une fois
+           la carte entièrement ouverte. -->
+      <header class="trail__intro">
+        <p class="trail__eyebrow"><span class="trail__eyebrow-num">02.</span> Suivez le guide</p>
+        <h2 class="trail__heading">Carnet de routes</h2>
+      </header>
 
       <div class="trail__map">
         <div class="trail__relief" aria-hidden="true"></div>
@@ -223,21 +265,65 @@
         </ol>
       </div>
 
-      <header class="trail__intro">
-        <p class="trail__eyebrow">Mon parcours</p>
-        <h2 class="trail__heading">L’ascension</h2>
-      </header>
-
       <div class="trail__hud">
-        <button type="button" class="trail__auto" aria-pressed="true">
-          <span class="trail__auto-dot" aria-hidden="true"></span>
-          <span class="trail__auto-label">Étape par étape</span>
-        </button>
+        <p class="trail__hud-label" aria-hidden="true">Avancement</p>
         <p class="trail__progress-label" aria-hidden="true">
           <span class="trail__progress-value">0</span><span>%</span>
         </p>
+        <button type="button" class="trail__auto" aria-pressed="true" aria-label="Avancer étape par étape">
+          <span class="trail__auto-opt trail__auto-opt--manual" aria-hidden="true">Manuel</span>
+          <span class="trail__auto-opt trail__auto-opt--auto" aria-hidden="true">Auto</span>
+        </button>
       </div>
 
+      </div>
+
+    </div>
+  </section>
+
+  <section class="section" id="projets">
+    <div class="section__head">
+      <p class="section__eyebrow">Projets</p>
+      <h2 class="section__title">Sélection de travaux</h2>
+      <p class="section__lede">
+        <span class="todo">À compléter</span>
+        Une phrase de cadrage&nbsp;: le type de projets que tu montres ici, et pourquoi
+        ceux-là plutôt que d’autres.
+      </p>
+    </div>
+
+    <div class="projects">
+      <article class="project project--todo">
+        <div class="project__frame"><span>Visuel à venir</span></div>
+        <p class="project__index">01</p>
+        <h3 class="project__title">Nom du projet</h3>
+        <p class="project__meta">Année<span class="project__dot">·</span>Client<span class="project__dot">·</span>Rôle</p>
+        <p class="project__desc">Le problème posé, ce que tu as fait, ce que ça a changé. Deux ou trois lignes.</p>
+      </article>
+
+      <article class="project project--todo">
+        <div class="project__frame"><span>Visuel à venir</span></div>
+        <p class="project__index">02</p>
+        <h3 class="project__title">Nom du projet</h3>
+        <p class="project__meta">Année<span class="project__dot">·</span>Client<span class="project__dot">·</span>Rôle</p>
+        <p class="project__desc">Le problème posé, ce que tu as fait, ce que ça a changé. Deux ou trois lignes.</p>
+      </article>
+
+      <article class="project project--todo">
+        <div class="project__frame"><span>Visuel à venir</span></div>
+        <p class="project__index">03</p>
+        <h3 class="project__title">Nom du projet</h3>
+        <p class="project__meta">Année<span class="project__dot">·</span>Client<span class="project__dot">·</span>Rôle</p>
+        <p class="project__desc">Le problème posé, ce que tu as fait, ce que ça a changé. Deux ou trois lignes.</p>
+      </article>
+
+      <article class="project project--todo">
+        <div class="project__frame"><span>Visuel à venir</span></div>
+        <p class="project__index">04</p>
+        <h3 class="project__title">Nom du projet</h3>
+        <p class="project__meta">Année<span class="project__dot">·</span>Client<span class="project__dot">·</span>Rôle</p>
+        <p class="project__desc">Le problème posé, ce que tu as fait, ce que ça a changé. Deux ou trois lignes.</p>
+      </article>
     </div>
   </section>
 
@@ -274,9 +360,9 @@
     </div>
 
     <nav class="site-footer__nav">
-      <a href="#projets">Projets</a>
       <a href="#a-propos">À propos</a>
       <a href="#parcours">Parcours</a>
+      <a href="#projets">Projets</a>
       <a href="#contact">Contact</a>
     </nav>
 

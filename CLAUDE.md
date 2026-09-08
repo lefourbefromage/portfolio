@@ -77,20 +77,39 @@ Exceptions restant hors palette, à trancher un jour : `#44d444` (pastille « Di
 
 ### Typographie
 
-Deux familles, toutes deux auto-hébergées dans `fonts/` en woff2 variable.
+Trois familles, toutes auto-hébergées dans `fonts/` en woff2 variable.
 
 - **Clash Display** (`--font-display`, graisses 200–700) — titres en bold, ainsi que les
   sous-titres et les labels.
 - **Inter** (`--font-body`, graisses 100–900) — texte courant, en regular.
+- **EB Garamond** (`--font-serif`, graisses 400–800) — **en italique seulement**. Réservé à
+  quatre usages, tous décidés par la maquette : les œils de section refaits (À propos et
+  parcours), les mots mis en avant dans le texte d'À propos, l'année des cartes d'étape, et le
+  « Avancement » du HUD. C'est la respiration du reste : ne l'étends pas sans le demander.
 
 `body` porte `--font-body` ; `--font-display` est appliqué explicitement aux onze sélecteurs
 de titres et de labels. Un nouvel élément de texte hérite donc d'Inter par défaut, ce qui est
 le comportement voulu.
 
+**Le woff2 de Garamond ne contient QUE l'italique**, sous-ensemble latin + accents français,
+29 Ko. Il est produit depuis la variable Google Fonts (`EBGaramond-Italic-VariableFont_wght.ttf`)
+avec fontTools ; le `@font-face` est déclaré en `font-style: italic`. Écrire du Garamond droit
+donnerait un faux romain synthétisé par le navigateur — ne le fais pas, ou réexporte le romain.
+Son œil est plus petit que celui d'Inter : `.about__hl` compense par un `font-size: 1.08em`,
+sinon les mots en avant paraissent en retrait au lieu d'en relief.
+
 ## La structure de la page
 
-`Hero > Projets > À propos > Parcours > Contact > Footer`, dans cet ordre, et la nav du
-header comme celle du footer pointent toutes vers des sections qui existent bel et bien.
+`Hero > À propos > Parcours (« Carnet de routes ») > Projets > Contact > Footer`, dans cet ordre, et la nav du
+header comme celle du footer pointent toutes vers des sections qui existent bel et bien —
+dans l'ordre de la page, elles aussi. À propos passe **avant** projets : c'est ce que veut la
+maquette, et c'est ce qui met la section à cheval avec le tas de photos du hero.
+
+`html` **et `main`** portent `overflow-x: clip` : en s'en allant, les photos du tas grossissent
+et dérivent hors du cadre, et sans ça un ascenseur horizontal apparaît. Il en faut sur les
+deux — la règle du root ne retient pas ce débordement-là, seul le clip du conteneur pleine
+largeur l'arrête. `clip` et non `hidden` : ni l'un ni l'autre ne crée de conteneur de
+défilement ici, donc le `position: sticky` du parcours n'est pas affecté (vérifié).
 
 Le fond du site est sombre (`--ink`) partout **sauf** le parcours, qui est crème : c'est le
 seul contraste fort de la page, et c'est ce qui fait ressortir la carte. Ne mets pas une
@@ -107,10 +126,17 @@ suit image par image sans casser.
 
 ## Le hero : un repère fixe adressé en pourcentages
 
-`.hero__panel` est un contexte de container query (`container-name: panel`) verrouillé sur
-`aspect-ratio: 1472 / 599`, la taille du cadre Figma. Chaque élément décoratif de
-`.hero__decor` est positionné en **pourcentage de ce cadre**, et les tailles de texte sont en
-`cqw`. Donc quand une demande est formulée en pixels (« descend la ligne de 10px »), convertis
+**Deux boîtes, à ne pas confondre.** `.hero__panel` fait `aspect-ratio: 1472 / 730` — presque
+2/1 — mais le **cadre Figma reste 1472 × 599**, porté par `--frame` et appliqué à
+`.hero__content` et `.hero__decor`, calés EN HAUT du panneau. La hauteur en plus s'ouvre donc
+en dessous, sans déplacer d'un pixel le titre, les badges ni les onze éléments du décor ; c'est
+elle qui laisse la place au « Scroll to explore » et au tas de photos. Si tu remets le décor
+sur la hauteur du panneau, tout descend proportionnellement.
+
+`.hero__panel` est aussi le contexte de container query (`container-name: panel`) : les `cqw`
+ne dépendent que de la largeur, donc ils sont les mêmes dans les deux boîtes. Chaque élément
+décoratif de `.hero__decor` est positionné en **pourcentage du cadre de 599**, et les tailles
+de texte sont en `cqw`. Donc quand une demande est formulée en pixels (« descend la ligne de 10px »), convertis
 contre cette taille de référence : **10px ≈ 0,679 % en horizontal, ≈ 1,669 % en vertical**.
 La rotation de chaque sticker vit dans sa règle `.sticker-N` sous forme de `--rot`, pas dans
 un `transform`.
@@ -127,13 +153,261 @@ vit entièrement dans la règle `.decor--sticker`. Garde ce partage : ajouter un
 dans le JS casse l'intention. `setPointerCapture` est enveloppé dans un try/catch parce que
 les drags synthétiques lèvent `NotFoundError`.
 
-## La section parcours (`#parcours`)
+## Le tas de photos (`js/main.js`, deuxième IIFE)
 
-La partie la plus délicate du site. `js/main.js`, deuxième IIFE.
+Sous le hero, à cheval sur le haut d'À propos. Tout — le « Scroll to explore », le tracé
+pointillé et les sept photos — est posé en **pourcentage d'un même cadre de référence**, 1472
+× 490, comme les stickers du hero. La composition se met donc à l'échelle d'un seul bloc, et
+les coordonnées du `d` du tracé sont celles de ce cadre (même viewBox, même rapport).
 
-**Forme.** Une piste `.trail` très haute (`height: 617vh`) avec une scène en
-`position: sticky`. La progression du scroll vaut
-`-trail.getBoundingClientRect().top / runway`, limitée par rAF.
+**L'échelle du collage est une règle, pas un réglage : il fait la largeur du titre du hero.**
+949 sur 1472, mesuré des deux côtés. C'est le repère à reprendre si tu retouches les tailles —
+une première lecture de la maquette l'avait fait une fois et demie trop grand, jusqu'à occuper
+toute la largeur, ce qui ne ressemblait plus à rien.
+
+**Les PNG sont à plat** : plus de rotation ni d'ombre cuites dedans, seulement le cadre crème.
+La rotation de repos vit dans `--rot` de chaque règle `.pile__photo--N` (jamais dans un
+`transform`) et l'ombre est un `box-shadow`. Elle ne se voit presque pas sur le fond d'encre —
+c'est sur les photos de dessous qu'elle travaille, et c'est ce qui fait tenir l'empilement.
+`photo1` à `photo7` sont de gauche à droite dans la maquette.
+
+**L'empilement est décidé par des `z-index` explicites, pas par l'ordre du DOM.** Ce sont les
+quatre couches de la maquette, et elles sont données :
+
+| couche | photos |
+|---|---|
+| 1 (au fond) | 1 et 7 |
+| 2 | 4 |
+| 3 | 3 et 6 |
+| 4 (devant) | 2 et 5 |
+
+Le tracé est en `z-index: 0` (donc sous tout : il disparaît derrière la photo du randonneur et
+ressort en dessous) — et son `inset` porte un **bas négatif** (-20,41 %, soit 100 unités de
+cadre) pour qu'il descende dans le padding haut d'À propos et meure juste au-dessus de l'œil de
+section, comme sur la maquette. Rien ne le rogne : `container-type` applique une containment de
+layout, pas de peinture. Son viewBox vaut donc 1472 × 590, pas 1472 × 490 et le « Scroll to explore » en `z-index: 5`, au-dessus de tout. L'ordre du
+DOM suit quand même ces couches — `1, 7, 4, 3, 6, 2, 5` — mais pour une autre raison : c'est
+lui que lit `:nth-of-type` pour décaler l'animation de chargement, qui doit poser les photos de
+l'arrière vers l'avant. Changer l'un sans l'autre désynchronise l'empilement et le décalage.
+
+**Le raccord tient à une seule marge négative.** `--bite` (8 % de la largeur du cadre, soit
+118px) dit de combien le CADRE remonte sur le hero ; `.pile__scene` porte
+`margin-top: calc(-1 * var(--bite) - clamp(20px, 3vw, 40px))`, le second terme annulant le
+padding bas du hero. **Ne répartis pas ça sur deux marges** (une sur `.pile`, une sur
+`.pile__scene`) : elles s'effondrent en une seule, la plus grande, et la morsure tombait à 24px
+au lieu de 118.
+
+Cette valeur est calée sur une contrainte précise : le hero laisse **259px de libre sous ses
+badges** (mesuré au cadre de 1472) depuis qu'il est passé en presque 2/1. Trois choses s'y
+logent, et elles se tiennent : le « Scroll to explore » à 90px sous les badges, 72px d'écart
+jusqu'au collage (la maquette en a 70), et le haut des photos qui mord de 75px sur le bord bas
+du panneau. Bouger `--bite` déplace les trois d'un coup — et **changer le rapport du hero aussi**,
+puisque tout est mesuré depuis son bord bas.
+
+**L'arrivée est une animation CSS jouée une fois au chargement**, pas un montage au scroll :
+les photos sont en place dès le départ et se posent de l'arrière vers l'avant
+(`@keyframes pile-land`, 70ms d'écart, dans l'ordre du DOM). Elle passe par la propriété **`translate`**, pas par
+`transform`, pour ne pas écraser la transformation composée — les deux se composent d'elles-
+mêmes. Ne la remets pas au scroll.
+
+**Le JS ne pose plus qu'un nombre** : `--out` sur la scène (0 posée, 1 partie), pour la sortie
+en parallaxe. La progression est mesurée sur la **traversée du tas** — du moment où son
+bord haut entre par le bas de l'écran à celui où son bord bas sort par le haut. C'est ce qui
+tient à toute hauteur d'écran : le tas est haut dans la page, donc sur une grande fenêtre il
+est déjà entier à l'écran au chargement, et un repère « centre du tas dans la fenêtre »
+démarrait avant le premier scroll. La sortie court de 0,50 à 0,90 de traversée : **le bord haut
+du tas quitte l'écran aux deux tiers**, donc des bornes plus tardives la jouaient hors champ.
+
+- **La sortie est une remontée, et rien d'autre.** Les photos s'échappent vers le haut, sans
+  zoom et sans dérive latérale : la transformation ne compose plus qu'un `translateY` et la
+  rotation. Ne réintroduis pas de `scale()` — ça a été essayé et retiré.
+- **Elles ne montent pas à la même vitesse**, et c'est tout le sujet : `--away-y` va de -6vh
+  pour celle du fond à -21vh pour celle de devant. C'est ce seul écart qui fait le parallaxe.
+- Les valeurs sont volontairement basses — les photos doivent s'échapper **doucement**, pas
+  décoller. Celle de devant va ~43 % plus vite que le scroll, celle du fond ~12 %.
+- La sortie **reste linéaire**. N'y remets pas d'assouplissement : c'est un parallaxe, donc
+  proportionnel au scroll, et l'effet vient de l'écart entre les photos, pas d'une courbe.
+
+En mobile le collage **déborde des deux côtés** plutôt que de rétrécir : `width: 170%` et
+`margin-left: -35%` sur la scène, donc son cadre en `aspect-ratio` grandit d'autant et les
+hauteurs suivent toutes seules. `--bite` est remis à l'échelle en conséquence (20,9 %). Le
+débord est clos par le `overflow-x: clip` de `html`.
+
+Sous `prefers-reduced-motion: reduce`, ni l'animation de chargement ni le JS ne tournent : le
+défaut `--out: 0` posé sur `.pile__scene` laisse le collage en place, immobile.
+
+Deux choses à savoir sur les assets : `photo4.png` a été **rognée de sa bande transparente
+haute** (54px) pour que la boîte de l'élément vaille exactement la photo visible — c'est
+l'invariant sur lequel reposent les `top` en % et le `box-shadow`. Si tu réexportes une photo
+depuis Figma, vérifie que son alpha remplit toute l'image. Et le libellé est en anglais
+(« Scroll to explore ») parce que la maquette l'est : c'est la seule entorse au français.
+
+
+## La section À propos (`#a-propos`)
+
+**C'est la seule section bâtie comme ça, et c'est voulu** : l'œil (`.about__eyebrow`) et le
+titre sont **centrés**, le texte repasse **à gauche** dans une colonne de 1040px. Ne la
+réaligne pas sur les autres sections, qui sont entièrement à gauche.
+
+**Sa hiérarchie est inversée, et c'est une consigne, pas un accident** : la tête est PLUS
+PETITE que le texte qu'elle annonce. Œil à **18px fixe**, titre à **25px maximum**
+(`clamp(21px, 1.65vw, 25px)`), pendant que le corps monte à 30px
+(`clamp(17px, 1.98vw, 30px)`, contre 18px pour le reste du site) et le chapô à 32px. La tête
+est une étiquette discrète posée au-dessus d'un bloc de lecture large, à ~70 signes par ligne.
+Ne « rétablis » pas un titre plus gros que son texte. Si tu changes le corps, change la largeur
+de colonne avec : les deux tiennent la mesure.
+
+`.about__head` ne porte **aucune largeur maximale** : à 25px le titre ne court pas, et la
+brider recentrerait mal les titres plus longs.
+
+Deux entorses assumées aux primitives communes : `.about__eyebrow` n'est pas en capitales
+espacées comme `.section__eyebrow` (c'est du Garamond italique à taille de texte), et
+`.about__title` n'est pas en capitales comme `.section__title`. La maquette veut une phrase.
+**Le parcours porte exactement les mêmes réglages** (`.trail__eyebrow` / `.trail__heading`,
+18px et 25px max, numéro d'ordre en vert) : ce sont les deux têtes refaites, elles doivent se
+répondre. Si tu en retouches une, retouche l'autre.
+
+**Le fond porte deux carrés topo** (`assets/topo-square-left.svg` et `-right.svg`, 266×266),
+posés dans un `.about__topo` en `z-index: -1` et `overflow: hidden` qui les laisse déborder
+des deux bords sans créer d'ascenseur. Ils sont calés en % de la **largeur**, jamais de la
+hauteur : le texte est du contenu réel, donc la section grandit quand on l'édite et un calage
+vertical en % dériverait. Leur remplissage a été ramené de `#18264A` à `--navy` à l'import —
+garde-le dans la palette si tu réexportes.
+
+**Le fil pointillé qui relie les deux sections part d'ici mais vit dans le parcours** —
+voir « Le fil qui vient d'À propos » plus bas. Il n'est plus dans `.about__body` parce qu'il
+doit se figer avec la scène du parcours, ce qu'un enfant d'À propos ne peut pas faire.
+
+**Le bouton CV est un `<span>`, pas un `<a>`, tant que le PDF n'existe pas** — même règle que
+les liens réseaux du contact : pas d'ancre morte sur le site. Le jour où le fichier est là, il
+repasse en `<a href="assets/cv-vincent-waldmann.pdf" download>`, un commentaire HTML le
+rappelle sur place.
+
+Le texte est **du vrai contenu**, écrit avec Vincent : treize ans d'expérience depuis 2013,
+les années sur des sites à très forte audience, et le « couteau suisse ». Le nombre d'années
+est écrit en toutes lettres dans le chapô — un commentaire HTML rappelle de l'incrémenter. L'ancienne liste de compétences
+(`.about__skills`) a disparu avec la refonte — les stickers du hero disent déjà les outils.
+
+## La section parcours (`#parcours`, « Carnet de routes »)
+
+La partie la plus délicate du site. `js/main.js`, troisième IIFE.
+
+**Forme.** Une piste `.trail` très haute (`height: 717vh`) avec une scène en
+`position: sticky`.
+
+**La section REMONTE sur le bas d'À propos** (`margin-top: calc(-1 * var(--pull))`, avec
+`--pull: max(0px, calc(50vh - 260px))`), et ce n'est pas un ajustement esthétique : c'est ce
+qui rend le fil pointillé de longueur constante. Le carton se tient à 50vh sous le haut de la
+section, donc sans ça le trajet du bouton « CV » jusqu'à lui grandissait avec la hauteur de la
+fenêtre — 380px sur un portable, plus de 1000 sur un grand écran, dont 640 de seule descente
+droite. En remontant de `50vh − 260px`, ce terme sort du calcul : le trajet tient dans
+376–465px de 900 × 600 à 2560 × 1440. Le `max(0px, ...)` évite de POUSSER la section vers le bas
+sur une fenêtre de moins de 520px de haut.
+
+Le recouvrement va jusqu'à 271px et ne cache rien : la scène est transparente tant que la
+fenêtre n'est pas ouverte, donc le texte d'À propos continue de défiler dessous, normalement.
+**Toute position mesurée depuis le haut de la section doit ajouter `--pull`** — c'est le cas de
+`--lead-top` et `--lead-run`.
+
+### La révélation : une fenêtre qui s'ouvre, une carte qui ne bouge pas
+
+Avant la marche, la section se donne un premier temps. Un **petit carton centré** montre déjà
+la carte en fond, avec l'œil et le titre dedans ; en scrollant il grandit jusqu'au plein écran,
+à une marge d'encre près.
+
+**C'est un masque, pas un zoom, et c'est tout le sujet.** `.trail__window` porte un
+`clip-path: inset(...)` dont les quatre côtés s'interpolent entre le carton et le plein cadre.
+La carte, dessous, n'est **pas** transformée pendant ce temps : le même relief reste exactement
+au même endroit à l'écran, on ne fait qu'en découvrir davantage. Si tu remplaces ça par une mise
+à l'échelle du carton, l'effet s'inverse et tout est perdu.
+
+**Le marcheur avance pendant l'ouverture, mais la caméra ne le suit pas** — c'est le partage à
+tenir, et il repose sur une seule variable dans `render()` : `pCam`. Le chemin parcouru, le
+pourcentage et les cartes d'étape suivent `p`, la vraie progression ; la caméra, elle, suit
+`pCam`, qui est **tenu à la position que le marcheur aura à la FIN de la révélation** tant que
+`rev < 1`. D'où un terrain rigoureusement immobile sous le cadre qui s'ouvre (matrice de
+transformation identique au pixel près, vérifié), et **aucun saut au raccord** puisque les deux
+valeurs se rejoignent exactement à cet instant. Viser la position de DÉPART à la place
+produirait ce saut : c'est le piège.
+
+Toute la géométrie de l'ouverture vit dans le CSS — taille du carton (`--card-w`, `--card-h`),
+marge finale (`--frame`), arrondi — et **le JS n'écrit qu'un nombre**, `--open`, comme pour les
+stickers du hero et le tas de photos. Les `%` du `inset()` se résolvent sur la boîte de la
+fenêtre, donc le carton reste centré à toute taille d'écran sans une ligne de JS.
+
+Trois choses attendent la **fin** de la révélation, et c'est une consigne : le chemin, le
+marcheur et les étapes n'apparaissent qu'une fois la carte entièrement ouverte, avec le HUD et
+le titre en haut à gauche. Le JS pose alors la classe `is-open` sur la scène et le CSS fait le
+fondu. C'est un rendez-vous, pas une progression : n'accroche pas ces opacités au scroll.
+
+**Et à cet instant on est presque sur la première étape**, à 11 % contre 14 % pour la carte —
+c'est là que la caméra prend le relais et se met à suivre.
+C'est `REVEAL_VH` qui le règle, contre le coût de l'amorce, qui vaut 100vh : à **0,8** il reste
+20vh de marche visible après l'ouverture, le temps de voir le marcheur couvrir les derniers
+mètres et la carte d'étape apparaître. À 1 il serait collé dessus au moment même où le cadre
+finit de s'ouvrir, et le chemin paraîtrait déjà arrivé. `REVEAL_VH` n'a **pas** de budget de
+scroll à lui : il se superpose à la marche, donc le changer ne touche ni la hauteur CSS ni la
+vitesse au sol.
+
+**Deux titres, pas un seul qui se déplace.** `.trail__cover` est centré dans le carton et
+s'efface au scroll (`opacity: calc(1 - var(--open) * 2.8)`, l'opacité étant bornée par le
+navigateur, pas besoin de clamp) ; `.trail__intro` reparaît en haut à gauche à l'ouverture.
+Le premier est `aria-hidden` et n'est pas un `<h2>` — sans quoi le titre serait doublé.
+
+**La révélation ne coûte rien** : mesurée à 8,3 ms médians, exactement comme la marche. Un
+`clip-path: inset()` est un découpage de rectangle arrondi, pas une recomposition.
+
+### Le fil qui vient d'À propos
+
+Le trait pointillé qui descend du bouton « CV » et va se poser sur le carton vit **dans le
+parcours**, pas dans À propos, et son bloc `.trail__lead` est en **`position: sticky`** avec une
+hauteur nulle.
+
+**C'est ce sticky qui fait tout** : il se colle en haut de l'écran à l'instant précis où la
+scène s'épingle, donc **au début de la révélation**. Avant, le fil défile avec la page et reste
+accroché sous le bouton ; à partir de là **il ne bouge plus**, et le carton, en grandissant, le
+recouvre jusqu'à l'avoir mangé. C'est aussi pourquoi il ne peut pas rester dans `.about__body` :
+un `sticky` ne sort pas de son bloc conteneur, et il doit tenir bien au-delà d'À propos.
+Hauteur nulle pour ne pas décaler la scène d'un pixel, et placé **avant** elle dans le DOM —
+tous deux en `z-index: auto` — pour que la fenêtre peigne par-dessus.
+
+`.trail__lead` **recopie les boîtes d'À propos** (`max-width: 1512px`, le même `padding-inline`,
+puis une colonne de 1040px) : le fil part ainsi exactement sous le bouton sans un seul calcul de
+centrage à refaire.
+
+**Il est en DEUX morceaux, et il faut garder ce partage.** `.trail__lead-run` est une descente
+droite de hauteur variable, `.trail__lead-hook` la boucle, de taille propre. La raison : la
+distance *verticale* à couvrir dépend de la hauteur de la fenêtre (le carton se tient à 50vh
+sous le haut de la section) alors que la distance *horizontale* est quasi constante — la colonne
+de texte et le carton sont l'un comme l'autre centrés. Une seule courbe à l'échelle uniforme
+liait les deux : sur un écran haut elle s'élargissait d'autant et sortait du carton par la
+droite (mesuré à 106 % de sa largeur en 1512 × 1200, hors cadre en 2560 × 1440). Avec le
+partage, l'arrivée reste entre 48 et 59 % de la largeur du carton de 900 × 600 à 2560 × 1440, et
+le fil finit toujours **70px derrière** son bord haut.
+
+**Le trait est en pixels d'écran** (`vector-effect: non-scaling-stroke`, épaisseur 4, tirets
+11/13) et pas en unités de viewBox : ces SVG-ci sont agrandis alors que celui du tas de photos
+est réduit (~0,7), si bien que le même trait de 5 sortait à plus du double ici. Les valeurs sont
+calées sur le rendu du fil du tas.
+
+`preserveAspectRatio="none"` est sur la descente droite **seulement** : un segment vertical
+étiré verticalement reste un segment vertical. Ne le mets pas sur la boucle — sur un tracé
+courbe, l'étirement fait partir les bouts ronds en biseaux, `non-scaling-stroke` ou pas
+(essayé, retiré).
+
+**La descente droite ne fait plus que 41 à 131px** depuis que la section remonte (voir
+« Forme ») : c'est `--pull` qui annule le terme en 50vh. Le fil finit toujours **70px derrière**
+le bord haut du carton, à toute taille d'écran.
+
+En dessous de 900px la boucle fait 400px de large au minimum : elle sortirait de l'écran sans
+jamais atteindre le carton, donc **elle est masquée** et la descente droite fait tout le trajet,
+recentrée — le carton l'est aussi, et le bouton, large, passe sous l'axe du milieu à cette
+largeur-là. Mettre `--hook-h` à zéro suffit à rendre sa pleine longueur à `--lead-run`.
+
+**Le mode auto est débrayé tant que la carte n'est pas ouverte.** La scène est déjà épinglée
+pendant la révélation, donc sans le garde `revealFraction() < 1` dans `targetFor()`, le premier
+cran de molette filerait droit sur la première carte et on ne verrait jamais la fenêtre
+s'ouvrir.
 
 **La caméra est une seule transformation composée** sur `.trail__map` (7200×7200,
 `transform-origin: 0 0`), qui se lit de droite à gauche : amener le point du marcheur à
@@ -258,21 +532,23 @@ est le premier `data-at` **moins `LEAD_RUN`** (0,113 de parcours), `END` le dern
 Sans ces deux bouts, le marcheur restait figé tant que la section n'était pas collée, puis se
 figeait de nouveau dès qu'elle se décollait : deux ruptures nettes, aux deux extrémités.
 
-**Tout tient à une division.** `fraction()` mesure la progression sur
-`trail.offsetHeight + innerHeight`, c'est-à-dire sur *toute la traversée* de la section — du
-moment où son bord haut entre par le bas de l'écran à celui où son bord bas sort par le haut.
-Il n'y a donc aucune couture à recoller : la densité de scroll est uniforme par construction,
-le marcheur ne change jamais d'allure, ni quand la scène se pose ni quand elle se décolle. Une
-version antérieure calculait les points de couture à l'avance ; elle dérivait de 5 % sur
-mobile, où `vh` et `window.innerHeight` ne sont pas d'accord à cause de la barre d'URL. Ne
-réintroduis pas ce découpage explicite.
+**Tout tient à une division.** `fraction()` mesure la marche sur toute la piste, de
+l'épinglage au moment où le bord bas de la section sort par le haut. Une seule division sur une
+longueur de scroll réelle, en pixels : la densité est uniforme par construction, le marcheur ne
+change jamais d'allure, ni quand la scène se décolle ni pendant la traîne. Une version
+antérieure calculait les points de couture à l'avance ; elle dérivait de 5 % sur mobile, où
+`vh` et `window.innerHeight` ne sont pas d'accord à cause de la barre d'URL. Ne réintroduis pas
+ce découpage explicite.
 
-Le `height` du CSS ne règle donc pas la vitesse, seulement **deux rendez-vous** : à 617 vh
-(100 d'entrée + 417 de piste + 100 de sortie), l'entrée dans l'aimant de la première carte
-tombe pile quand la section achève de se poser, et la sortie de l'aimant de la dernière pile
-quand elle commence à se retirer. Mesuré à 3 px près sur le tracé, aux deux bouts. Le changer
-décale ces rendez-vous sans rien casser. C'est aussi pourquoi **il n'y a pas de hauteur
-réduite en mobile** : les 100 vh d'entrée et de sortie ne rétrécissent pas.
+**La traversée se lit 100 + 717 = 817 vh**, et `height` en vaut 717 : 100 vh d'entrée pendant
+lesquels le carton monte jusqu'au centre, puis 717 vh de marche — dont les 100 derniers se
+jouent pendant que la scène ressort par le haut. La révélation ne prend aucun de ces vh, elle
+se superpose aux 80 premiers.
+
+Les **deux rendez-vous** tiennent : l'entrée dans l'aimant de la première carte tombe 100 vh
+après l'épinglage, et la sortie de l'aimant de la dernière pile quand la scène commence à se
+retirer (vérifié : 14 % à 1 vh après l'épinglage, 86 % à `H − V`). C'est aussi pourquoi **il n'y
+a pas de hauteur réduite en mobile** : les 100 vh d'entrée et de sortie ne rétrécissent pas.
 
 `LEAD_RUN` est près du double de `TAIL_RUN`, et ce n'est pas une faute de frappe : le terrain
 d'avant la première carte est plus plat, donc moins cher, donc il en faut davantage pour
@@ -318,6 +594,13 @@ dès qu'on touche à l'espacement, et les oublier se voit tout de suite :
 
 Les trois dernières se résolvent ensemble : le barème est intégré une fois, donc changer l'une
 déplace les autres. En pratique on les cherche numériquement plutôt qu'à la main.
+
+**Le HUD est une pastille d'encre posée sur la carte**, en bas à droite : « Avancement » en
+Garamond italique, le pourcentage en gros Clash, et sous un filet le couple **Manuel / Auto**.
+Les deux libellés sont **décoratifs** (`aria-hidden`) — l'état réel passe par `aria-pressed` sur
+le bouton unique, et son `aria-label` dit ce que fera le prochain clic. Le HUD est en
+`pointer-events: none` tant que `is-open` n'est pas posée : invisible, il ne doit pas non plus
+être cliquable ni atteignable au clavier.
 
 ### Le mode « étape par étape »
 
@@ -411,10 +694,10 @@ plus rien ne pointe dessus.
 
 Ces points ne sont pas encore arbitrés — demande plutôt que de supposer :
 
-- **Le contenu de `#projets`, `#a-propos` et `#contact`.** Les sections existent et sont
-  maquettées, mais leurs textes sont des **placeholders assumés**, marqués par la pastille
-  `.todo` (« À compléter »). N'invente pas de projets, de client ou de bio à sa place :
-  demande-lui le contenu. L'adresse de `#contact` est `adresse@a-completer.fr`, et les liens
+- **Le contenu de `#projets` et `#contact`.** Les sections existent et sont maquettées, mais
+  leurs textes sont des **placeholders assumés**, marqués par la pastille `.todo`
+  (« À compléter »). N'invente pas de projets ni de client à sa place : demande-lui le
+  contenu. À propos, elle, est écrite pour de bon. L'adresse de `#contact` est `adresse@a-completer.fr`, et les liens
   réseaux sont des `<span>`, pas des `<a>`, pour ne pas laisser d'ancre morte.
 - **Le design des titres**, `.trail__intro` compris, qui doit être repris. En attendant, les
   cartes d'étape passent derrière « L'ASCENSION » et les deux textes se croisent : c'est
