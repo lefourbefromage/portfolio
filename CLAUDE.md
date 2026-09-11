@@ -1400,7 +1400,7 @@ auto n'y est pas branché du tout, et le HUD (donc son bouton) y est masqué. Qu
 des morceaux de la carte, masque les éléments feuilles — masquer un conteneur a déjà emporté
 `.trail__stops` deux fois en silence.
 
-## La section projets (`#projets`, « Cartographie des projets »)
+## La section projets (`#projets`, « Ascensions récentes »)
 
 Trois projets — Jacquie & Michel, Beepz, Jimizz — en trois cartes à gauche, et à
 droite **un seul emplacement** où trois groupements de visuels se superposent :
