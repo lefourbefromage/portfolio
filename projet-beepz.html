@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Beepz — Vincent Waldmann</title>
 <meta name="description" content="Étude de cas Beepz : place de marché automobile californienne. Un design système, appliqué et éprouvé sur la landing page et les emails.">
-<link rel="stylesheet" href="css/style.css?v=0.29">
+<link rel="stylesheet" href="css/style.css?v=0.30">
 
 <!-- L'ICÔNE DU SITE. Les trois fichiers sont à la RACINE du dépôt et non dans
      `assets/`, qui se range par page : ils n'appartiennent à aucune page, et
@@ -63,7 +63,7 @@
 <!-- LE VOILE DE TRANSITION, en tête et sur les quatre pages : sa moitié
      « arrivée » doit s'exécuter avant le premier rendu, sinon la page apparaît
      un instant à nu avant d'être recouverte. Voir l'en-tête de `js/veil.js`. -->
-<script src="js/veil.js?v=0.29"></script>
+<script src="js/veil.js?v=0.30"></script>
 
 <!-- La motion de la page, en trois lignes et AVANT le premier rendu.
 
@@ -99,7 +99,7 @@
   <span class="banner__flag">Site en cours de construction.</span>
   <span>Des bugs peuvent apparaître.</span>
   <!-- Posé par tools/bump_version.py, avec les ?v= du <head> : ne pas éditer à la main. -->
-  <span class="banner__version">v0.29</span>
+  <span class="banner__version">v0.30</span>
 </div>
 
 <header class="site-header">
@@ -506,8 +506,8 @@
            La carte est dessinée à la main en SVG plutôt que reprise en image de la
            planche Figma : à l'échelle d'une page web, soixante-sept vignettes de
            téléphone sont illisibles. Ce qu'il faut lire, c'est la STRUCTURE — le tronc,
-           la fourche, les trois branches et leurs poids. Les écrans viendront à côté,
-           dans un rail défilant, quand les exports seront là. -->
+           la fourche, les trois branches et leurs poids. La planche elle-même vient
+           ensuite, en capture, pour le volume ; puis dix écrans dans un rail défilant. -->
       <li class="versant" id="onboarding" data-reveal="pin">
         <div class="versant__head" data-reveal>
           <p class="versant__num">03</p>
@@ -521,6 +521,11 @@
           mener chacun, acheteur ou vendeur, jusqu’à un profil complet.
         </p>
 
+        <!-- Le texte à gauche, la carte à droite, dressée à la VERTICALE : elle se lit
+             de haut en bas en même temps que les trois paragraphes, et elle ne coûte
+             plus une bande pleine largeur à elle seule. Sous 900 px, les deux
+             s'empilent et la carte passe sous le texte. -->
+        <div class="onb-split">
         <div class="versant__body" data-reveal>
           <p>
             <span class="case-hl">Il n’y avait pas d’onboarding.</span> Rien entre le
@@ -545,75 +550,99 @@
           </p>
         </div>
 
-        <figure class="versant__figure" data-reveal>
-          <!-- Le conteneur qui défile : un diagramme de 1180 unités écrasé dans 350 px
-               ne se lit plus. Sous 900 px, la carte garde sa taille minimale et c'est
-               le doigt qui la parcourt — comme n'importe quel tableau large. -->
-          <div class="flow-wrap">
-          <svg class="flow" viewBox="0 0 1180 400" role="img"
+        <!-- La carte, en vertical : le tronc descend, la fourche est au milieu, et les
+             trois branches s'ouvrent côte à côte en bas — la queue vendeur sous la
+             sienne. Même vocabulaire que la version horizontale qu'elle remplace. -->
+        <figure class="onb-split__map" data-reveal>
+          <svg class="flow" viewBox="0 -2 440 540" role="img"
                aria-label="La structure du parcours : une entrée de 3 écrans, puis la question « How will you use Beepz ? », puis 4 écrans d’inscription communs, puis trois branches — acheteur 9 écrans, vendeur 10 écrans suivis de 8 écrans de mise en vente, et parrain 4 écrans.">
 
             <!-- le tronc -->
-            <path class="flow-line" d="M140 200H190"/>
-            <path class="flow-line" d="M450 200H500"/>
+            <path class="flow-line" d="M220 72V100M220 200V228"/>
 
             <!-- l'éclatement en trois branches -->
-            <path class="flow-line" d="M650 200H700M700 76V324M700 76H740M700 200H740M700 324H740"/>
+            <path class="flow-line" d="M220 300V330M70 330H370M70 330V360M220 330V360M370 330V360"/>
 
             <!-- la queue vendeur -->
-            <path class="flow-line" d="M900 200H950"/>
+            <path class="flow-line" d="M220 432V462"/>
 
             <g class="flow-node">
-              <rect class="flow-box" x="0" y="164" width="140" height="72" rx="12"/>
-              <text class="flow-name" x="18" y="196">Entrée</text>
-              <text class="flow-count" x="18" y="218">3 écrans</text>
+              <rect class="flow-box" x="130" y="0" width="180" height="72" rx="12"/>
+              <text class="flow-name" x="220" y="31">Entrée</text>
+              <text class="flow-count" x="220" y="53">3 écrans</text>
             </g>
 
             <!-- La fourche porte l'accent : c'est la décision du volet, pas une étape
                  parmi d'autres. Elle est aussi la seule boîte à citer le produit. -->
             <g class="flow-node">
-              <rect class="flow-box flow-box--fork" x="190" y="150" width="260" height="100" rx="14"/>
-              <text class="flow-name" x="212" y="188">How will you</text>
-              <text class="flow-name" x="212" y="210">use Beepz&nbsp;?</text>
-              <text class="flow-count" x="212" y="232">1 écran, 3 réponses</text>
+              <rect class="flow-box flow-box--fork" x="100" y="100" width="240" height="100" rx="14"/>
+              <text class="flow-name" x="220" y="134">How will you</text>
+              <text class="flow-name" x="220" y="156">use Beepz&nbsp;?</text>
+              <text class="flow-count" x="220" y="178">1 écran, 3 réponses</text>
             </g>
 
             <g class="flow-node">
-              <rect class="flow-box" x="500" y="164" width="150" height="72" rx="12"/>
-              <text class="flow-name" x="518" y="196">Inscription</text>
-              <text class="flow-count" x="518" y="218">4 écrans</text>
+              <rect class="flow-box" x="130" y="228" width="180" height="72" rx="12"/>
+              <text class="flow-name" x="220" y="259">Inscription</text>
+              <text class="flow-count" x="220" y="281">4 écrans</text>
             </g>
 
             <g class="flow-node">
-              <rect class="flow-box" x="740" y="40" width="160" height="72" rx="12"/>
-              <text class="flow-name" x="758" y="72">Acheteur</text>
-              <text class="flow-count" x="758" y="94">9 écrans</text>
+              <rect class="flow-box" x="2" y="360" width="136" height="72" rx="12"/>
+              <text class="flow-name" x="70" y="391">Acheteur</text>
+              <text class="flow-count" x="70" y="413">9 écrans</text>
             </g>
 
             <g class="flow-node">
-              <rect class="flow-box" x="740" y="164" width="160" height="72" rx="12"/>
-              <text class="flow-name" x="758" y="196">Vendeur</text>
-              <text class="flow-count" x="758" y="218">10 écrans</text>
+              <rect class="flow-box" x="152" y="360" width="136" height="72" rx="12"/>
+              <text class="flow-name" x="220" y="391">Vendeur</text>
+              <text class="flow-count" x="220" y="413">10 écrans</text>
             </g>
 
             <g class="flow-node">
-              <rect class="flow-box" x="950" y="164" width="200" height="72" rx="12"/>
-              <text class="flow-name" x="968" y="196">Mise en vente</text>
-              <text class="flow-count" x="968" y="218">8 écrans</text>
+              <rect class="flow-box" x="302" y="360" width="136" height="72" rx="12"/>
+              <text class="flow-name" x="370" y="391">Parrain</text>
+              <text class="flow-count" x="370" y="413">4 écrans</text>
             </g>
 
             <g class="flow-node">
-              <rect class="flow-box" x="740" y="288" width="160" height="72" rx="12"/>
-              <text class="flow-name" x="758" y="320">Parrain</text>
-              <text class="flow-count" x="758" y="342">4 écrans</text>
+              <rect class="flow-box" x="135" y="462" width="170" height="72" rx="12"/>
+              <text class="flow-name" x="220" y="493">Mise en vente</text>
+              <text class="flow-count" x="220" y="515">8 écrans</text>
             </g>
           </svg>
+        </figure>
+        </div>
+
+        <!-- La planche entière, telle qu'elle est dans Figma. Elle ne se LIT pas à
+             cette échelle, et ce n'est pas son rôle : la carte au-dessus dit la
+             structure, celle-ci dit le VOLUME. La visionneuse l'ouvre en grand pour qui
+             veut s'y promener. Source : assets/beepz/src/onboarding-figma.png.
+
+             L'interface de Figma est gardée EXPRÈS, à la demande de Vincent : c'est
+             elle qui dit « voilà le fichier de travail ». Ne la rogne pas. La fenêtre
+             porte son ombre macOS dans son alpha, donc pas de `.versant__shot` autour :
+             la fenêtre est son propre cadre. -->
+        <figure class="versant__figure onb-board" data-reveal>
+          <div data-viewer="La planche de l’onboarding">
+            <img src="assets/beepz/onboarding/wireframe.webp" width="2580" height="1694" loading="lazy" decoding="async"
+                 alt="La page Onboarding du fichier Beepz ouverte dans Figma : une soixantaine d’écrans reliés par des flèches, du splash jusqu’à la mise en vente, répartis en branches acheteur, vendeur et parrain.">
           </div>
         </figure>
 
+        <!-- La tête du carrousel : elle dit que les dix écrans sont un CHOIX, pour
+             qu'on ne les prenne pas pour le parcours entier juste après la planche. -->
+        <div class="onb-pick" data-reveal>
+          <h3 class="onb-pick__title">Quelques vues, choisies dans le parcours</h3>
+          <p class="onb-pick__lede">
+            Une petite sélection d’écrans, dans l’ordre où on les traverse&nbsp;— du
+            lancement de l’application jusqu’au programme de parrainage.
+          </p>
+        </div>
+
         <!-- Le rail : dix écrans, pas quarante. Il montre un ORDRE, pas un volume —
-             le volume est le travail de la carte, juste au-dessus, qui le dit en
-             chiffres. Une file de quarante vignettes redeviendrait une planche-contact,
+             le volume est le travail de la carte, qui le dit en chiffres, et de la
+             planche juste au-dessus, qui le montre. Une file de quarante vignettes redeviendrait une planche-contact,
              ce que la règle d'édition du projet écarte.
 
              Chaque écran porte un argument : la fourche est le point du volet,
@@ -625,7 +654,7 @@
              Pas de libellé sous les écrans : les noms de chapitre sont déjà sur la
              carte au-dessus, et le titre de chaque vue n'apprend rien. Le sens est
              porté par les `alt`, qui décrivent réellement ce qu'on voit. -->
-        <figure class="versant__figure" data-reveal>
+        <figure class="versant__figure onb-rail" data-reveal>
           <div class="rail-wrap" data-viewer="Les écrans de l’onboarding" tabindex="0" role="group"
                aria-label="Les écrans de l’onboarding, du splash à la mise en vente : faites glisser pour les parcourir.">
             <ol class="rail">
@@ -809,7 +838,7 @@
   </div>
 </footer>
 
-<script src="js/main.js?v=0.29"></script>
+<script src="js/main.js?v=0.30"></script>
 
 </body>
 </html>

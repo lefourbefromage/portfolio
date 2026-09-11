@@ -3836,17 +3836,83 @@ a.contact__mail:hover { border-bottom-color: var(--pink); }
    les volets — c'est le vocabulaire du parcours de l'accueil, appliqué à un autre
    chemin. Seule la fourche porte le vert : c'est la décision du volet, pas une
    étape parmi d'autres. */
-/* Le diagramme ne se met pas à l'échelle indéfiniment : sous sa largeur minimale, il
-   garde sa taille et c'est le conteneur qui défile. 860 unités sur 1180, soit 73 % —
-   en dessous, le texte des boîtes passe sous 12 px et la carte ne se lit plus. */
-.flow-wrap { overflow-x: auto; }
+/* Depuis qu'une capture de la planche est venue s'ajouter sous elle, la carte ne
+   la remplace plus : elle dit la structure, la capture dit le volume.
+
+   Elle est DRESSÉE À LA VERTICALE, à droite du texte : le tronc descend, les trois
+   branches s'ouvrent côte à côte en bas. Sa colonne est bornée à 420 px pour un
+   viewBox de 440 — soit 95 % : les noms restent au-dessus de 16 px, les compteurs
+   au-dessus de 12. Le plancher de 350 px les garde lisibles à côté du texte ; sous
+   900 px elle passe sous le texte, bornée à la même largeur. */
+.onb-split {
+  display: grid;
+  /* `1fr` et pas `68ch` : un `ch` se résoudrait ici sur la police du conteneur, pas
+     sur celle des paragraphes. La mesure reste tenue par le `max-width` du corps. */
+  grid-template-columns: minmax(0, 1fr) minmax(350px, 420px);
+  align-items: center;
+  column-gap: clamp(40px, 6vw, 110px);
+  margin-top: clamp(22px, 3.4vh, 36px);
+}
+
+/* La carte est CENTRÉE sur la hauteur du texte, demandé par Vincent. Pour que ce
+   soit vrai, la marge haute du corps passe sur la grille : laissée sur le corps,
+   elle compterait dans sa hauteur et décentrerait la carte d'autant. */
+.onb-split > .versant__body,
+.onb-split__map { margin: 0; }
 
 .flow {
   display: block;
   width: 100%;
-  min-width: 860px;
   height: auto;
 }
+
+@media (max-width: 900px) {
+  .onb-split { grid-template-columns: minmax(0, 1fr); }
+  .onb-split__map {
+    width: 100%;
+    max-width: 440px;
+    margin: clamp(28px, 4.5vh, 52px) auto 0;
+  }
+}
+
+/* La capture de Figma, interface comprise — voulue telle quelle, ne la rogne pas.
+   Elle porte l'ombre de la fenêtre macOS dans son alpha : 112 px de marge
+   transparente de chaque côté pour 3404 px de fenêtre (source de 3628). Sans
+   compensation, la fenêtre paraîtrait en retrait de la colonne. On agrandit donc
+   l'image de 3628/3404 et on la décale de 112/3404 : ce sont les bords de la
+   FENÊTRE qui tombent sur ceux de la colonne, et l'ombre déborde dans la marge.
+   Ces deux nombres suivent la capture : si tu la remplaces, remesure l'alpha. */
+.onb-board img {
+  width: calc(100% * 3628 / 3404);
+  max-width: none;
+  margin-left: calc(-100% * 112 / 3404);
+}
+
+/* La tête du carrousel. Elle vient après la planche, et c'est ce qui la rend
+   nécessaire : sans elle, dix écrans juste sous soixante se liraient comme le
+   parcours entier. Clash pour le titre, Inter pour la ligne — sous les plafonds
+   du site (30 px et 20 px). */
+.onb-pick { margin: clamp(48px, 8vh, 88px) 0 0; }
+
+.onb-pick__title {
+  font-family: var(--font-display);
+  margin: 0;
+  font-size: clamp(20px, 1.9vw, 28px);
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--cream);
+}
+
+.onb-pick__lede {
+  max-width: 60ch;
+  margin: 10px 0 0;
+  font-size: clamp(15px, 1.15vw, 17px);
+  line-height: 1.6;
+  color: rgb(var(--cream-rgb) / .6);
+}
+
+/* Le rail colle à sa tête : l'écart de figure habituel l'en détacherait. */
+.versant__figure.onb-rail { margin-top: clamp(18px, 2.6vh, 28px); }
 
 .flow-box {
   fill: rgb(var(--navy-rgb) / .38);
@@ -3866,6 +3932,11 @@ a.contact__mail:hover { border-bottom-color: var(--pink); }
   stroke-dasharray: 5 5;
   stroke-linecap: round;
 }
+
+/* Les libellés sont centrés dans leur case : leur `x` est le milieu de la boîte,
+   et c'est `text-anchor` qui fait le reste. */
+.flow-name,
+.flow-count { text-anchor: middle; }
 
 .flow-name {
   font-family: var(--font-display);
