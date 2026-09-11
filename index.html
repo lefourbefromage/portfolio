@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vincent Waldmann — Webdesigner & Intégrateur</title>
 <meta name="description" content="Webdesigner et intégrateur depuis 2013. Treize ans à concevoir et intégrer des sites à très forte audience, du premier tracé à la mise en ligne.">
-<link rel="stylesheet" href="css/style.css?v=0.28">
+<link rel="stylesheet" href="css/style.css?v=0.29">
 
 <!-- L'ICÔNE DU SITE. Les trois fichiers sont à la RACINE du dépôt et non dans
      `assets/`, qui se range par page : ils n'appartiennent à aucune page, et
@@ -50,10 +50,20 @@
      forme compterait à part. -->
 <link rel="canonical" href="https://vincentw.fr/">
 
+<!-- LA MESURE D'AUDIENCE, par Umami Cloud : visiteurs, pages, durée de visite,
+     provenance. Sans cookie, donc sans bandeau de consentement. Voir « La
+     mesure d'audience » dans CLAUDE.md et la dernière IIFE de `js/main.js`.
+     `data-domains` coupe tout hors du domaine : le serveur local ne compte pas.
+     `data-exclude-hash` : les ancres ne comptent pas comme des pages. -->
+<script defer src="https://cloud.umami.is/script.js"
+        data-website-id="4deed941-b997-4501-a1a0-e32246f48ac7"
+        data-domains="vincentw.fr"
+        data-exclude-hash="true"></script>
+
 <!-- LE VOILE DE TRANSITION, en tête et sur les quatre pages : sa moitié
      « arrivée » doit s'exécuter avant le premier rendu, sinon la page apparaît
      un instant à nu avant d'être recouverte. Voir l'en-tête de `js/veil.js`. -->
-<script src="js/veil.js?v=0.28"></script>
+<script src="js/veil.js?v=0.29"></script>
 
 <!-- L'ARRIVÉE SUR L'ACCUEIL, et elle se règle AVANT le premier rendu — d'où ce
      script en tête de page et non dans `main.js`, qui charge en bas. Même parti
@@ -154,7 +164,7 @@
   <span class="banner__flag">Site en cours de construction.</span>
   <span>Des bugs peuvent apparaître.</span>
   <!-- Posé par tools/bump_version.py, avec les ?v= du <head> : ne pas éditer à la main. -->
-  <span class="banner__version">v0.28</span>
+  <span class="banner__version">v0.29</span>
 </div>
 
 <header class="site-header">
@@ -258,7 +268,7 @@
        étroite : c'est la seule section de la page bâtie comme ça, la maquette le veut.
        Le fond porte les deux carrés topo, et le fil pointillé reprend celui du tas de
        photos pour descendre vers le parcours. -->
-  <section class="section about" id="a-propos">
+  <section class="section about" id="a-propos" data-stat="Section : À propos">
 
     <div class="about__topo" aria-hidden="true">
       <img class="about__topo-tile about__topo-tile--left" src="assets/home/about/topo-square-left.svg" alt="" decoding="async">
@@ -351,7 +361,7 @@
 
   </section>
 
-  <section class="trail" id="parcours">
+  <section class="trail" id="parcours" data-stat="Section : Parcours">
 
     <!-- Le fil pointillé qui descend du bouton « CV » d'À propos et vient se poser
          sur le carton. C'est le tracé de `src/home/separator.svg`, renormalisé pour que son
@@ -506,7 +516,7 @@
     </div>
   </section>
 
-  <section class="section" id="projets">
+  <section class="section" id="projets" data-stat="Section : Projets">
     <div class="section__head">
       <p class="section__eyebrow">
         <span class="section__eyebrow-num">03.</span> Sur les sentiers
@@ -583,7 +593,7 @@
     </ul>
   </section>
 
-  <section class="section contact" id="contact">
+  <section class="section contact" id="contact" data-stat="Section : Contact">
     <div class="section__head">
       <p class="section__eyebrow"><span class="section__eyebrow-num">04.</span> Contact</p>
       <h2 class="section__title">Discutons</h2>
@@ -630,6 +640,6 @@
   </div>
 </footer>
 
-<script src="js/main.js?v=0.28"></script>
+<script src="js/main.js?v=0.29"></script>
 </body>
 </html>

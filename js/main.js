@@ -1007,6 +1007,8 @@
     dlg.setAttribute('aria-label', g.el.dataset.viewer || 'Visionneuse');
     paint(false);
     if (!dlg.open) dlg.showModal();
+    // La mesure d'audience (dernière IIFE) : quelles galeries on ouvre en grand.
+    window.umami?.track('Visionneuse', { groupe: g.el.dataset.viewer || '' });
   }
 
   function step(delta) {
@@ -1470,4 +1472,75 @@
     link.append(...el.childNodes);
     el.replaceWith(link);
   }
+})();
+
+/* ---------- La mesure d'audience ----------
+   Umami (chargé en tête des quatre pages) compte seul les pages vues. Ce qu'on
+   ajoute ici, ce sont des ÉVÉNEMENTS, et le premier sert moins à les compter
+   qu'à rendre la durée de visite juste : Umami la mesure du premier au dernier
+   signal d'une visite, donc quelqu'un qui lit tout l'accueil sans changer de
+   page repartirait avec « 0 s ». Chaque section atteinte est un signal de plus.
+
+   Tout passe par `window.umami?.track` : si le script est bloqué (bloqueur de
+   pub, réseau), il n'y a pas d'objet, et rien ne casse. Hors de vincentw.fr,
+   Umami ignore l'appel de lui-même (`data-domains`). Rien n'est intercepté :
+   aucun `preventDefault`, le voile de transition garde la main sur les liens. */
+(function () {
+  const track = (name, data) => window.umami?.track(name, data);
+
+  // Ne pas se compter soi-même : `?stats=off` une fois par appareil et par
+  // navigateur, `?stats=on` pour revenir. C'est le drapeau qu'Umami lit
+  // lui-même, et ce fichier passe AVANT lui (le sien est en `defer`), donc la
+  // visite qui pose le drapeau n'est déjà plus comptée.
+  const flag = new URLSearchParams(location.search).get('stats');
+  if (flag === 'off' || flag === 'on') {
+    try {
+      if (flag === 'off') localStorage.setItem('umami.disabled', '1');
+      else localStorage.removeItem('umami.disabled');
+    } catch (e) { /* stockage indisponible */ }
+    const url = new URL(location.href);
+    url.searchParams.delete('stats');
+    history.replaceState(history.state, '', url.pathname + url.search + url.hash);
+  }
+
+  // Les liens qui quittent le site, et l'adresse de contact.
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest?.('a[href]');
+    if (!a) return;
+    if (a.protocol === 'mailto:') track('Mail');
+    else if (/^https?:$/.test(a.protocol) && a.hostname !== location.hostname) {
+      track('Lien sortant', { vers: a.hostname.replace(/^www\./, '') });
+    }
+  });
+
+  // Ce qu'on a LU. Le HTML décide : `data-stat="<nom>"` sur un bloc, et
+  // l'événement part la première fois qu'il reste DWELL ms à l'écran — un bloc
+  // traversé d'un trait (saut d'ancre, flick) ne compte pas comme lu. Un
+  // `IntersectionObserver` suffit ici, contrairement au reveal : rater un bloc
+  // qu'on n'a pas vu est justement la bonne réponse. On attend le `load`,
+  // qui suit l'envoi de la page vue par Umami : aucun événement ne la précède.
+  const blocks = document.querySelectorAll('[data-stat]');
+  if (!blocks.length || !('IntersectionObserver' in window)) return;
+  const DWELL = 1500;
+
+  const start = () => {
+    const timers = new Map();
+    const io = new IntersectionObserver((entries) => {
+      for (const { target, isIntersecting } of entries) {
+        if (isIntersecting && !timers.has(target)) {
+          timers.set(target, setTimeout(() => {
+            track(target.dataset.stat);
+            io.unobserve(target);
+          }, DWELL));
+        } else if (!isIntersecting) {
+          clearTimeout(timers.get(target));
+          timers.delete(target);
+        }
+      }
+    }, { rootMargin: '0px 0px -20% 0px' });   // entré dans les quatre cinquièmes hauts
+    blocks.forEach((el) => io.observe(el));
+  };
+
+  if (document.readyState === 'complete') start();
+  else addEventListener('load', start, { once: true });
 })();

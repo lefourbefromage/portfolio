@@ -280,6 +280,47 @@ carte, `og:image` est déjà par page — il n'y a qu'un chemin à changer.
 une carte sans image le temps du premier passage de leur robot. Si tu changes l'image, change
 les deux nombres.
 
+### La mesure d'audience
+
+**Umami Cloud**, choisi par Vincent (offre gratuite, 100 000 événements par mois). **Sans
+cookie**, donc **sans bandeau de consentement** — c'est la raison du choix contre Google
+Analytics, qui en aurait imposé un. N'ajoute aucun outil qui pose des cookies sans poser la
+question du bandeau.
+
+Le `<script defer>` est dans les **quatre** `<head>`, juste sous le `canonical`, avec le même
+identifiant de site. Trois attributs, tous voulus :
+
+- `data-domains="vincentw.fr"` — rien n'est envoyé ailleurs : le serveur local ne compte pas,
+  et on peut tester sans polluer les chiffres. Si le domaine change, c'est une ligne de plus
+  à reprendre avec le `CNAME` et les `og:` ;
+- `data-exclude-hash="true"` — Umami compte comme une page vue tout `pushState` /
+  `replaceState` qui change l'URL ; sans ça, l'ancre `#parcours` posée par le clic sur
+  « Parcours » serait une page à part ;
+- `defer` — il n'est pas sur le chemin du premier rendu.
+
+**La dernière IIFE de `js/main.js` envoie les événements**, toujours par
+`window.umami?.track` : si le script est bloqué, rien ne casse. Elle n'intercepte rien — pas
+de `preventDefault`, le voile garde la main sur les liens. **N'utilise pas les attributs
+`data-umami-event`** : Umami annule alors lui-même la navigation d'un lien pour la refaire
+après son envoi, en travers du voile de transition.
+
+- **`data-stat="<nom>"`** sur un bloc, le HTML décide : l'événement part la première fois que
+  le bloc reste 1,5 s à l'écran. Posé sur les quatre sections de l'accueil
+  (« Section : À propos »…) et sur la `.case-foot` des pages projet (« Fin de page »). Ce
+  n'est pas qu'un compteur de lecture : **Umami mesure la durée d'une visite du premier au
+  dernier signal**, donc sans eux quelqu'un qui lit tout l'accueil sans changer de page
+  repartirait avec 0 s. Un nom d'événement fait au plus 50 signes ;
+- **« Lien sortant »** (`vers` : le domaine) et **« Mail »**, par un écouteur de clic
+  délégué — aucun balisage à tenir ;
+- **« Visionneuse »** (`groupe` : le `data-viewer`), une ligne dans `open()` de la visionneuse.
+
+**Pour que Vincent ne se compte pas lui-même** : ouvrir une fois `?stats=off` sur chaque
+appareil et chaque navigateur (`?stats=on` pour revenir). Ça pose le drapeau
+`umami.disabled` qu'Umami lit lui-même, puis retire le paramètre de l'URL.
+
+Le panneau masqué gèle l'`IntersectionObserver` : les « Section : » ne s'y déclenchent pas,
+le reste se vérifie en remplaçant `window.umami.track` par un journal.
+
 ## Système de design
 
 ### Palette : quatre couleurs

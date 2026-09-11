@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Jacquie &amp; Michel — Vincent Waldmann</title>
 <meta name="description" content="Douze ans en interne chez Jacquie &amp; Michel : les sites de la marque, ses campagnes et les visuels des réseaux sociaux.">
-<link rel="stylesheet" href="css/style.css?v=0.28">
+<link rel="stylesheet" href="css/style.css?v=0.29">
 
 <!-- L'ICÔNE DU SITE. Les trois fichiers sont à la RACINE du dépôt et non dans
      `assets/`, qui se range par page : ils n'appartiennent à aucune page, et
@@ -50,10 +50,20 @@
      forme compterait à part. -->
 <link rel="canonical" href="https://vincentw.fr/projet-jm">
 
+<!-- LA MESURE D'AUDIENCE, par Umami Cloud : visiteurs, pages, durée de visite,
+     provenance. Sans cookie, donc sans bandeau de consentement. Voir « La
+     mesure d'audience » dans CLAUDE.md et la dernière IIFE de `js/main.js`.
+     `data-domains` coupe tout hors du domaine : le serveur local ne compte pas.
+     `data-exclude-hash` : les ancres ne comptent pas comme des pages. -->
+<script defer src="https://cloud.umami.is/script.js"
+        data-website-id="4deed941-b997-4501-a1a0-e32246f48ac7"
+        data-domains="vincentw.fr"
+        data-exclude-hash="true"></script>
+
 <!-- LE VOILE DE TRANSITION, en tête et sur les quatre pages : sa moitié
      « arrivée » doit s'exécuter avant le premier rendu, sinon la page apparaît
      un instant à nu avant d'être recouverte. Voir l'en-tête de `js/veil.js`. -->
-<script src="js/veil.js?v=0.28"></script>
+<script src="js/veil.js?v=0.29"></script>
 
 <!-- Même amorce de motion que `projet-beepz.html`, et pour les mêmes raisons :
      la classe est posée AVANT le premier rendu, elle n'est pas posée du tout en
@@ -80,7 +90,7 @@
   <span class="banner__flag">Site en cours de construction.</span>
   <span>Des bugs peuvent apparaître.</span>
   <!-- Posé par tools/bump_version.py, avec les ?v= du <head> : ne pas éditer à la main. -->
-  <span class="banner__version">v0.28</span>
+  <span class="banner__version">v0.29</span>
 </div>
 
 <header class="site-header">
@@ -480,7 +490,7 @@
          alt="La page anniversaire des vingt ans de Jacquie &amp; Michel, présentée en trois panneaux inclinés : une frise chronologique sur fond bleu, ponctuée d’anecdotes, de captures d’époque et de vignettes découpées.">
   </section>
 
-  <nav class="case-foot" data-reveal aria-label="Navigation entre projets">
+  <nav class="case-foot" data-reveal data-stat="Fin de page" aria-label="Navigation entre projets">
     <a class="case-foot__back" href="./#projets">
       <svg class="case-back__arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true" focusable="false">
         <path d="M9 5H1M5 1L1 5L5 9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
@@ -517,7 +527,7 @@
   </div>
 </footer>
 
-<script src="js/main.js?v=0.28"></script>
+<script src="js/main.js?v=0.29"></script>
 
 </body>
 </html>
