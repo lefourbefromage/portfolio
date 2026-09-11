@@ -284,6 +284,48 @@
 
   const at = (len) => track.getPointAtLength(Math.max(0, Math.min(total, len)));
 
+  // Le chemin parcouru est le MÊME tracé, recoupé au point atteint — et non plus
+  // révélé par `stroke-dasharray`. WebKit (Safari, et tous les navigateurs iOS)
+  // ignore ce tiret sur ce tracé-là : le vert s'y peignait de bout en bout, dès
+  // l'ouverture. Vérifié sur iOS 18 avec quatre variantes — tiret + trou,
+  // `dashoffset`, trou de 1e7, SVG sans calque ni transform — qui échouent
+  // toutes ; seul le `d` recoupé tient.
+  // Le `d` n'est fait que de M et de L (voir gen_route.py / gen_relief.py), donc
+  // les longueurs cumulées se calculent une fois, et chaque image ne fait plus
+  // qu'une recherche dichotomique et une jointure de chaîne.
+  const doneFull = done.getAttribute('d');
+  const donePts = (doneFull.match(/-?\d*\.?\d+/g) || []).map(Number);
+  const doneSegs = [];
+  const doneLen = [0];
+  for (let i = 0; i + 3 < donePts.length; i += 2) {
+    doneSegs.push(`L ${donePts[i + 2]} ${donePts[i + 3]}`);
+    doneLen.push(doneLen[doneLen.length - 1] +
+      Math.hypot(donePts[i + 2] - donePts[i], donePts[i + 3] - donePts[i + 1]));
+  }
+  let doneWalked = -1;
+
+  function drawWalked(walked) {
+    const w = Math.round(walked);
+    if (w === doneWalked || doneSegs.length === 0) return;
+    doneWalked = w;
+    const end = doneLen[doneLen.length - 1];
+    if (w >= end) { done.setAttribute('d', doneFull); return; }
+    // Dernier sommet déjà dépassé, puis le point interpolé sur le segment en cours.
+    let lo = 0;
+    let hi = doneLen.length - 1;
+    while (hi - lo > 1) {
+      const mid = (lo + hi) >> 1;
+      if (doneLen[mid] <= w) lo = mid; else hi = mid;
+    }
+    const f = (w - doneLen[lo]) / ((doneLen[hi] - doneLen[lo]) || 1);
+    const x0 = donePts[lo * 2];
+    const y0 = donePts[lo * 2 + 1];
+    const x = x0 + (donePts[hi * 2] - x0) * f;
+    const y = y0 + (donePts[hi * 2 + 1] - y0) * f;
+    done.setAttribute('d',
+      `M ${donePts[0]} ${donePts[1]} ${doneSegs.slice(0, lo).join(' ')} L ${x.toFixed(1)} ${y.toFixed(1)}`);
+  }
+
   function layoutStops() {
     stops.forEach((s) => {
       const pt = at(total * parseFloat(s.dataset.at));
@@ -309,7 +351,7 @@
     const p = progressFor(scrolled);
     const walked = total * p;
 
-    done.style.strokeDasharray = `${walked} ${total}`;
+    drawWalked(walked);
 
     // Le marcheur avance dès l'épinglage, mais la CAMÉRA ne le suit qu'une fois le
     // chemin visible. Pendant l'ouverture elle est tenue à la position qu'il aura

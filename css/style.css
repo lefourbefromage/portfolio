@@ -861,6 +861,19 @@ html { scroll-padding-top: var(--banner-h); }
      c'est ce qui laisse les deux blocs sur la MÊME ligne du bas sans jamais se
      rencontrer, au lieu d'obliger l'un à passer au-dessus de l'autre. */
   --hud-reserve: clamp(148px, 15vw, 250px);
+
+  /* La part de la scène que les barres du navigateur mobile recouvrent. `100vh`
+     vaut la fenêtre barres ESCAMOTÉES : quand elles sont affichées, le bas de la
+     scène passe sous la barre d'outils, et le journal comme le HUD avec lui.
+     `100dvh` suit la fenêtre réellement visible, donc l'écart des deux est
+     exactement ce qui est caché — 0 sur ordinateur, 0 barres escamotées. Seuls
+     les calques ancrés en bas le relisent : la scène garde 100vh, sa hauteur, la
+     caméra et les rendez-vous de la marche ne bougent pas d'un pixel. */
+  --bar-gap: 0px;
+}
+
+@supports (height: 100dvh) {
+  .trail__stage { --bar-gap: max(0px, calc(100vh - 100dvh)); }
 }
 
 /* Pas de fond ici mais sur la fenêtre : hors d'elle, on doit voir l'encre de la
@@ -1248,7 +1261,7 @@ html { scroll-padding-top: var(--banner-h); }
      n'importe quelle largeur. `right` leur évite de se rencontrer quand le texte
      est long, et `max-width` tient la mesure de lecture sur grand écran. */
   right: var(--hud-reserve);
-  bottom: clamp(16px, 2.6vh, 38px);
+  bottom: calc(clamp(16px, 2.6vh, 38px) + var(--bar-gap));
   width: auto;
   max-width: 38ch;
   /* Hauteur nulle : les entrées se recouvrent, donc la boîte n'a pas de hauteur
@@ -1272,7 +1285,9 @@ html { scroll-padding-top: var(--banner-h); }
   position: absolute;
   left: calc(-1 * var(--log-inset));
   right: -22%;
-  bottom: calc(-1 * clamp(16px, 2.6vh, 38px));
+  /* Jusqu'au bas de la scène, barre du navigateur comprise : le scrim ne doit
+     pas finir en bord net au-dessus d'elle. */
+  bottom: calc(-1 * clamp(16px, 2.6vh, 38px) - var(--bar-gap));
   height: min(430px, 52vh);
   background: radial-gradient(
     116% 100% at 0% 100%,
@@ -1345,7 +1360,7 @@ html { scroll-padding-top: var(--banner-h); }
 .trail__hud {
   position: absolute;
   right: clamp(16px, 2.4vw, 38px);
-  bottom: clamp(16px, 2.6vh, 38px);
+  bottom: calc(clamp(16px, 2.6vh, 38px) + var(--bar-gap));
   z-index: 4;
   padding: clamp(10px, 1vw, 16px) clamp(16px, 1.6vw, 26px) clamp(8px, .8vw, 12px);
   border-radius: 14px;

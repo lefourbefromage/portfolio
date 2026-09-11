@@ -921,11 +921,19 @@ relit — relancer `gen_relief.py` ne cumule donc pas les décalages. **Si tu r�
 avec `gen_route.py`, supprime ce fichier puis relance `gen_relief.py`**, sinon l'altitude
 resterait calée sur l'ancien tracé.
 
-**Deux tracés superposés, au `d` identique.** `.trail__track` est la route grise en
-pointillés devant ; `.trail__track-done` est verte, pleine, et se révèle par
-`stroke-dasharray: ${walked} ${total}`. Cette astuce ne fonctionne que parce que la ligne
-parcourue n'est *pas* en pointillés — si elle le redevenait, il faudrait un `<mask>` et un
-tracé de révélation distinct.
+**Deux tracés superposés, au même `d` dans le HTML.** `.trail__track` est la route grise
+en pointillés devant ; `.trail__track-done` est verte, pleine, et **le JS recoupe son `d`
+au point atteint** à chaque image (`drawWalked()`) : longueurs cumulées calculées une fois,
+puis une dichotomie et le point interpolé sur le segment en cours.
+
+**Ne reviens pas à `stroke-dasharray: ${walked} ${total}`.** C'était la technique d'avant,
+et WebKit — Safari, donc TOUS les navigateurs iOS, Chrome compris — l'ignore sur ce tracé :
+le vert s'y peignait de bout en bout dès l'ouverture de la carte. Vérifié sur iOS 18 dans
+le simulateur, quatre variantes échouent toutes (tiret + trou, `dashoffset`, trou de 1e7,
+SVG sans calque ni transform) ; seul le `d` recoupé tient. Chrome desktop, lui, rend bien
+les tirets : **le bug ne se voit pas dans le panneau navigateur**, il faut le simulateur.
+Le recoupage suppose un `d` fait uniquement de `M` et de `L`, ce que produisent
+`gen_route.py` et `gen_relief.py`.
 
 Ajouter ou déplacer une étape se fait en éditant `data-at` dans `index.html` ; les positions à
 l'écran sont calculées par `getPointAtLength`. Une étape ajoutée doit porter les quatre
@@ -990,6 +998,14 @@ demandé : `--log-inset` vaut `clamp(16px, 3vw, 42px)` contre `clamp(24px, 4.5vw
 même verticale — si tu veux les raccorder, c'est le padding de `.trail__intro` qu'il faut
 descendre, pas le journal qu'il faut repousser. Le scrim relit `--log-inset`, il n'y a qu'une
 valeur à changer.
+
+**Les barres du navigateur mobile recouvrent le bas de la scène**, qui fait `100vh` —
+soit la fenêtre barres ESCAMOTÉES. Le journal et le HUD passaient donc sous la barre
+d'outils d'iOS. Leur `bottom` ajoute `--bar-gap`, qui vaut `100vh − 100dvh` : exactement
+la part cachée, 0 sur ordinateur et 0 barres escamotées. **La scène, elle, garde
+`100vh`** : sa hauteur, la caméra et les rendez-vous de la marche n'en dépendent pas, et
+c'est pour ça que seuls les calques ancrés en bas relisent la variable. Le scrim la
+retranche de son `bottom` pour descendre jusqu'au bas de la scène.
 
 **Le journal et le HUD partagent la ligne du bas**, à toute largeur d'écran : même `bottom`,
 et le journal s'arrête avant le coin droit grâce à `--hud-reserve`, la place réservée au HUD.
@@ -2101,8 +2117,10 @@ Ces points ne sont pas encore arbitrés — demande plutôt que de supposer :
   leurs textes sont des **placeholders assumés**, marqués par la pastille `.todo`
   (« À compléter »). N'invente pas de projets ni de client à sa place : demande-lui le
   contenu. À propos et le parcours, eux, sont écrits pour de bon.
-  L'adresse de `#contact` est `adresse@a-completer.fr`, et les liens
-  réseaux sont des `<span>`, pas des `<a>`, pour ne pas laisser d'ancre morte.
+  L'adresse de `#contact` est `adresse@a-completer.fr`. Les liens réseaux — **LinkedIn,
+  Behance et Dribbble** — sont de vrais `<a>` (nouvel onglet), et ce sont les trois mêmes
+  que porte le footer des quatre pages : garde les deux listes d'accord. GitHub a été
+  retiré.
 - **Le design des titres**, `.trail__intro` compris, qui doit être repris. En attendant, les
   cartes d'étape passent derrière « L'ASCENSION » et les deux textes se croisent : c'est
   **connu et assumé**, pas un bug. Ne le rattrape pas par un fond ou un dégradé sous le titre,
