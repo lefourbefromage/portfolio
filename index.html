@@ -6,6 +6,11 @@
 <title>Vincent Waldmann — Webdesigner & Intégrateur</title>
 <link rel="stylesheet" href="css/style.css">
 
+<!-- LE VOILE DE TRANSITION, en tête et sur les quatre pages : sa moitié
+     « arrivée » doit s'exécuter avant le premier rendu, sinon la page apparaît
+     un instant à nu avant d'être recouverte. Voir l'en-tête de `js/veil.js`. -->
+<script src="js/veil.js"></script>
+
 <!-- L'ARRIVÉE SUR L'ACCUEIL, et elle se règle AVANT le premier rendu — d'où ce
      script en tête de page et non dans `main.js`, qui charge en bas. Même parti
      que l'amorce de motion des trois pages projet.
@@ -71,10 +76,10 @@
 
       // Trois rendez-vous, et pas un seul : la hauteur du document n'est
       // complète qu'une fois les images posées, et une cible plus basse que le
-      // document se fait écrêter en silence. `pagereveal` est celui qui compte
-      // quand la transition de page joue — il tombe avant que le navigateur ne
-      // prenne l'instantané de la page entrante, donc la transition part de la
-      // bonne position au lieu de la rattraper.
+      // document se fait écrêter en silence. Mesuré, c'est le premier qui
+      // travaille — le document a déjà sa hauteur pleine à `DOMContentLoaded`,
+      // donc il n'existe aucune image où la page serait peinte en haut.
+      // `pagereveal` tombe juste après, avant la première occasion de rendu.
       var put = function () {
         if (free || Math.abs(scrollY - y) < 1) return;
         scrollTo({ top: y, behavior: 'instant' });

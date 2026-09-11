@@ -7,6 +7,11 @@
 <meta name="description" content="Jimizz, la crypto-monnaie de Jacquie &amp; Michel : le site, le dashboard d’investissement, la marketplace de NFT et le site de quiz.">
 <link rel="stylesheet" href="css/style.css">
 
+<!-- LE VOILE DE TRANSITION, en tête et sur les quatre pages : sa moitié
+     « arrivée » doit s'exécuter avant le premier rendu, sinon la page apparaît
+     un instant à nu avant d'être recouverte. Voir l'en-tête de `js/veil.js`. -->
+<script src="js/veil.js"></script>
+
 <!-- Même amorce de motion que `projet-jm.html` et `projet-beepz.html`, et pour
      les mêmes raisons : la classe est posée AVANT le premier rendu, elle n'est
      pas posée du tout en mouvement réduit, et un garde-fou de 2,5 s la retire si

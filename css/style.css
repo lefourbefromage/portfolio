@@ -89,65 +89,115 @@ body {
 }
 
 /* ==========================================================================
-   LES TRANSITIONS DE PAGE
+   LE VOILE DE TRANSITION
 
-   Le site est multi-pages, sans routeur et sans étape de build : la transition
-   est donc celle du NAVIGATEUR, `@view-transition`, et pas un chargement
-   scripté. Trois conséquences, toutes voulues :
+   Entre deux pages, un panneau d'encre monte du bas, recouvre l'écran, porte le
+   nom, puis POURSUIT SA MONTÉE et libère la page suivante. Un seul geste, coupé
+   en deux par la navigation : ce qui a couvert sort par le haut, ça ne revient
+   pas sur ses pas.
 
-     — rien n'est intercepté. Le clic reste une navigation ordinaire, et le
-       bouton Précédent, l'ouverture dans un nouvel onglet et le rechargement
-       marchent exactement comme avant ;
-     — les IIFE de `main.js` n'ont rien à réinitialiser, puisque le document est
-       bel et bien remplacé. C'est tout le coût qu'aurait eu un remplacement de
-       `<main>` en fetch, et il est évité ;
-     — sur un navigateur qui ne connaît pas la règle, la navigation est celle
-       d'hier : pas de transition, et rien de cassé. Il n'y a donc AUCUN repli à
-       écrire, et surtout pas une seconde mécanique à tenir d'accord.
+   IL Y A EU UNE `@view-transition` NATIVE ICI, RETIRÉE. Elle marchait, elle ne
+   se VOYAIT pas : un fondu croisé de 360 ms entre deux pages sombres au dessin
+   quasi identique ne donne rien à regarder. Et elle ne jouait que sur les
+   navigateurs qui la connaissent. Ne la remets pas EN PLUS du voile — les deux
+   se marcheraient dessus, le navigateur prenant son instantané pendant que le
+   panneau bouge.
 
-   Elle ne joue qu'entre DEUX pages qui la déclarent toutes les deux. Les quatre
-   pages du site partageant cette feuille de style, c'est acquis pour elles et
-   pour elles seules : un lien sortant ne transitionne pas.
+   LE PRIX, ASSUMÉ : le clic est intercepté, donc la navigation part avec
+   `--veil-close + --veil-hold` de retard. C'est le seul endroit du site où le
+   JS se met en travers d'un geste du visiteur, et c'est ce qui permet au voile
+   d'être fermé AVANT que la page ne s'en aille. Tout ce qui n'est pas une
+   navigation interne passe sans être touché — ancre de la même page, lien
+   sortant, `mailto:`, nouvel onglet, clic milieu, téléchargement.
 
-   LE MOUVEMENT EST LE MÊME PARTOUT — accueil → projet, projet → projet, retour
-   — et c'est une consigne : un seul vocabulaire de mouvement, rien à tenir page
-   par page. Il reprend celui des révélations des pages projet, ça monte de
-   quelques pixels et ça se fond, sur la même courbe `--ease-out`. */
-@view-transition { navigation: auto; }
-
-/* LES DEUX ANIMATIONS ONT LA MÊME DURÉE, et ce n'est pas une coquetterie : la
-   page sortante garde son opacité PLEINE du début à la fin — elle ne fait que
-   monter — et c'est l'entrante qui la recouvre en se révélant par-dessus. Si la
-   sortante s'effaçait la première, on verrait au travers pendant quelques
-   images, sur un site dont le fond est d'encre de bout en bout.
-
-   D'où aussi le retour à `mix-blend-mode: normal` : le `plus-lighter` posé par
-   défaut est fait pour un fondu croisé dont les deux opacités se complètent
-   exactement, ce qui n'est pas le cas ici. Il éclaircirait le milieu du
-   mouvement. */
-::view-transition-old(root),
-::view-transition-new(root) { mix-blend-mode: normal; }
-
-::view-transition-old(root) { animation: page-leave 360ms var(--ease-out) both; }
-::view-transition-new(root) { animation: page-enter 360ms var(--ease-out) both; }
-
-/* `transform` ET NON `translate`, à l'inverse du reste du site. Ailleurs les deux
-   propriétés sont séparées exprès, parce qu'une pièce peut porter une rotation de
-   repos, une révélation et un parallaxe à la fois. Ici il n'y a rien à composer :
-   le morphing de boîte vit sur `::view-transition-group`, pas sur ces deux-là, qui
-   n'ont donc aucune transformation à eux. C'est aussi la forme documentée. */
-@keyframes page-leave { to   { transform: translateY(-12px); } }
-@keyframes page-enter { from { opacity: 0; transform: translateY(16px); } }
-
-/* En mouvement réduit, la navigation redevient un remplacement net. On neutralise
-   les ANIMATIONS et non la règle `@view-transition` elle-même : la transition a
-   bien lieu, elle ne dure rien — c'est le seul moyen de ne pas laisser un
-   navigateur à moitié dans l'un et à moitié dans l'autre. */
-@media (prefers-reduced-motion: reduce) {
-  ::view-transition-group(*),
-  ::view-transition-old(*),
-  ::view-transition-new(*) { animation: none !important; }
+   LES TROIS DURÉES SONT DÉCLARÉES ICI ET LUES PAR LE JS, jamais réécrites de
+   l'autre côté : `js/veil.js` va chercher `--veil-close` et `--veil-hold` dans
+   le style calculé pour savoir quand lancer la navigation. Même principe que
+   `bakeRelief()`, qui lit le chemin de la tuile dans le fond CSS plutôt que de
+   le redire. Change un nombre ici, les deux côtés suivent. */
+:root {
+  --veil-close: 420ms;   /* le panneau monte et recouvre */
+  --veil-hold:  120ms;   /* il reste plein, le temps de lire le nom */
+  --veil-open:  560ms;   /* il poursuit sa montée et libère la page */
 }
+
+/* LE PANNEAU EST UN PSEUDO-ÉLÉMENT DE `html`, et ce n'est pas de la coquetterie :
+   il doit exister DÈS LE PREMIER RENDU de la page qui arrive, or à ce moment-là
+   il n'y a pas encore de `<body>` où insérer quoi que ce soit. Une classe posée
+   sur la racine par un script en tête de page suffit, et sans JS il n'y a pas de
+   classe, donc pas de voile — même règle que `.js-motion`. */
+html.is-leaving::before,
+html.is-entering::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: var(--ink);
+  pointer-events: none;
+  will-change: transform;
+}
+
+/* Le bord d'attaque est BOMBÉ, et il s'aplatit en arrivant : un rectangle qui
+   monte tout droit se lit comme un rideau de scène, la courbe le fait lire comme
+   une matière qui monte. C'est un seul nombre — mets les `vh` à 0 et tu retrouves
+   le bord droit. */
+html.is-leaving::before  { animation: veil-close var(--veil-close) cubic-bezier(.62, .02, .34, 1) both; }
+html.is-entering::before { animation: veil-open  var(--veil-open)  var(--ease-out) var(--veil-hold) both; }
+
+@keyframes veil-close {
+  from { transform: translateY(100%); border-radius: 50% 50% 0 0 / 9vh 9vh 0 0; }
+  to   { transform: translateY(0);    border-radius: 0; }
+}
+@keyframes veil-open {
+  from { transform: translateY(0);     border-radius: 0; }
+  to   { transform: translateY(-100%); border-radius: 0 0 50% 50% / 0 0 9vh 9vh; }
+}
+
+/* LE NOM EST UN SECOND PSEUDO-ÉLÉMENT, et il ne bouge pas avec le panneau : il se
+   fond sur place. S'il voyageait avec lui, il ne serait au centre qu'un instant,
+   et c'est justement le temps d'arrêt qui donne sa respiration au mouvement.
+
+   Le texte est recopié du header, ce qui est une entorse assumée à la règle « une
+   seule source de vérité » : le seul autre moyen serait un vrai élément, et un
+   vrai élément ne peut pas exister avant le `<body>`. Le `/ ""` le rend muet pour
+   les lecteurs d'écran, qui lisent déjà le logo du header. */
+html.is-leaving::after,
+html.is-entering::after {
+  content: "Waldmann\A Vincent" / "";
+  white-space: pre;
+  position: fixed;
+  inset: 0;
+  z-index: 9001;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(22px, 2.6vw, 34px);
+  line-height: 1.15;
+  color: var(--cream);
+  pointer-events: none;
+}
+
+/* Il n'arrive QUE dans le dernier tiers de la fermeture — sous le panneau il n'y
+   a rien à voir, et un nom qui monte en même temps que le fond ferait deux
+   mouvements pour un. Il s'en va au premier tiers de l'ouverture, pour la même
+   raison. */
+html.is-leaving::after  { animation: veil-mark-in  var(--veil-close) var(--ease-out) both; }
+html.is-entering::after { animation: veil-mark-out calc(var(--veil-open) * .45) ease both var(--veil-hold); }
+
+@keyframes veil-mark-in {
+  0%, 55% { opacity: 0; transform: translateY(10px); }
+  100%    { opacity: 1; transform: translateY(0); }
+}
+@keyframes veil-mark-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+/* En mouvement réduit, il n'y a pas de voile du tout : `js/veil.js` sort avant
+   de poser la moindre classe, donc aucune de ces règles ne s'applique et le clic
+   n'est pas intercepté. Rien à neutraliser ici. */
 
 /* L'ARRIVÉE NE DÉFILE PAS SOUS LES YEUX. `scroll-behavior: smooth` vaut aussi
    pour le saut vers l'ancre d'une NAVIGATION, et pas seulement pour le clic sur

@@ -1485,41 +1485,67 @@ tout le reste est en `loading="lazy"`, vérifié au moniteur réseau.
 
 ## Les transitions de page
 
-Le site est multi-pages, sans routeur et sans étape de build : la transition entre deux
-pages est donc **celle du navigateur**, `@view-transition { navigation: auto }`, et pas un
-chargement scripté. Elle tient en un bloc de `css/style.css`, juste avant le header.
+Entre deux pages, **un panneau d'encre monte du bas, recouvre l'écran, porte le nom, puis
+POURSUIT SA MONTÉE et libère la page suivante.** Un seul geste coupé en deux par la
+navigation : ce qui a couvert sort par le haut, ça ne revient pas sur ses pas. Le dessin
+est dans `css/style.css` (« LE VOILE DE TRANSITION »), la mécanique dans `js/veil.js`.
 
-**Rien n'est intercepté, et c'est tout l'intérêt.** Le clic reste une navigation
-ordinaire : le bouton Précédent, l'ouverture dans un nouvel onglet, le rechargement et la
-restauration de position marchent comme avant. Les IIFE de `main.js` n'ont rien à
-réinitialiser, puisque le document est bel et bien remplacé — c'est exactement le coût
-qu'aurait eu un remplacement de `<main>` en fetch, et il est évité. Et sur un navigateur
-qui ne connaît pas la règle, la navigation est celle d'hier : pas de transition, rien de
-cassé. **Il n'y a donc aucun repli à écrire**, surtout pas une seconde mécanique à tenir
-d'accord avec la première.
+**Il y a eu une `@view-transition` native ici, et elle a été retirée.** Elle marchait —
+vérifié dans le CSSOM — mais elle ne se VOYAIT pas : un fondu croisé de 360 ms entre deux
+pages sombres au dessin quasi identique ne donne rien à regarder, et elle ne jouait que sur
+les navigateurs qui la connaissent. **Ne la remets pas EN PLUS du voile** : le navigateur
+prendrait son instantané pendant que le panneau bouge, et les deux se marcheraient dessus.
 
-Elle ne joue qu'entre DEUX pages qui la déclarent toutes les deux. Les quatre pages
-partageant la feuille de style, c'est acquis pour elles et pour elles seules : un lien
-sortant ne transitionne pas.
+**`js/veil.js` est un quatrième fichier, et c'est motivé.** Sa moitié « arrivée » doit
+s'exécuter AVANT LE PREMIER RENDU, sans quoi la page suivante apparaît un instant à nu
+avant d'être recouverte — `main.js`, qui charge en bas, est hors de course. Le seul autre
+moyen serait de recopier le même bloc dans les quatre en-têtes, et c'est le genre de
+doublon dont l'une des copies finit par mentir. Il est chargé en tête des **quatre** pages.
 
-**Le mouvement est le même partout** — accueil → projet, projet → projet, retour — et
-c'est une consigne : un seul vocabulaire, rien à tenir page par page, aucun élément
-partagé à nommer. Il reprend celui des révélations des pages projet : ça monte de quelques
-pixels et ça se fond, sur `--ease-out`.
+Le partage habituel tient : **le JS ne pose que deux classes** sur la racine, `is-leaving`
+et `is-entering`, et tout le dessin est en CSS — comme `--open` du parcours ou `--out` du
+tas de photos.
 
-**Les deux animations ont la même durée (360 ms), et ce n'est pas une coquetterie.** La
-page sortante garde son opacité PLEINE du début à la fin — elle ne fait que monter de
-12 px — et c'est l'entrante qui la recouvre en se révélant par-dessus. Si la sortante
-s'effaçait la première, on verrait au travers pendant quelques images, sur un site dont le
-fond est d'encre de bout en bout. D'où aussi le retour à `mix-blend-mode: normal` sur les
-deux pseudo-éléments : le `plus-lighter` posé par défaut est fait pour un fondu croisé dont
-les deux opacités se complètent exactement, ce qui n'est pas le cas ici — il éclaircirait
-le milieu du mouvement.
+**Le panneau et le nom sont deux PSEUDO-ÉLÉMENTS de `html`** (`::before` et `::after`), et
+ce n'est pas de la coquetterie : au premier rendu de la page qui arrive, il n'y a pas
+encore de `<body>` où insérer quoi que ce soit. Une classe posée sur la racine suffit.
+Corollaire gratuit : **sans JS il n'y a pas de classe, donc pas de voile**, et le clic
+n'est pas intercepté — même règle que `.js-motion`.
 
-En mouvement réduit, on neutralise les **animations** (`::view-transition-group(*)` et ses
-deux voisins) et non la règle `@view-transition` elle-même : la transition a bien lieu, elle
-ne dure rien. C'est le seul moyen de ne pas laisser un navigateur à moitié dans l'un et à
-moitié dans l'autre.
+**Le nom ne voyage pas avec le panneau**, il se fond sur place : s'il montait avec lui, il
+ne serait au centre qu'un instant, or c'est justement le temps d'arrêt qui donne sa
+respiration au mouvement. Son texte est recopié du header, entorse assumée à la règle de la
+source unique — un vrai élément ne peut pas exister avant le `<body>`. Le `/ ""` de la
+propriété `content` le rend muet pour les lecteurs d'écran.
+
+**Les trois durées sont déclarées dans le CSS et LUES par le JS**, jamais réécrites de
+l'autre côté : `--veil-close` (420 ms), `--veil-hold` (120 ms) et `--veil-open` (560 ms)
+vivent dans `:root`, et `veil.js` va chercher les deux premières dans le style calculé pour
+savoir quand lancer la navigation. Même principe que `bakeRelief()`, qui lit le chemin de
+la tuile dans le fond CSS plutôt que de le redire. **Change un nombre, les deux côtés
+suivent.** Total ≈ 1,1 s, réseau en plus.
+
+**LE PRIX, ASSUMÉ : le clic est intercepté**, donc la navigation part avec
+`--veil-close + --veil-hold` de retard. C'est le SEUL endroit du site où le JS se met en
+travers d'un geste du visiteur, et c'est ce qui permet au voile d'être fermé avant que la
+page ne s'en aille. Tout le reste passe sans être touché, et la liste est à tenir : ancre
+de la même page (le défilement lissé du header en dépend), lien sortant, `mailto:`,
+`target="_blank"`, `download`, clic milieu, Cmd/Ctrl/Maj/Alt-clic. Vérifié un par un.
+
+**Le voile ne joue QUE d'une page du site à une autre.** Le drapeau est posé en partant et
+consommé en arrivant : quelqu'un qui débarque d'un moteur de recherche ne regarde pas un
+panneau d'encre se retirer — ce serait un écran de chargement, pas une transition. Le
+bouton Précédent non plus, faute d'avoir pu intercepter le départ.
+
+**Deux filets, et il faut les deux** : la classe `is-entering` est retirée sur
+`animationend` (avec vérification du nom de l'animation — `animationend` remonte jusqu'à la
+racine depuis toute la page, l'atterrissage du tas de photos compris), et à défaut par un
+minuteur. Sans le second, un onglet ouvert en arrière-plan — où les animations ne tournent
+pas — resterait sous un panneau d'encre plein écran.
+
+En mouvement réduit, `veil.js` sort avant de poser la moindre classe : aucune règle ne
+s'applique et le clic n'est pas intercepté. Il n'y a rien à neutraliser en CSS.
+
 
 ### L'arrivée sur l'accueil ne défile plus sous les yeux
 
@@ -1550,8 +1576,8 @@ retrouve la carte qu'on regardait, et l'état du parcours avec.
   hauteur du document n'est complète qu'une fois les images posées, et une cible plus basse
   que le document se fait écrêter en silence. Mesuré, c'est le premier qui travaille — le
   document a déjà sa hauteur pleine à `DOMContentLoaded`, donc **il n'existe aucune image
-  où la page serait peinte en haut**. `pagereveal` est là pour la transition : il tombe
-  avant que le navigateur ne prenne l'instantané de la page entrante ;
+  où la page serait peinte en haut**. `pagereveal` tombe juste après, avant la première
+  occasion de rendu : c'est la dernière barrière avant que quoi que ce soit ne se voie ;
 - **le visiteur est prioritaire** : au premier geste de sa part, on lâche l'affaire.
 
 Le tout dans un try/catch — `sessionStorage` lève en navigation privée sur certains
@@ -1559,23 +1585,24 @@ navigateurs, et une page d'accueil n'a pas à dépendre d'un espace de stockage.
 
 ### Ce que le panneau ne peut pas montrer
 
-Deux pièges de plus, à ajouter à celui de `requestAnimationFrame` :
+Le voile lui-même ne s'y voit pas : **le panneau masqué gèle les animations CSS**, donc une
+animation en `both` reste figée sur sa première image. Ce qui se vérifie quand même, et qui
+a été vérifié : les pseudo-éléments n'existent pas sans classe (`content: none`), ils
+couvrent bien tout l'écran en encre une fois la classe posée, le clic est intercepté ou non
+selon le type de lien, le drapeau passe d'une page à l'autre, et `is-entering` est posée
+**pendant que le document est encore en `loading`** — donc avant le premier rendu.
 
-- **une transition de page est ABANDONNÉE sur un document masqué.** `document.hidden` étant
-  vrai dans le panneau, `startViewTransition().ready` rejette sur
-  `InvalidStateError: Transition was aborted because of invalid state`, et un `pageswap`
-  cross-document arrive avec `event.viewTransition` à `null`. Ce n'est pas le code. Ce qui
-  se vérifie quand même : la règle et les pseudo-éléments dans `document.styleSheets`,
-  `CSS.supports('selector(::view-transition)')`, et la présence d'`event.activation` ;
-- **le saut vers le fragment au CHARGEMENT ne se fait pas non plus** — il passe par la
-  boucle de rendu, qui est gelée. Une ancre posée à la main sur un document déjà chargé
-  (`location.hash = '#contact'`) défile, elle, normalement : ne conclus pas de l'une à
-  l'autre.
+Deux autres pièges du panneau, à ajouter à celui de `requestAnimationFrame` :
 
-Et surtout : **le panneau masqué a un viewport de hauteur NULLE**. `717vh` y vaut 0, la
-piste du parcours se replie entièrement, `--pull` tombe à 0 et le document fait 7 300 px au
-lieu de plus de 12 000. **Aucune mesure verticale n'y veut rien dire** — seules les mesures
-horizontales et les rapports position mémorisée / position restaurée tiennent.
+- **il sert des HTML en cache.** Un `<script>` ajouté en tête de page ne sera pas là au
+  chargement suivant, et on cherche longtemps pourquoi le code « ne s'exécute pas ». Le
+  rafraîchissement documenté plus haut ne couvre que `style.css` et `main.js` : ajoute les
+  pages elles-mêmes à la liste des `fetch(…, {cache: 'reload'})` ;
+- **il a un viewport de hauteur NULLE.** `717vh` y vaut 0, la piste du parcours se replie
+  entièrement, `--pull` tombe à 0 et le document fait 7 300 px au lieu de plus de 12 000.
+  **Aucune mesure verticale n'y veut rien dire** — seules les mesures horizontales et les
+  rapports position mémorisée / position restaurée tiennent.
+
 
 ## La motion des pages projet (`js/main.js`, cinquième IIFE)
 

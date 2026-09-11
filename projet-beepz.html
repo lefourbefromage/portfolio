@@ -7,6 +7,11 @@
 <meta name="description" content="Étude de cas Beepz : place de marché automobile californienne. Un design système, appliqué et éprouvé sur la landing page et les emails.">
 <link rel="stylesheet" href="css/style.css">
 
+<!-- LE VOILE DE TRANSITION, en tête et sur les quatre pages : sa moitié
+     « arrivée » doit s'exécuter avant le premier rendu, sinon la page apparaît
+     un instant à nu avant d'être recouverte. Voir l'en-tête de `js/veil.js`. -->
+<script src="js/veil.js"></script>
+
 <!-- La motion de la page, en trois lignes et AVANT le premier rendu.
 
      `js-motion` est la classe sous laquelle vivent tous les états masqués des
