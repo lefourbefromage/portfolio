@@ -12,6 +12,7 @@ Dépendances : `numpy`, `scipy`, `matplotlib` pour les générateurs, `Pillow` p
 | `gen_map.py` | `assets/home/src/trail-map.svg` | ✅ identique à l'octet près |
 | `gen_route.py` | l'attribut `d` des deux tracés, réécrit dans `index.html` | ✅ identique à l'octet près |
 | `gen_topo.py` | `assets/home/src/hero-topo-raw.svg` | ⚠️ voir ci-dessous |
+| `gen_favicon.py` | `favicon.svg`, `favicon.ico`, `apple-touch-icon.png`, à la racine | ✅ déterministe |
 | `build_projects.py` | les 17 `.webp` de `assets/home/projects/` | ✅ déterministe |
 | `build_jm.py` | les 25 `.webp` de `assets/jm/` | ✅ déterministe |
 | `build_jimizz.py` | les 17 `.webp` de `assets/jimizz/` | ✅ déterministe |
@@ -83,6 +84,33 @@ scripts :
   écrans et le dégradé des mises en scène.
 
 **Où déposer, pour les deux :** `assets/jm/src/` et `assets/jimizz/src/`, hors dépôt.
+
+**`gen_favicon.py`** — le seul script qui écrit à la **racine** du dépôt, et pas dans
+`assets/` : ses trois fichiers n'appartiennent à aucune page, et deux d'entre eux sont
+sondés par des agents à un chemin fixe (`/favicon.ico`, `/apple-touch-icon.png`) sans que
+le `<head>` soit jamais lu.
+
+La marque est le **W de Clash Display à la graisse 700**, celle du logo du header, en crème
+sur un carré d'encre. Son contour n'est écrit nulle part : il est extrait de
+`fonts/ClashDisplay-Variable.ttf`, donc changer de police ou de graisse se fait dans le
+script et l'icône suit. Un `<text>` dans le SVG ne marcherait pas — une icône de favori est
+rendue hors de toute page, sans feuille de style ni `@font-face` à charger.
+
+Trois choses à ne pas défaire :
+
+- **le SVG et les PNG sont dessinés deux fois, avec les mêmes nombres.** Aucun rastériseur
+  SVG n'est installé sur cette machine, et en ajouter un pour trois fichiers serait cher
+  payé : le PNG redessine le glyphe avec Pillow en reprenant `FILL` et `OPTICAL`, donc les
+  deux sorties se superposent. Si tu touches à la géométrie, touche aux deux constantes et
+  pas à l'une des deux branches ;
+- **chaque taille de l'ICO est rendue pour elle-même**, jamais réduite depuis la plus
+  grande : à 16 px, un W de 48 px réduit perd ses fûts. Le supersampling 8x puis la
+  réduction Lanczos font tout l'anticrénelage, et c'est lui qui rend la lettre lisible ;
+- **l'`apple-touch-icon` est OPAQUE et sans arrondi.** iOS applique son propre masque : un
+  PNG déjà arrondi laisserait un liseré, et un alpha laisserait des bords clairs.
+
+Changer de lettre tient en une constante — `MARK = "V"` donne le V de « Vincent », qui
+remplit mieux le carré parce qu'il est moins large.
 
 ## Limite connue
 

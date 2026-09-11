@@ -7,6 +7,49 @@
 <meta name="description" content="Jimizz, la crypto-monnaie de Jacquie &amp; Michel : le site, le dashboard d’investissement, la marketplace de NFT et le site de quiz.">
 <link rel="stylesheet" href="css/style.css">
 
+<!-- L'ICÔNE DU SITE. Les trois fichiers sont à la RACINE du dépôt et non dans
+     `assets/`, qui se range par page : ils n'appartiennent à aucune page, et
+     `/favicon.ico` comme `/apple-touch-icon.png` sont sondés à un chemin fixe
+     par des agents qui ne lisent jamais ce `<head>`. Ils sont fabriqués par
+     `tools/gen_favicon.py` — voir CLAUDE.md, « L'icône et l'image de partage ».
+
+     L'ordre compte : le navigateur retient la DERNIÈRE déclaration qu'il sait
+     lire, donc le SVG passe après l'ICO et c'est lui qui gagne partout où il
+     est compris. -->
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+<!-- LA CARTE DE PARTAGE — ce qui s'affiche quand l'adresse est collée dans un
+     message ou sur un réseau.
+
+     LES URL SONT ABSOLUES ICI, ET C'EST OBLIGATOIRE : un robot de réseau social
+     ne résout pas une URL relative, il ne charge pas la page. C'est la SEULE
+     entorse du site à la règle des chemins relatifs, et c'est pour ça que le
+     domaine y est écrit en clair — si l'adresse change, ces lignes changent.
+
+     `twitter:card` suffit seul : X, comme la plupart des autres, retombe sur
+     les `og:` pour le titre, le texte et l'image. Les redire ferait deux jeux
+     de chaînes à tenir d'accord, et c'est toujours le second qui ment. -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Vincent Waldmann">
+<meta property="og:locale" content="fr_FR">
+<meta property="og:url" content="https://vincentw.fr/projet-jimizz">
+<meta property="og:title" content="Jimizz — Vincent Waldmann">
+<meta property="og:description" content="Jimizz, la crypto-monnaie de Jacquie &amp; Michel : le site, le dashboard d’investissement, la marketplace de NFT et le site de quiz.">
+<meta property="og:image" content="https://vincentw.fr/social-image.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta property="og:image:alt" content="Vincent Waldmann, webdesigner &amp; intégrateur : le titre du site posé sur une carte topographique, entouré de stickers Figma, Adobe, HTML et Github.">
+<meta name="twitter:card" content="summary_large_image">
+
+<!-- LA FORME CANONIQUE est l'adresse SANS `.html`, celle que portent tous les
+     liens du site. GitHub Pages sert les deux, donc un moteur de recherche y
+     verrait deux adresses pour un même contenu, et un partage de la vieille
+     forme compterait à part. -->
+<link rel="canonical" href="https://vincentw.fr/projet-jimizz">
+
 <!-- LE VOILE DE TRANSITION, en tête et sur les quatre pages : sa moitié
      « arrivée » doit s'exécuter avant le premier rendu, sinon la page apparaît
      un instant à nu avant d'être recouverte. Voir l'en-tête de `js/veil.js`. -->

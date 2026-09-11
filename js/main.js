@@ -1,67 +1,11 @@
 // Portfolio — Vincent Waldmann
 
-(function () {
-  const DAMPING = 0.35; // resistance: peel intensity lags behind the pointer
-  const MAX_DRAG = 26; // px — caps how far the pointer offset is allowed to push the peel
-  const MAX_TILT = 16; // deg — max corner-lift tilt
-  const MAX_SCALE = 0.06; // max "lifting off the surface" scale bump
-
-  document.querySelectorAll('.decor--sticker').forEach((el) => {
-    el.draggable = false;
-
-    let dragging = false;
-    let pointerId = null;
-    let startX = 0;
-    let startY = 0;
-
-    const setPeel = (tiltX, tiltY, scale) => {
-      el.style.setProperty('--tiltx', `${tiltX}deg`);
-      el.style.setProperty('--tilty', `${tiltY}deg`);
-      el.style.setProperty('--peel-scale', scale);
-    };
-
-    const release = (e) => {
-      if (!dragging || e.pointerId !== pointerId) return;
-      dragging = false;
-      pointerId = null;
-      el.classList.remove('is-dragging');
-      setPeel(0, 0, 1);
-    };
-
-    el.addEventListener('pointerdown', (e) => {
-      dragging = true;
-      pointerId = e.pointerId;
-      startX = e.clientX;
-      startY = e.clientY;
-      el.classList.add('is-dragging');
-      try { el.setPointerCapture(pointerId); } catch (err) { /* no active pointer to capture */ }
-    });
-
-    el.addEventListener('pointermove', (e) => {
-      if (!dragging || e.pointerId !== pointerId) return;
-      const rawX = (e.clientX - startX) * DAMPING;
-      const rawY = (e.clientY - startY) * DAMPING;
-      const dist = Math.hypot(rawX, rawY);
-      const clamp = dist > MAX_DRAG ? MAX_DRAG / dist : 1;
-      const cx = rawX * clamp;
-      const cy = rawY * clamp;
-      const intensity = Math.hypot(cx, cy) / MAX_DRAG; // 0..1 — how far into the peel we are
-      const tiltY = (cx / MAX_DRAG) * MAX_TILT;
-      const tiltX = -(cy / MAX_DRAG) * MAX_TILT;
-      setPeel(tiltX, tiltY, 1 + intensity * MAX_SCALE);
-    });
-
-    el.addEventListener('pointerup', release);
-    el.addEventListener('pointercancel', release);
-  });
-})();
-
 /* ---------- Le tas de photos : emporté en parallaxe ---------- */
 // Le tas est en place dès le chargement — son arrivée est une animation CSS
 // jouée une fois, pas un montage au scroll. Il ne reste ici que la SORTIE, où
 // les photos s'échappent vers le haut : le JS pose `--out` sur la scène (0
 // posée, 1 partie) et la transformation composée vit dans `.pile__photo`,
-// comme pour les stickers du hero.
+// comme `--open` du parcours.
 (function () {
   const scene = document.querySelector('.pile__scene');
   if (!scene) return;
@@ -807,8 +751,8 @@
 /* ---------- Le comparateur avant / après (page projet) ----------
    Le curseur natif fait tout le travail : glissement à la souris et au doigt,
    clavier, bornes, annonce aux lecteurs d'écran. Le JS n'écrit qu'un nombre,
-   `--pos`, et le CSS compose le reste — même partage que les stickers du hero,
-   le tas de photos et la révélation du parcours. */
+   `--pos`, et le CSS compose le reste — même partage que le tas de photos et la
+   révélation du parcours. */
 (function () {
   const wipes = document.querySelectorAll('.wipe');
   if (!wipes.length) return;
@@ -837,8 +781,8 @@
       défilement natif du navigateur a une inertie et un rebond qu'aucune ligne écrite
       ici n'égalera, et le doigt doit aussi pouvoir faire défiler la PAGE depuis le
       rail. Seuls la souris et le stylet passent par le glissement scripté.
-   2. `setPointerCapture` est enveloppé dans un try/catch — même raison que le
-      décollage des stickers du hero : les drags synthétiques lèvent `NotFoundError`.
+   2. `setPointerCapture` est enveloppé dans un try/catch : les drags synthétiques
+      lèvent `NotFoundError`.
    3. Le JS ne pose qu'une classe, `is-dragging`. Le curseur et le débrayage de
       l'aimant vivent dans le CSS — même partage que partout ailleurs ici. */
 (function () {

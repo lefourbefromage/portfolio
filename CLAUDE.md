@@ -175,8 +175,55 @@ bonne nouvelle, pas un défaut.
 
 **Les anciennes URL en `.html` restent servies**, GitHub Pages ne sachant pas rediriger côté
 serveur. Sans conséquence pour un visiteur, mais un moteur de recherche y voit deux adresses
-pour un même contenu ; une balise `<link rel="canonical">` par page reste à ajouter si le sujet
-devient réel.
+pour un même contenu — d'où le `<link rel="canonical">` que porte désormais chaque page, et
+qui déclare la forme sans extension. Il est posé avec les balises de partage, voir juste en
+dessous : les deux disent la même adresse, et il n'y avait pas de raison d'en tenir deux.
+
+### L'icône et l'image de partage
+
+**Quatre fichiers, et ils sont à la RACINE du dépôt, pas dans `assets/`.** Ce n'est pas une
+entorse au rangement par page, c'est ce que ce rangement implique : `assets/` se range
+d'après la PAGE qui charge un fichier, or ces quatre-là n'appartiennent à aucune page. Deux
+d'entre eux sont même sondés **à un chemin fixe** — `/favicon.ico` et `/apple-touch-icon.png`
+— par des agents qui ne lisent jamais le `<head>`. Les mettre ailleurs, c'est un 404 chez
+eux.
+
+```
+favicon.svg           net à toute taille, c'est lui qui gagne partout où il est compris
+favicon.ico           16 + 32 + 48, pour le reste et pour `/favicon.ico`
+apple-touch-icon.png  180x180, iOS. OPAQUE et SANS arrondi : iOS pose son propre masque
+social-image.png      1280x640, la carte de partage
+```
+
+**Les trois icônes sont produites par `tools/gen_favicon.py`**, jamais dessinées à la main :
+la marque est le **W de Clash Display à la graisse 700**, celle du logo du header, en crème
+sur un carré d'encre — aucune couleur de plus. Son contour est extrait de la police, donc il
+suit la police. Changer de lettre tient en une constante (`MARK`). Voir `tools/README.md`
+pour les trois pièges de ce script.
+
+**L'ordre des trois `<link>` compte** : le navigateur retient la DERNIÈRE déclaration qu'il
+sait lire, donc le SVG passe après l'ICO.
+
+**Les URL des balises `og:` sont ABSOLUES, et c'est la SEULE entorse du site à la règle des
+chemins relatifs.** Un robot de réseau social ne résout pas une URL relative — il ne charge
+pas la page, il lit le HTML. Le domaine est donc écrit en clair dans les quatre `<head>` :
+si l'adresse change, ce sont ces lignes-là qu'il faut reprendre, avec le `CNAME` et la zone
+DNS.
+
+**`twitter:card` est seul de sa famille**, et il faut que ça le reste : X comme la plupart
+des autres retombent sur les `og:` pour le titre, le texte et l'image. Redire chaque chaîne
+en `twitter:` ferait deux jeux à tenir d'accord, et c'est toujours le second qui ment.
+
+**L'image de partage est la même pour les quatre pages** — le hero de l'accueil, fourni par
+Vincent. Elle est en **1280x640**, soit le 2:1 exact que veut X ; Facebook recadre vers son
+1,91:1 en rognant une quinzaine de pixels en haut et en bas, ce que la composition, centrée
+et margée, absorbe sans rien perdre. Son alpha a été retiré à l'import : il était
+uniformément opaque, donc il ne portait rien. Le jour où chaque page projet mérite sa propre
+carte, `og:image` est déjà par page — il n'y a qu'un chemin à changer.
+
+**`og:image:width` et `-height` ne sont pas décoratifs** : sans eux, les réseaux affichent
+une carte sans image le temps du premier passage de leur robot. Si tu changes l'image, change
+les deux nombres.
 
 ## Système de design
 
@@ -332,15 +379,15 @@ Pour placer un élément par rapport à un tracé SVG décoratif (par exemple «
 de la flèche »), lis le point fractionnaire dans le `d` du SVG, multiplie-le par le `width:%`
 de l'élément et par 1472/599 pour la composante verticale, puis ajoute ses `left`/`top`.
 
-## Le décollage des stickers (`js/main.js`, première IIFE)
+**Les stickers sont de purs décors, et ils doivent le rester.** Il y a eu ici un effet de
+décollage — on prenait un sticker au pointeur, un coin se soulevait en 3D et revenait en
+place. Vincent l'a fait retirer : il ne servait rien, personne ne pense à essayer, et il
+coûtait une IIFE, quatre variables CSS et un `pointer-events: auto` qui rouvrait le décor
+aux événements. `.hero__decor` est de nouveau en `pointer-events: none` de bout en bout,
+et `.decor--sticker` ne porte plus que sa rotation de repos et son ombre. Ne le remonte
+pas.
 
-Draguer un sticker ne doit **pas le déplacer** : ça soulève un coin en 3D et ça revient en
-place. Le JS n'écrit que `--tiltx`, `--tilty` et `--peel-scale` ; la transformation composée
-vit entièrement dans la règle `.decor--sticker`. Garde ce partage : ajouter une translation
-dans le JS casse l'intention. `setPointerCapture` est enveloppé dans un try/catch parce que
-les drags synthétiques lèvent `NotFoundError`.
-
-## Le tas de photos (`js/main.js`, deuxième IIFE)
+## Le tas de photos (`js/main.js`, première IIFE)
 
 Sous le hero, à cheval sur le haut d'À propos. Tout — le « Scroll to explore », le tracé
 pointillé et les sept photos — est posé en **pourcentage d'un même cadre de référence**, 1472
@@ -485,7 +532,7 @@ est écrit en toutes lettres dans le chapô — un commentaire HTML rappelle de 
 
 ## La section parcours (`#parcours`, « Carnet de routes »)
 
-La partie la plus délicate du site. `js/main.js`, troisième IIFE.
+La partie la plus délicate du site. `js/main.js`, deuxième IIFE.
 
 **Forme.** Une piste `.trail` très haute (`height: 717vh`) avec une scène en
 `position: sticky`.
@@ -541,8 +588,8 @@ valeurs se rejoignent exactement à cet instant. Viser la position de DÉPART à
 produirait ce saut : c'est le piège.
 
 Toute la géométrie de l'ouverture vit dans le CSS — taille du carton (`--card-w`, `--card-h`),
-marge finale (`--frame`), arrondi — et **le JS n'écrit qu'un nombre**, `--open`, comme pour les
-stickers du hero et le tas de photos. `--open` et la classe `is-open` sont posés sur **`.trail`
+marge finale (`--frame`), arrondi — et **le JS n'écrit qu'un nombre**, `--open`, comme pour le
+tas de photos. `--open` et la classe `is-open` sont posés sur **`.trail`
 et pas sur la scène** : le fil pointillé en a besoin lui aussi, et comme il est le FRÈRE de la
 scène il ne pourrait pas les lire depuis elle. Ne redéclare pas `--open: 0` sur `.trail__stage`
 — une déclaration sur l'élément l'emporte sur l'héritage, et la valeur du JS serait masquée. Les `%` du `inset()` se résolvent sur la boîte de la
@@ -1029,7 +1076,7 @@ survoler une carte fait entrer le sien. C'est la maquette de Vincent, intégrée
 telle quelle.
 
 **Le JS ne pose qu'un état**, la classe `is-active` déplacée d'un `<li>` à
-l'autre (`js/main.js`, quatrième IIFE). Le fondu, les décalages d'entrée, l'échelle de la
+l'autre (`js/main.js`, troisième IIFE). Le fondu, les décalages d'entrée, l'échelle de la
 carte : tout est dans le CSS, comme `--open` du parcours et `--out` du tas de
 photos. La classe part du HTML, sur le premier projet — **sans JS, en mouvement
 réduit ou si `main.js` ne charge pas, c'est lui qui reste affiché**. Rien de
@@ -1528,10 +1575,12 @@ tout le reste est en `loading="lazy"`, vérifié au moniteur réseau.
 
 ## Les transitions de page
 
-Entre deux pages, **un panneau d'encre monte du bas, recouvre l'écran, porte le nom, puis
-POURSUIT SA MONTÉE et libère la page suivante.** Un seul geste coupé en deux par la
-navigation : ce qui a couvert sort par le haut, ça ne revient pas sur ses pas. Le dessin
-est dans `css/style.css` (« LE VOILE DE TRANSITION »), la mécanique dans `js/veil.js`.
+Entre deux pages, **un panneau d'encre monte du bas, recouvre l'écran en portant un
+COLLAGE DES SEPT STICKERS DU HERO, puis POURSUIT SA MONTÉE et libère la page suivante.**
+Un seul geste coupé en deux par la navigation : ce qui a couvert sort par le haut, ça ne
+revient pas sur ses pas. Le dessin est dans `css/style.css` (« LE VOILE DE TRANSITION »),
+la mécanique dans `js/veil.js`. Il a porté le NOM avant le collage — c'était plus sobre,
+et ça se lisait comme un écran de chargement.
 
 **Il y a eu une `@view-transition` native ici, et elle a été retirée.** Elle marchait —
 vérifié dans le CSSOM — mais elle ne se VOYAIT pas : un fondu croisé de 360 ms entre deux
@@ -1549,17 +1598,88 @@ Le partage habituel tient : **le JS ne pose que deux classes** sur la racine, `i
 et `is-entering`, et tout le dessin est en CSS — comme `--open` du parcours ou `--out` du
 tas de photos.
 
-**Le panneau et le nom sont deux PSEUDO-ÉLÉMENTS de `html`** (`::before` et `::after`), et
-ce n'est pas de la coquetterie : au premier rendu de la page qui arrive, il n'y a pas
-encore de `<body>` où insérer quoi que ce soit. Une classe posée sur la racine suffit.
-Corollaire gratuit : **sans JS il n'y a pas de classe, donc pas de voile**, et le clic
-n'est pas intercepté — même règle que `.js-motion`.
+**LE PANNEAU EST UN PSEUDO-ÉLÉMENT DE `html`, LE COLLAGE EST DU DOM**, et ce partage est
+la sûreté du procédé, pas une commodité :
 
-**Le nom ne voyage pas avec le panneau**, il se fond sur place : s'il montait avec lui, il
-ne serait au centre qu'un instant, or c'est justement le temps d'arrêt qui donne sa
-respiration au mouvement. Son texte est recopié du header, entorse assumée à la règle de la
-source unique — un vrai élément ne peut pas exister avant le `<body>`. Le `/ ""` de la
-propriété `content` le rend muet pour les lecteurs d'écran.
+- **ce qui COUVRE ne peut pas échouer.** Au premier rendu de la page qui arrive, il n'y a
+  pas encore de `<body>` où insérer quoi que ce soit ; une classe sur la racine, elle,
+  s'applique tout de suite. Le panneau est donc là dès la première image ;
+- **ce qui DÉCORE peut se permettre une image de retard.** Le collage est monté par le JS
+  dès que `<body>` existe. S'il arrivait tard, on verrait un panneau d'encre nu — jamais la
+  page à nu.
+
+Ne déplace pas le panneau dans le DOM pour « faire pareil » : c'est exactement la garantie
+qu'on perdrait. Corollaire gratuit : **sans JS il n'y a ni classe ni collage, donc pas de
+voile**, et le clic n'est pas intercepté — même règle que `.js-motion`.
+
+**Le collage est du CHROME, donc c'est le JS qui le fabrique** — même règle que la
+visionneuse, et l'inverse exact de celle du reveal. La liste des sept fichiers est dans
+`veil.js`, TOUTE la géométrie est dans le CSS : le JS ne sait pas où les pièces se posent.
+
+**Le montage attend `<body>` avec un `MutationObserver`, et pas `DOMContentLoaded`**, qui
+vient après tout le document : l'observateur rend la main à l'instant où la balise s'ouvre,
+donc avant qu'un seul contenu ne soit analysé. Vérifié — la classe et le collage sont en
+place pendant que `document.readyState` vaut encore `loading`.
+
+**Une page qui arrive SANS voile monte quand même le collage, au `load`.** Ce n'est pas du
+zèle : les sept stickers pèsent 232 Ko, et c'est ce qui les met en cache pour le départ
+suivant sans rien disputer au premier rendu (mesuré : 0 Ko de transfert au voile suivant).
+Un filet dans le gestionnaire de clic le monte à la volée si l'on part avant.
+
+### Le collage, et son parallaxe
+
+**Les sept pièces se chevauchent**, et c'est la seule chose à préserver : posées côte à
+côte elles se liraient comme sept vignettes perdues au milieu du cadre — même leçon que le
+groupement Jimizz de l'accueil et le collage des campagnes de la page J&M. Mesuré, chacune
+en touche au moins une autre (sept contacts), et le cadre de 640 × 440 est occupé à
+57/56 px de marge horizontale et 23/24 px de marge verticale.
+
+Tout est posé **en pourcentage d'un cadre de référence**, comme le hero, le tas de photos
+et les groupements des projets. La rotation de repos vit dans `--rot` — ce sont les valeurs
+mêmes du hero, les fichiers sont à plat.
+
+**L'ordre du DOM est l'ordre de peinture ET l'ordre de profondeur**, de l'arrière vers
+l'avant, et il règle les séries qui vont toutes ensemble : `--out-y` (de combien la pièce
+traîne derrière le panneau à l'aller), `--out-x/r/s` (sa dérive, sa rotation et son échelle
+de départ), `--d` (son retard), `--away-y/r` (de combien elle s'échappe EN PLUS du panneau
+au retour). Si tu réordonnes les pièces, garde-les croissantes.
+
+**`--out-y` ET `--away-y` SONT EN `vh`, et c'est le point.** `--out-y` a d'abord été en
+PIXELS — 26 à 60 px — et Vincent a dit que le collage ne bougeait pas du tout. Il avait
+raison, et ce n'était pas un bug : le conteneur, lui, traverse 100 vh, soit 800 px sur un
+portable. Le décalage propre d'une pièce pesait donc **5 % du mouvement** et se perdait
+dedans — on ne voyait qu'un bloc qui monte. Une pièce doit traîner d'une **fraction de
+l'écran** pour qu'on la voie rattraper le panneau. C'est 12 vh au fond et 42 devant, soit
+96 à 336 px mesurés en 1280 × 800 : celle de devant parcourt 42 % de plus que le panneau.
+
+**Le panneau et le collage partagent LA MÊME animation, à la lettre** : c'est ce qui les
+tient collés sans un seul calcul, et c'est pour ça que les pièces n'ont à porter que ce qui
+leur est propre. Sépare-les et ils dériveront.
+
+**À l'aller elles rattrapent le panneau**, l'une après l'autre, en tournant (de -34° à
++40° de départ) et en grandissant (de ×0,64 à ×0,78). **Elles empruntent la courbe du
+panneau** et non `--ease-out` : c'est ce qui fait lire la traîne comme un retard sur un
+même mouvement plutôt que comme sept animations indépendantes. Le dernier retard plus la
+durée doivent tenir dans `--veil-close + --veil-hold` — 168 + 528 = 696 pour 820 de
+fenêtre — sinon la page s'en va avant que la dernière pièce ne soit posée.
+
+**Au retour c'est une remontée, et rien d'autre** : pas de fondu, pas d'échelle, pas de
+retard. Elles partent toutes ensemble, sur la même courbe et la même durée que le panneau,
+et **l'effet vient du seul écart entre leurs `--away-y`** — mesuré, le conteneur fait
+-800 px et les pièces ajoutent de -64 px au fond à -288 px devant, soit 4,5×. Même principe
+que la sortie du tas de photos de l'accueil : n'y remets ni retard ni courbe. Seule la
+rotation leur est propre (`--away-r`), et elle **alterne de signe** — sans quoi l'envol se
+lirait comme une seule image qu'on translate.
+
+**Aucune pièce ne peut se retrouver exposée sur la page**, et c'est arithmétique : le
+panneau remonte de 100 vh, chaque pièce de 100 vh PLUS son `--away-y`, donc elle va
+toujours au moins aussi vite que lui. Une pièce plus lente sortirait par le bas du panneau
+et se verrait par-dessus le contenu. Garde tous les `--away-y` négatifs.
+
+À l'aller, la garantie est la même dans l'autre sens : les `--out-y` sont tous POSITIFS,
+donc une pièce part toujours plus bas que sa place et reste sous le bord d'attaque du
+panneau tant qu'elle le rattrape. Un `--out-y` négatif la ferait sortir par le haut,
+au-dessus du panneau, avant que celui-ci ne l'ait couverte.
 
 **Les trois durées sont déclarées dans le CSS et LUES par le JS**, jamais réécrites de
 l'autre côté : `--veil-close` (420 ms), `--veil-hold` (120 ms) et `--veil-open` (560 ms)
@@ -1647,7 +1767,7 @@ Deux autres pièges du panneau, à ajouter à celui de `requestAnimationFrame` :
   rapports position mémorisée / position restaurée tiennent.
 
 
-## La motion des pages projet (`js/main.js`, cinquième IIFE)
+## La motion des pages projet (`js/main.js`, quatrième IIFE)
 
 Deux mouvements sur les trois pages projet, et deux seulement : la **couverture se pose au
 chargement**, les **blocs se révèlent au scroll**. Le corps de texte n'est jamais révélé
@@ -1735,7 +1855,7 @@ document.querySelectorAll('*').forEach(e => e.getAnimations().forEach(a => a.fin
 Le second est le plus important : une transition déjà lancée survit au changement de règle,
 et c'est ELLE qui tient la valeur, pas la feuille de style.
 
-## Le parallaxe des pages projet (`js/main.js`, neuvième IIFE)
+## Le parallaxe des pages projet (`js/main.js`, huitième IIFE)
 
 Ce qui donne son glissé à une page longue, ce n'est pas la vitesse du scroll, c'est
 **l'écart entre ce qui avance vite et ce qui avance lentement** — même principe que la
@@ -1832,7 +1952,7 @@ dire (même piège que la révélation au scroll, voir plus haut). Ce qui est v�
 dix pièces de la page J&M et les vingt-deux de la page Jimizz n'écrivent que `transform`,
 propriété de compositeur, et la boucle se débranche à l'arrêt.
 
-## La visionneuse (`js/main.js`, huitième IIFE)
+## La visionneuse (`js/main.js`, septième IIFE)
 
 Cliquer une image d'une page projet l'ouvre en grand. Trois principes, les mêmes que
 partout ailleurs sur ce site :
@@ -1921,6 +2041,11 @@ utiles : ils vont lire les `width: %` des pièces DANS `css/style.css` plutôt q
 redire. Une taille écrite deux fois, c'est toujours la seconde qui ment. Ils n'agrandissent
 jamais et listent en fin de passe les sources trop petites pour la densité 2, avec l'échelle
 d'export Figma qui corrigerait.
+
+**`gen_favicon.py` est à part** : il ne dessine pas de terrain, il extrait le **W de Clash
+Display** de la police et en sort les trois icônes du site, à la RACINE du dépôt et non dans
+`assets/` — voir « L'icône et l'image de partage ». Lui aussi est reproductible à l'octet
+près.
 
 **`gen_map.py` et `assets/home/src/trail-map.svg` ne servent plus au site** : c'est la carte plate,
 remplacée par la tuile en relief. Le script reste comme référence du terrain d'origine, mais

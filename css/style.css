@@ -91,17 +91,15 @@ body {
 /* ==========================================================================
    LE VOILE DE TRANSITION
 
-   Entre deux pages, un panneau d'encre monte du bas, recouvre l'écran, porte le
-   nom, puis POURSUIT SA MONTÉE et libère la page suivante. Un seul geste, coupé
-   en deux par la navigation : ce qui a couvert sort par le haut, ça ne revient
-   pas sur ses pas.
+   Entre deux pages, un panneau d'encre monte du bas, recouvre l'écran en
+   portant un COLLAGE DES SEPT STICKERS DU HERO, puis poursuit sa montée et
+   libère la page suivante. Un seul geste coupé en deux par la navigation : ce
+   qui a couvert sort par le haut, ça ne revient pas sur ses pas.
 
    IL Y A EU UNE `@view-transition` NATIVE ICI, RETIRÉE. Elle marchait, elle ne
    se VOYAIT pas : un fondu croisé de 360 ms entre deux pages sombres au dessin
-   quasi identique ne donne rien à regarder. Et elle ne jouait que sur les
-   navigateurs qui la connaissent. Ne la remets pas EN PLUS du voile — les deux
-   se marcheraient dessus, le navigateur prenant son instantané pendant que le
-   panneau bouge.
+   quasi identique ne donne rien à regarder. Ne la remets pas EN PLUS du voile —
+   le navigateur prendrait son instantané pendant que le panneau bouge.
 
    LE PRIX, ASSUMÉ : le clic est intercepté, donc la navigation part avec
    `--veil-close + --veil-hold` de retard. C'est le seul endroit du site où le
@@ -116,16 +114,25 @@ body {
    `bakeRelief()`, qui lit le chemin de la tuile dans le fond CSS plutôt que de
    le redire. Change un nombre ici, les deux côtés suivent. */
 :root {
-  --veil-close: 420ms;   /* le panneau monte et recouvre */
-  --veil-hold:  120ms;   /* il reste plein, le temps de lire le nom */
-  --veil-open:  560ms;   /* il poursuit sa montée et libère la page */
+  --veil-close: 600ms;   /* le panneau monte, le collage le rattrape */
+  --veil-hold:  220ms;   /* il reste plein, le temps de voir le collage posé */
+  --veil-open:  620ms;   /* il poursuit sa montée, les stickers s'échappent */
 }
 
-/* LE PANNEAU EST UN PSEUDO-ÉLÉMENT DE `html`, et ce n'est pas de la coquetterie :
-   il doit exister DÈS LE PREMIER RENDU de la page qui arrive, or à ce moment-là
-   il n'y a pas encore de `<body>` où insérer quoi que ce soit. Une classe posée
-   sur la racine par un script en tête de page suffit, et sans JS il n'y a pas de
-   classe, donc pas de voile — même règle que `.js-motion`. */
+/* LE PANNEAU EST UN PSEUDO-ÉLÉMENT DE `html`, ET LE COLLAGE EST DU DOM. Ce
+   partage n'est pas un hasard, c'est la sûreté du procédé :
+
+     — CE QUI COUVRE NE PEUT PAS ÉCHOUER. Au premier rendu de la page qui
+       arrive, il n'y a pas encore de `<body>` où insérer quoi que ce soit ; une
+       classe sur la racine, elle, s'applique tout de suite. Le panneau est donc
+       là dès la première image, quoi qu'il arrive ;
+     — CE QUI DÉCORE PEUT SE PERMETTRE UNE IMAGE DE RETARD. Le collage est
+       monté par le JS dès que `<body>` existe. S'il arrivait tard, on verrait
+       un panneau d'encre nu — jamais la page à nu.
+
+   Ne déplace pas le panneau dans le DOM pour « faire pareil » : c'est
+   exactement la garantie qu'on perdrait. Et sans JS il n'y a ni classe ni
+   collage, donc pas de voile du tout — même règle que `.js-motion`. */
 html.is-leaving::before,
 html.is-entering::before {
   content: "";
@@ -137,12 +144,32 @@ html.is-entering::before {
   will-change: transform;
 }
 
-/* Le bord d'attaque est BOMBÉ, et il s'aplatit en arrivant : un rectangle qui
-   monte tout droit se lit comme un rideau de scène, la courbe le fait lire comme
-   une matière qui monte. C'est un seul nombre — mets les `vh` à 0 et tu retrouves
-   le bord droit. */
-html.is-leaving::before  { animation: veil-close var(--veil-close) cubic-bezier(.62, .02, .34, 1) both; }
-html.is-entering::before { animation: veil-open  var(--veil-open)  var(--ease-out) var(--veil-hold) both; }
+.veil {
+  position: fixed;
+  inset: 0;
+  z-index: 9001;          /* au-dessus du panneau, qui est à 9000 */
+  display: none;          /* les images se chargent quand même, c'est voulu */
+  pointer-events: none;
+  will-change: transform;
+}
+html.is-leaving .veil,
+html.is-entering .veil { display: block; }
+
+/* LE PANNEAU ET LE COLLAGE PARTAGENT LA MÊME ANIMATION, à la lettre : c'est ce
+   qui les tient collés l'un à l'autre sans un seul calcul. Le collage n'a donc
+   à porter que ce qui lui est PROPRE — l'assemblage à l'aller, le parallaxe au
+   retour — exactement comme les photos du tas, qui ne portent que leur écart de
+   vitesse par-dessus le défilement de la page. Si tu changes la courbe ou la
+   durée de l'un, l'autre suit tout seul ; sépare-les et ils dériveront.
+   (L'arrondi des keyframes ne fait rien sur `.veil`, qui n'a pas de fond.)
+
+   Le bord d'attaque du panneau est BOMBÉ et s'aplatit en arrivant : un
+   rectangle qui monte tout droit se lit comme un rideau de scène, la courbe le
+   fait lire comme une matière qui monte. Mets les `vh` à 0 pour un bord droit. */
+html.is-leaving::before,
+html.is-leaving .veil   { animation: veil-close var(--veil-close) cubic-bezier(.62, .02, .34, 1) both; }
+html.is-entering::before,
+html.is-entering .veil  { animation: veil-open  var(--veil-open)  var(--ease-out) var(--veil-hold) both; }
 
 @keyframes veil-close {
   from { transform: translateY(100%); border-radius: 50% 50% 0 0 / 9vh 9vh 0 0; }
@@ -153,58 +180,132 @@ html.is-entering::before { animation: veil-open  var(--veil-open)  var(--ease-ou
   to   { transform: translateY(-100%); border-radius: 0 0 50% 50% / 0 0 9vh 9vh; }
 }
 
-/* LE NOM EST UN SECOND PSEUDO-ÉLÉMENT, et il ne bouge pas avec le panneau : il se
-   fond sur place. S'il voyageait avec lui, il ne serait au centre qu'un instant,
-   et c'est justement le temps d'arrêt qui donne sa respiration au mouvement.
-
-   Le texte est recopié du header, ce qui est une entorse assumée à la règle « une
-   seule source de vérité » : le seul autre moyen serait un vrai élément, et un
-   vrai élément ne peut pas exister avant le `<body>`. Le `/ ""` le rend muet pour
-   les lecteurs d'écran, qui lisent déjà le logo du header. */
-html.is-leaving::after,
-html.is-entering::after {
-  content: "Waldmann\A Vincent" / "";
-  white-space: pre;
-  position: fixed;
-  inset: 0;
-  z-index: 9001;
-  display: grid;
-  place-content: center;
-  text-align: center;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: clamp(22px, 2.6vw, 34px);
-  line-height: 1.15;
-  color: var(--cream);
-  pointer-events: none;
+/* LE COLLAGE — même convention que le hero, le tas de photos et les groupements
+   de la section projets : tout est posé en POURCENTAGE d'un cadre de référence,
+   ici 640 × 440, donc la composition se met à l'échelle d'un seul bloc. */
+.veil__art {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  width: min(600px, 84vw);
+  aspect-ratio: 640 / 440;
 }
 
-/* Il n'arrive QUE dans le dernier tiers de la fermeture — sous le panneau il n'y
-   a rien à voir, et un nom qui monte en même temps que le fond ferait deux
-   mouvements pour un. Il s'en va au premier tiers de l'ouverture, pour la même
-   raison. */
-html.is-leaving::after  { animation: veil-mark-in  var(--veil-close) var(--ease-out) both; }
-html.is-entering::after { animation: veil-mark-out calc(var(--veil-open) * .45) ease both var(--veil-hold); }
-
-@keyframes veil-mark-in {
-  0%, 55% { opacity: 0; transform: translateY(10px); }
-  100%    { opacity: 1; transform: translateY(0); }
+/* La rotation de repos vit dans `--rot`, jamais dans un `transform` — ce sont
+   les valeurs mêmes du hero, les fichiers sont à plat. Les deux états sont
+   écrits en dur, et AUCUNE de ces variables ne change de l'un à l'autre : c'est
+   la déclaration qui change. Une variable qui change en cours d'animation ne
+   s'interpole pas, elle saute. */
+.veil__sticker {
+  position: absolute;
+  filter: drop-shadow(0 6px 16px rgb(0 0 0 / .45));
+  transform: rotate(var(--rot));
 }
-@keyframes veil-mark-out {
-  from { opacity: 1; }
-  to   { opacity: 0; }
+
+/* LES SEPT PIÈCES SE CHEVAUCHENT, et c'est la seule chose à préserver si tu
+   déplaces quelque chose : posées côte à côte elles se liraient comme sept
+   vignettes perdues au milieu du cadre, pas comme un tas — même leçon que le
+   groupement Jimizz de l'accueil et que le collage des campagnes de la page J&M.
+
+   L'ORDRE DU DOM EST L'ORDRE DE PEINTURE (tout est en `z-index: auto`) ET
+   L'ORDRE DE PROFONDEUR : de l'arrière vers l'avant. C'est lui qui règle les
+   séries ci-dessous, et elles vont toutes ensemble —
+
+     --out-y        de combien la pièce TRAÎNE derrière le panneau, à l'aller ;
+     --out-x/r/s    sa dérive, sa rotation et son échelle de départ ;
+     --d            son retard, pour qu'elles se posent l'une après l'autre ;
+     --away-y/r     de combien elle s'échappe EN PLUS du panneau, au retour.
+
+   `--out-y` ET `--away-y` SONT EN `vh`, ET C'EST TOUT LE SUJET. `--out-y` a été
+   en PIXELS — 26 à 60 px — et le collage semblait alors ne pas bouger du tout :
+   le conteneur, lui, traverse 100 vh (800 px sur un portable), donc le décalage
+   propre d'une pièce pesait 5 % du mouvement et se perdait dedans. On ne voyait
+   qu'un bloc qui monte. Une pièce doit traîner d'une FRACTION DE L'ÉCRAN pour
+   qu'on la voie rattraper le panneau — c'est ce qui fait le parallaxe, et c'est
+   pour ça que les deux côtés partagent l'unité.
+
+   Celle du fond traîne de 12 vh, celle de devant de 42 : à l'écran, la première
+   est presque en place quand la dernière entre encore par le bas. Garde l'ordre
+   croissant si tu réordonnes les pièces. */
+.veil__sticker--figma {
+  left: 13%; top: 21%; width: 12%; aspect-ratio: 306/447; --rot: -6deg;
+  --out-x: -40px; --out-y: 12vh; --out-r: -22deg; --out-s: .78; --d:   0ms;
+  --away-y: -8vh; --away-r:   7deg;
+}
+.veil__sticker--uiux {
+  left: 33%; top:  7%; width: 16%; aspect-ratio: 397/566; --rot: -8deg;
+  --out-x: -26px; --out-y: 16vh; --out-r: 20deg; --out-s: .76; --d:  28ms;
+  --away-y: -12vh; --away-r:  -10deg;
+}
+.veil__sticker--html {
+  left: 65%; top: 29%; width: 17%; aspect-ratio: 399/405; --rot: -11deg;
+  --out-x: 52px; --out-y: 21vh; --out-r: 26deg; --out-s: .74; --d:  56ms;
+  --away-y: -17vh; --away-r:   13deg;
+}
+.veil__sticker--adobe {
+  left: 11%; top: 45%; width: 34%; aspect-ratio: 594/355; --rot: -10deg;
+  --out-x: -58px; --out-y: 26vh; --out-r: -18deg; --out-s: .72; --d:  84ms;
+  --away-y: -22vh; --away-r:  -16deg;
+}
+.veil__sticker--sass {
+  left: 57%; top: 53%; width: 32%; aspect-ratio: 513/349; --rot: 10deg;
+  --out-x: 64px; --out-y: 31vh; --out-r: 24deg; --out-s: .70; --d: 112ms;
+  --away-y: -27vh; --away-r:   19deg;
+}
+.veil__sticker--affinity {
+  left: 29%; top: 69%; width: 19%; aspect-ratio: 440/379; --rot: -6deg;
+  --out-x: -34px; --out-y: 36vh; --out-r: -28deg; --out-s: .68; --d: 140ms;
+  --away-y: -31vh; --away-r:  -22deg;
+}
+.veil__sticker--github {
+  left: 43%; top: 37%; width: 17%; aspect-ratio: 390/387; --rot: 8deg;
+  --out-x: 18px; --out-y: 42vh; --out-r: 32deg; --out-s: .64; --d: 168ms;
+  --away-y: -36vh; --away-r:   26deg;
+}
+
+/* À L'ALLER ELLES RATTRAPENT LE PANNEAU, l'une après l'autre, de l'arrière vers
+   l'avant — chacune traînant de son `--out-y`, en tournant et en grandissant.
+
+   ELLES EMPRUNTENT LA COURBE DU PANNEAU, et pas `--ease-out` : c'est ce qui fait
+   lire la traîne comme un RETARD sur un même mouvement plutôt que comme sept
+   animations indépendantes. Seule l'amplitude les distingue, comme à la sortie.
+
+   LE DERNIER RETARD PLUS LA DURÉE DOIVENT TENIR DANS `--veil-close + --veil-hold`,
+   sinon la page s'en va avant que la dernière pièce ne soit posée : 168 + 528 =
+   696 pour 820 de fenêtre. Si tu allonges la série, refais cette addition. */
+html.is-leaving .veil__sticker {
+  animation: veil-piece-in calc(var(--veil-close) * .88) cubic-bezier(.62, .02, .34, 1) var(--d) both;
+}
+@keyframes veil-piece-in {
+  from { opacity: 0;
+         transform: translate(var(--out-x), var(--out-y))
+                    rotate(calc(var(--rot) + var(--out-r)))
+                    scale(var(--out-s)); }
+  to   { opacity: 1;
+         transform: translate(0, 0) rotate(var(--rot)) scale(1); }
+}
+
+/* AU RETOUR ELLES S'ÉCHAPPENT, et c'est une REMONTÉE ET RIEN D'AUTRE : pas de
+   fondu, pas d'échelle, pas de retard. Elles partent toutes en même temps, sur
+   la même courbe et la même durée que le panneau — l'effet vient du seul écart
+   entre leurs `--away-y`, pas d'un décalage ni d'une courbe. Ajoute un retard
+   et le parallaxe se lit comme un défaut de synchronisation.
+
+   La rotation, elle, est propre à chaque pièce (`--away-r`) et ALTERNE DE SIGNE :
+   c'est ce qui empêche l'envol de se lire comme une seule image qu'on translate. */
+html.is-entering .veil__sticker {
+  animation: veil-piece-out var(--veil-open) var(--ease-out) var(--veil-hold) both;
+}
+@keyframes veil-piece-out {
+  from { transform: translateY(0)             rotate(var(--rot)); }
+  to   { transform: translateY(var(--away-y)) rotate(calc(var(--rot) + var(--away-r))); }
 }
 
 /* En mouvement réduit, il n'y a pas de voile du tout : `js/veil.js` sort avant
-   de poser la moindre classe, donc aucune de ces règles ne s'applique et le clic
-   n'est pas intercepté. Rien à neutraliser ici. */
+   de poser la moindre classe et sans monter le collage, donc aucune de ces
+   règles ne s'applique et le clic n'est pas intercepté. Rien à neutraliser. */
 
-/* L'ARRIVÉE NE DÉFILE PAS SOUS LES YEUX. `scroll-behavior: smooth` vaut aussi
-   pour le saut vers l'ancre d'une NAVIGATION, et pas seulement pour le clic sur
-   une ancre interne : revenir sur `index.html#projets` faisait descendre la page
-   en douceur… à travers les 717 vh du parcours. La classe est posée par le
-   script en tête d'`index.html` et retirée au `load`, donc elle ne couvre que
-   l'arrivée — les ancres du header gardent leur défilement lissé. */
 html.is-arriving { scroll-behavior: auto; }
 
 /* ---------- Header ---------- */
@@ -430,16 +531,7 @@ html.is-arriving { scroll-behavior: auto; }
 .decor--sticker {
   object-fit: contain;
   filter: drop-shadow(0 .6cqw 1.2cqw rgba(0, 0, 0, .4));
-  transform: rotate(var(--rot, 0deg)) perspective(700px) rotateX(var(--tiltx, 0deg)) rotateY(var(--tilty, 0deg)) scale(var(--peel-scale, 1));
-  transition: transform .55s cubic-bezier(.34, 1.56, .64, 1);
-  cursor: grab;
-  touch-action: none;
-  pointer-events: auto;
-}
-
-.decor--sticker.is-dragging {
-  transition: none;
-  cursor: grabbing;
+  transform: rotate(var(--rot, 0deg));
 }
 
 /* Sept stickers, positionnés en % du cadre 1472x599 (cf. CLAUDE.md, « Le hero »).
@@ -2415,7 +2507,7 @@ a.pcard:hover { border-color: rgb(var(--cream-rgb) / .28); }
 
    Le curseur natif fait tout le travail — glissement souris et doigt, clavier, bornes,
    annonce aux lecteurs d'écran. Le JS n'écrit qu'un nombre, `--pos` ; le trait et la
-   pastille sont des décors. Même partage que les stickers du hero et le tas de photos. */
+   pastille sont des décors. Même partage que le tas de photos et le parcours. */
 .wipe {
   --pos: 50%;
   position: relative;
@@ -3929,7 +4021,7 @@ a.case-foot__next:hover { color: var(--cream); }
 
 
 /* ---------- Le parallaxe, le mécanisme ----------
-   Le JS (neuvième IIFE) ne pose qu'un nombre, `--par`, entre -1 (la pièce est en
+   Le JS (huitième IIFE) ne pose qu'un nombre, `--par`, entre -1 (la pièce est en
    haut de la fenêtre) et +1 (elle est en bas). Tout le reste se décide dans la
    règle de chaque pièce, une amplitude à la fois :
 

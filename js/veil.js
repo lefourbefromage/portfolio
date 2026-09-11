@@ -14,6 +14,17 @@
    elles-mêmes sont LUES dans le CSS (`--veil-close`, `--veil-hold`) plutôt que
    réécrites ici : il n'y a qu'un endroit où les changer.
 
+   IL FABRIQUE AUSSI LE COLLAGE — les sept stickers du hero — parce que c'est du
+   CHROME et non du contenu : sans JS il ne doit rester ni balise inerte ni image
+   décorative en travers, exactement comme la visionneuse des pages projet. La
+   liste des fichiers est ici, TOUTE la géométrie est dans le CSS ; ce fichier ne
+   sait pas où les pièces se posent, et c'est voulu.
+
+   LE PANNEAU D'ENCRE, LUI, N'EST PAS DU DOM : c'est un pseudo-élément de la
+   racine, donc il est là dès la première image, quand `<body>` n'existe pas
+   encore. Le collage, lui, peut se permettre une image de retard — au pire on
+   voit un panneau nu, jamais la page à nu. Ne ramène pas les deux du même côté.
+
    SANS JS, RIEN. Pas de classe, donc pas de pseudo-élément, donc pas de voile —
    et le clic n'est pas intercepté. Même règle que `.js-motion` : la navigation
    ne dépend jamais de ce fichier.
@@ -39,6 +50,59 @@
     return isNaN(n) ? 0 : (v.slice(-2) === 'ms' ? n : n * 1000);
   };
 
+  /* ---------- LE COLLAGE ----------
+     Les sept stickers du hero, dans l'ORDRE DE PROFONDEUR — de l'arrière vers
+     l'avant. Cet ordre est celui de la peinture ET celui du parallaxe, et le CSS
+     s'y accroche pièce par pièce : ne le change pas d'un côté seulement. */
+  var PIECES = [
+    ['figma',    'sticker-figma.webp'],
+    ['uiux',     'sticker-uiux.webp'],
+    ['html',     'sticker-html.webp'],
+    ['adobe',    'sticker-adobe.webp'],
+    ['sass',     'sticker-sassless.webp'],
+    ['affinity', 'sticker-affinity.webp'],
+    ['github',   'sticker-github.webp']
+  ];
+
+  var art = null;
+
+  var build = function () {
+    if (art) return;
+    art = document.createElement('div');
+    art.className = 'veil';
+    // Décoratif de bout en bout : le conteneur est masqué aux lecteurs d'écran
+    // et chaque image a un `alt` vide — ce qui l'écarte aussi de la visionneuse,
+    // dont le filtre est l'alternative textuelle et non une liste de classes.
+    art.setAttribute('aria-hidden', 'true');
+
+    var inner = document.createElement('div');
+    inner.className = 'veil__art';
+    PIECES.forEach(function (p) {
+      var img = document.createElement('img');
+      img.className = 'veil__sticker veil__sticker--' + p[0];
+      img.src = 'assets/home/hero/' + p[1];   // chemin RELATIF : le site est servi sous /portfolio/
+      img.alt = '';
+      img.decoding = 'async';
+      inner.appendChild(img);
+    });
+    art.appendChild(inner);
+    mount(art);
+  };
+
+  // `<body>` n'existe pas encore quand ce fichier s'exécute. On ne l'attend pas
+  // avec `DOMContentLoaded`, qui vient après TOUT le document : l'observateur
+  // rend la main à l'instant où la balise s'ouvre, donc avant que le moindre
+  // contenu ne soit analysé — et donc avant le premier rendu.
+  function mount(node) {
+    if (document.body) { document.body.appendChild(node); return; }
+    var mo = new MutationObserver(function () {
+      if (!document.body) return;
+      mo.disconnect();
+      document.body.appendChild(node);
+    });
+    mo.observe(document.documentElement, { childList: true });
+  }
+
   /* ---------- L'ARRIVÉE ----------
      On ne voile QUE si l'on vient d'une page du site — le drapeau a été posé en
      partant. Quelqu'un qui arrive d'un moteur de recherche ou d'un lien direct
@@ -49,6 +113,7 @@
     if (sessionStorage.getItem(KEY)) {
       sessionStorage.removeItem(KEY);
       html.classList.add('is-entering');
+      build();   // tout de suite : le collage doit être là à la première image
 
       // On retire la classe une fois le panneau sorti, pour ne pas laisser deux
       // pseudo-éléments plein écran en place. Le nom de l'animation est vérifié :
@@ -65,6 +130,11 @@
       setTimeout(off, ms('--veil-hold') + ms('--veil-open') + 400);
     }
   } catch (e) { /* stockage indisponible : pas de voile, la navigation est nue */ }
+
+  // Page arrivée sans voile (lien direct, moteur de recherche, bouton Précédent) :
+  // on monte le collage une fois le reste chargé. Les 232 Ko des sept stickers ne
+  // disputent alors rien au premier rendu, et ils sont en cache pour le départ.
+  if (!art) addEventListener('load', function () { setTimeout(build, 0); });
 
   /* ---------- LE DÉPART ----------
      Un seul écouteur, sur le document, en phase de bouillonnement : il voit tous
@@ -84,12 +154,21 @@
 
     // `mailto:` et les liens sortants ont une autre origine : ils passent.
     if (url.origin !== location.origin) return;
-    // Une ancre DANS la même page n'est pas une navigation — c'est le défilement
-    // lissé du header, et il ne doit surtout pas être voilé.
+
+    // UNE ANCRE DANS LA MÊME PAGE N'EST PAS UNE NAVIGATION — c'est le défilement
+    // lissé du header, et il ne doit surtout pas être voilé. Le test se fait en
+    // DEUX temps depuis que les liens internes sont sans extension : `./#projets`
+    // pointe sur `/`, donc il ne porte plus le même `pathname` que l'accueil
+    // ouvert sur `/index.html`, et la comparaison seule laissait passer l'ancre.
+    // Le second test ne demande rien à l'URL : la cible est-elle ICI ? Sur une
+    // page projet, `#projets` n'existe pas, donc le voile joue bien.
+    if (url.hash && (url.pathname === location.pathname ||
+                     document.getElementById(url.hash.slice(1)))) return;
     if (url.pathname === location.pathname && url.search === location.search) return;
 
     e.preventDefault();
     busy = true;
+    build();   // filet : un clic avant la fin du chargement n'aura pas de collage sinon
     try { sessionStorage.setItem(KEY, '1'); } catch (err) {}
     html.classList.add('is-leaving');
 
