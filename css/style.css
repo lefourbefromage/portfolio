@@ -2179,12 +2179,16 @@ a.pcard:hover { border-color: rgb(var(--cream-rgb) / .28); }
 .about__cv-arrow { color: var(--pink); flex: none; }
 
 /* ---------- Contact ---------- */
+/* Centré comme la tête de section : un bloc à la largeur de son contenu,
+   recentré par ses marges. Le `gap` ne sépare que l'adresse de la flèche —
+   l'adresse est UN seul enfant, sans quoi ses trois morceaux s'écartent. */
 .contact__mail {
   font-family: var(--font-display);
-  display: inline-flex;
+  display: flex;
+  width: fit-content;
   align-items: baseline;
   gap: .4em;
-  margin-top: clamp(32px, 5vh, 56px);
+  margin: clamp(32px, 5vh, 56px) auto 0;
   font-size: clamp(24px, 3.4vw, 48px);
   font-weight: 700;
   color: var(--pink);
@@ -2200,28 +2204,6 @@ a.contact__mail:hover { border-bottom-color: var(--pink); }
 .contact__at::before { content: "@"; }
 
 .contact__arrow { width: .38em; height: .38em; }
-
-.contact__links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 28px;
-  margin: clamp(28px, 4vh, 44px) 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.contact__link {
-  font-family: var(--font-display);
-  display: inline-flex;
-  align-items: center;
-  font-size: clamp(14px, 1vw, 16px);
-  color: rgb(var(--cream-rgb) / .72);
-  transition: color .2s ease;
-}
-
-.contact__link .todo { margin: 0 0 0 10px; }
-
-.contact__link:hover { color: var(--cream); }
 
 /* ---------- Footer ---------- */
 .site-footer {

@@ -79,6 +79,13 @@ texte — sans quoi l'adresse ne se copierait pas (un contenu généré n'est pa
 - une autre adresse ailleurs sur le site suit le même balisage : l'IIFE traite tout
   `[data-mail]`.
 
+**La section contact tient en trois lignes** : la tête commune, une phrase de disponibilité
+(écrite avec Vincent, au vouvoiement — ne la réécris pas sans lui), et l'adresse, **centrée**
+comme la tête. **Elle ne porte plus de liens réseaux** : LinkedIn, Behance et Dribbble sont
+dans le footer juste en dessous, et Vincent a fait retirer le doublon. Ils ne vivent donc
+plus qu'au footer des quatre pages, et dans le menu mobile qui les clone. Plus aucune
+pastille `.todo` n'est posée sur la page ; la classe reste dans le CSS pour la prochaine.
+
 Les skills vendorisées (`.agents/`, et les liens symboliques de `.claude/skills/`) sont
 ignorées par git — 5,4 Mo que `skills-lock.json`, lui versionné, permet de restaurer.
 
@@ -752,7 +759,7 @@ voir « Le fil qui vient d'À propos » plus bas. Il n'est plus dans `.about__bo
 doit se figer avec la scène du parcours, ce qu'un enfant d'À propos ne peut pas faire.
 
 **Le bouton CV est un `<span>`, pas un `<a>`, tant que le PDF n'existe pas** — même règle que
-les liens réseaux du contact : pas d'ancre morte sur le site. Le jour où le fichier est là, il
+l'adresse de contact sans JS : pas d'ancre morte sur le site. Le jour où le fichier est là, il
 repasse en `<a href="assets/home/cv-vincent-waldmann.pdf" download>`, un commentaire HTML le
 rappelle sur place.
 
@@ -1484,8 +1491,7 @@ d'écran lit les trois cartes, pas leur illustration.
 
 **Les trois cartes sont des liens** (`projet-jm.html`, `projet-beepz.html`,
 `projet-jimizz.html`). Celle de Jimizz a longtemps été un `<div>` — pas d'ancre
-morte tant que la page n'existait pas, même règle que les liens réseaux du
-contact ; la page existe, la carte est un `<a>`, et rien d'autre n'a changé.
+morte tant que la page n'existait pas, même règle que le bouton CV ; la page existe, la carte est un `<a>`, et rien d'autre n'a changé.
 La navigation entre pages projet boucle&nbsp;: J&M → Beepz → Jimizz → J&M.
 
 **Les trois icônes de marque portent leur fond ET leurs coins arrondis dans
@@ -2371,14 +2377,6 @@ plus rien ne pointe dessus.
 
 Ces points ne sont pas encore arbitrés — demande plutôt que de supposer :
 
-- **Le contenu de `#projets` et `#contact`.** Les sections existent et sont maquettées, mais
-  leurs textes sont des **placeholders assumés**, marqués par la pastille `.todo`
-  (« À compléter »). N'invente pas de projets ni de client à sa place : demande-lui le
-  contenu. À propos et le parcours, eux, sont écrits pour de bon.
-  L'adresse de `#contact`, elle, est réglée — voir « L'adresse de contact ». Les liens réseaux — **LinkedIn,
-  Behance et Dribbble** — sont de vrais `<a>` (nouvel onglet), et ce sont les trois mêmes
-  que porte le footer des quatre pages : garde les deux listes d'accord. GitHub a été
-  retiré.
 - **Le design des titres**, `.trail__intro` compris, qui doit être repris. En attendant, les
   cartes d'étape passent derrière « L'ASCENSION » et les deux textes se croisent : c'est
   **connu et assumé**, pas un bug. Ne le rattrape pas par un fond ou un dégradé sous le titre,

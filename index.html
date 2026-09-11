@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vincent Waldmann — Webdesigner & Intégrateur</title>
 <meta name="description" content="Webdesigner et intégrateur depuis 2013. Treize ans à concevoir et intégrer des sites à très forte audience, du premier tracé à la mise en ligne.">
-<link rel="stylesheet" href="css/style.css?v=0.27">
+<link rel="stylesheet" href="css/style.css?v=0.28">
 
 <!-- L'ICÔNE DU SITE. Les trois fichiers sont à la RACINE du dépôt et non dans
      `assets/`, qui se range par page : ils n'appartiennent à aucune page, et
@@ -53,7 +53,7 @@
 <!-- LE VOILE DE TRANSITION, en tête et sur les quatre pages : sa moitié
      « arrivée » doit s'exécuter avant le premier rendu, sinon la page apparaît
      un instant à nu avant d'être recouverte. Voir l'en-tête de `js/veil.js`. -->
-<script src="js/veil.js?v=0.27"></script>
+<script src="js/veil.js?v=0.28"></script>
 
 <!-- L'ARRIVÉE SUR L'ACCUEIL, et elle se règle AVANT le premier rendu — d'où ce
      script en tête de page et non dans `main.js`, qui charge en bas. Même parti
@@ -154,7 +154,7 @@
   <span class="banner__flag">Site en cours de construction.</span>
   <span>Des bugs peuvent apparaître.</span>
   <!-- Posé par tools/bump_version.py, avec les ?v= du <head> : ne pas éditer à la main. -->
-  <span class="banner__version">v0.27</span>
+  <span class="banner__version">v0.28</span>
 </div>
 
 <header class="site-header">
@@ -588,8 +588,9 @@
       <p class="section__eyebrow"><span class="section__eyebrow-num">04.</span> Contact</p>
       <h2 class="section__title">Discutons</h2>
       <p class="section__lede">
-        <span class="todo">À compléter</span>
-        Une ligne qui dit ce que tu cherches en ce moment, et sous quel délai tu réponds.
+        Je suis disponible pour de nouvelles collaborations.<br>
+        Un projet, une idée&nbsp;?
+        Écrivez-moi, on en parle.
       </p>
     </div>
 
@@ -597,17 +598,11 @@
          messagerie dans ce fichier, pour les robots qui ratissent le HTML. L'arobase
          est dessinée par le CSS, et main.js monte le vrai lien (« L'adresse de contact »). -->
     <span class="contact__mail" data-mail>
-      <span>contact</span><span class="contact__at"></span><span>vincentw.fr</span>
+      <span><span>contact</span><span class="contact__at"></span><span>vincentw.fr</span></span>
       <svg class="contact__arrow" width="14" height="14" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <path d="M1 9L9 1M9 1H2M9 1V8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </span>
-
-    <ul class="contact__links">
-      <li><a class="contact__link" href="https://www.linkedin.com/in/vincent-waldmann-7989b893/" target="_blank" rel="noopener">LinkedIn</a></li>
-      <li><a class="contact__link" href="https://www.behance.net/lefourbefromage" target="_blank" rel="noopener">Behance</a></li>
-      <li><a class="contact__link" href="https://dribbble.com/LeFourbeFromage" target="_blank" rel="noopener">Dribbble</a></li>
-    </ul>
   </section>
 </main>
 
@@ -635,6 +630,6 @@
   </div>
 </footer>
 
-<script src="js/main.js?v=0.27"></script>
+<script src="js/main.js?v=0.28"></script>
 </body>
 </html>
