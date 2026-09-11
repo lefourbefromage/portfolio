@@ -308,6 +308,111 @@ html.is-entering .veil__sticker {
 
 html.is-arriving { scroll-behavior: auto; }
 
+/* ---------- Le bandeau de chantier ----------
+   IL EST STICKY ET IL EST ROSE, et les deux sont demandés : il doit rester
+   sous les yeux tant que le débogage n'est pas fini.
+
+   Le rose en FOND est la seule entorse du site à la règle « le rose est une
+   touche de couleur, sur fond foncé uniquement » — c'est justement ce qui le
+   fait sortir d'une page sombre de bout en bout, et c'est ce qu'on lui
+   demande. Rien d'autre n'est ajouté à la palette : le texte, les hachures et
+   la pastille sont de l'encre.
+
+   Sa hauteur est un TOKEN, `--banner-h`, et pas une hauteur libre : trois
+   choses la lisent — le calage des ancres (`scroll-padding-top`), la tête du
+   parcours qui passe dessous, et la barre elle-même. Elle est donc fixée, pas
+   déduite du texte.
+
+   Il passe SOUS le voile de transition (9000) : entre deux pages, c'est le
+   panneau d'encre qui couvre tout, bandeau compris.
+
+   À RETIRER LE JOUR OÙ LE SITE EST FINI : ce bloc entier (les trois règles
+   qu'il emporte avec lui — `scroll-padding-top`, `.trail__intro` et la règle
+   mobile plus bas) et le `<div class="banner">` en tête des QUATRE pages. */
+:root { --banner-h: 46px; }
+
+/* Une ancre ne doit pas se poser SOUS la barre. `scroll-padding` ne touche que
+   le saut vers un fragment et `scrollIntoView` — les `scrollTo` du mode auto du
+   parcours, qui visent des positions calculées, ne sont pas concernés. */
+html { scroll-padding-top: var(--banner-h); }
+
+.banner {
+  font-family: var(--font-display);
+  position: sticky;
+  top: 0;
+  z-index: 8000;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0 .6em;
+  min-height: var(--banner-h);
+  padding: 6px clamp(14px, 2.6vw, 40px);
+  background: var(--pink);
+  font-size: clamp(11px, 1.05vw, 14px);
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  text-align: center;
+  color: rgb(var(--ink-rgb) / .72);
+  /* L'ombre portée le décolle de la page : sans elle, une barre collante se lit
+     comme un morceau de page qui refuse de partir. */
+  box-shadow: 0 12px 32px rgb(var(--ink-rgb) / .55);
+}
+
+/* Les hachures de chantier, sur le bord bas — en encre sur le rose, donc encore
+   aucune couleur de plus. C'est ce qui dit « travaux » sans un mot de plus. */
+.banner::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4px;
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--ink) 0 7px,
+    transparent 7px 14px
+  );
+}
+
+.banner__flag {
+  display: inline-flex;
+  align-items: center;
+  gap: .5em;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* La pastille qui bat, comme celle du badge « Disponible » du hero. Elle est
+   décorative : le texte dit déjà tout. */
+.banner__flag::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--ink);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .banner__flag::before { animation: banner-pulse 1.8s ease-in-out infinite; }
+}
+
+@keyframes banner-pulse {
+  0%, 100% { opacity: 1;  transform: scale(1);   }
+  50%      { opacity: .3; transform: scale(.72); }
+}
+
+/* Sous ~490px les deux phrases ne tiennent plus sur une ligne : la barre passe
+   à deux, et `--banner-h` avec elle — les ancres et la tête du parcours
+   suivent toutes seules. La rampe est mesurée, pas choisie : à 11px de corps le
+   texte fait 460px de large. */
+@media (max-width: 520px) {
+  :root { --banner-h: 58px; }
+  .banner { letter-spacing: .05em; }
+}
+
 /* ---------- Header ---------- */
 .site-header {
   display: flex;
@@ -1097,7 +1202,12 @@ html.is-arriving { scroll-behavior: auto; }
   right: 0;
   top: 0;
   z-index: 4;
-  padding: clamp(26px, 5vh, 56px) clamp(24px, 4.5vw, 64px) 0;
+  /* `--banner-h` est la hauteur du bandeau de chantier, qui est collant en haut
+     de fenêtre : sans ce terme il passerait sur l'œil de la section, la scène
+     étant épinglée à `top: 0`. Le repli à `0px` n'est pas décoratif — c'est ce
+     qui rend au titre son calage d'origine le jour où le bandeau est retiré,
+     sans avoir à repasser ici. */
+  padding: calc(var(--banner-h, 0px) + clamp(26px, 5vh, 56px)) clamp(24px, 4.5vw, 64px) 0;
   pointer-events: none;
 }
 

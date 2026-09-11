@@ -289,6 +289,44 @@ donnerait un faux romain synthétisé par le navigateur — ne le fais pas, ou r
 Son œil est plus petit que celui d'Inter : `.about__hl` compense par un `font-size: 1.08em`,
 sinon les mots en avant paraissent en retrait au lieu d'en relief.
 
+## Le bandeau de chantier
+
+Un bandeau **rose et collant** annonce en tête des **quatre** pages que le site est en
+construction et que des bugs peuvent apparaître. **Il est temporaire** : le retirer, c'est
+le bloc « Le bandeau de chantier » de `css/style.css` — qui emporte avec lui le
+`scroll-padding-top` et la règle des écrans étroits — et le `<div class="banner">` en tête
+des quatre pages. Rien d'autre : le seul endroit du site qu'il touche, la tête du parcours,
+se recale tout seul (voir plus bas).
+
+**Le rose EN FOND est la seule entorse à la règle « le rose est une touche de couleur, sur
+fond foncé uniquement »**, et elle est assumée : c'est ce qui le fait sortir d'une page
+sombre de bout en bout, et c'est ce qu'on lui demande. Aucune cinquième couleur pour
+autant — le texte, les hachures du bord bas et la pastille qui bat sont de l'encre.
+
+**Sa hauteur est un token, `--banner-h`, et pas une hauteur libre**, parce que trois choses
+la lisent :
+
+- la barre elle-même (`min-height`) ;
+- le calage des ancres, `scroll-padding-top` sur `html` — sans quoi un lien du header
+  poserait sa section SOUS la barre. Il ne concerne que le saut vers un fragment et
+  `scrollIntoView` : les `scrollTo` du mode auto du parcours, qui visent des positions
+  calculées, ne sont pas touchés ;
+- **la tête du parcours**, seule chose du site que le bandeau déplace. La scène est
+  épinglée à `top: 0`, donc la barre passerait sur son œil ; son `padding-top` vaut donc
+  `calc(var(--banner-h, 0px) + …)`. **Le repli à `0px` n'est pas décoratif** : c'est lui qui
+  rend au titre son calage d'origine le jour où le bandeau part, sans avoir à repasser dans
+  la règle du parcours.
+
+Sous 520px les deux phrases ne tiennent plus sur une ligne : `--banner-h` passe à 58px et
+les trois lecteurs suivent. Le seuil est mesuré (460px de texte à 11px de corps), pas choisi.
+
+**Il est à `z-index: 8000`, donc SOUS le voile de transition** (9000) : entre deux pages,
+c'est le panneau d'encre qui couvre tout, bandeau compris. La visionneuse, elle, est un
+`<dialog>` en couche supérieure et passe devant sans rien avoir à déclarer.
+
+Aucun JS, aucune fermeture : il n'y a rien à mémoriser, et il doit rester sous les yeux tant
+que le débogage n'est pas fini.
+
 ## La structure de la page
 
 `Hero > À propos > Parcours (« Carnet de routes ») > Projets > Contact > Footer`, dans cet ordre, et la nav du
