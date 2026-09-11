@@ -1340,3 +1340,134 @@
   // menu dans l'état où on l'a quittée.
   window.addEventListener('pageshow', (e) => { if (e.persisted) set(false, { focus: false }); });
 })();
+
+/* ---------- Le mème d'À propos ----------
+   Survoler « un concept infaisable » fait apparaître un mème au-dessus de la
+   souris, qui la suit. Le HTML décide (`data-meme` porte le chemin de l'image),
+   le JS ne pose que `--x`, `--y`, `--tilt` et la classe `is-on`, le CSS dessine.
+
+   C'est du chrome, donc la règle de la visionneuse : l'image est fabriquée ici,
+   et seulement au PREMIER survol — une page qui n'est jamais survolée ne la
+   télécharge pas. Sans souris (tactile, stylet sans survol) il ne se passe rien,
+   et le soulignement qui promet l'effet n'est même pas posé.
+
+   La position ne saute pas sur la souris, elle la rattrape (`FOLLOW`), et
+   l'image penche du côté où l'on va, d'après la vitesse horizontale : c'est ce
+   qui la fait lire comme un objet qu'on traîne plutôt que comme une infobulle.
+   Hors mouvement réduit seulement — sinon elle suit au pixel, sans pencher. */
+(function () {
+  const word = document.querySelector('[data-meme]');
+  if (!word) return;
+  if (!matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+
+  const still = matchMedia('(prefers-reduced-motion: reduce)');
+  const FOLLOW = 0.22;     // part du reste parcourue à chaque image
+  const TILT_MAX = 14;     // degrés
+  const GAP = 18;          // px entre la souris et le bord de l'image
+  const EDGE = 8;          // px de marge aux bords de la fenêtre
+
+  let img = null;
+  let broken = false;
+  let on = false;
+  let raf = 0;
+  const mouse = { x: 0, y: 0 };
+  const pos = { x: 0, y: 0, tilt: 0 };
+
+  word.classList.add('is-live');
+
+  function make() {
+    img = document.createElement('img');
+    img.className = 'meme-float';
+    img.alt = '';
+    img.setAttribute('aria-hidden', 'true');
+    img.decoding = 'async';
+    img.addEventListener('error', () => { broken = true; img.remove(); });
+    img.src = word.dataset.meme;
+    document.body.append(img);
+  }
+
+  // Où l'image doit se poser : centrée sur la souris, au-dessus d'elle, et
+  // retenue dans la fenêtre. Trop près du haut, elle passe dessous.
+  function target() {
+    const w = img.offsetWidth;
+    const h = img.offsetHeight || w * 1.64;
+    const below = mouse.y - GAP - h < EDGE;
+    img.classList.toggle('is-below', below);
+    return {
+      x: Math.min(Math.max(mouse.x - w / 2, EDGE), innerWidth - w - EDGE),
+      y: below ? mouse.y + GAP + 6 : mouse.y - GAP - h,
+    };
+  }
+
+  function paint() {
+    img.style.setProperty('--x', `${pos.x}px`);
+    img.style.setProperty('--y', `${pos.y}px`);
+    img.style.setProperty('--tilt', `${pos.tilt}deg`);
+  }
+
+  function tick() {
+    raf = 0;
+    const t = target();
+    const dx = t.x - pos.x;
+    pos.x += dx * FOLLOW;
+    pos.y += (t.y - pos.y) * FOLLOW;
+    const lean = Math.max(-TILT_MAX, Math.min(TILT_MAX, dx * 0.35));
+    pos.tilt += (lean - pos.tilt) * 0.2;
+    paint();
+    // La boucle s'arrête quand tout est posé, comme le parallaxe des pages projet.
+    const settled = Math.abs(dx) < 0.3 && Math.abs(t.y - pos.y) < 0.3 && Math.abs(pos.tilt) < 0.1;
+    if (!settled) raf = requestAnimationFrame(tick);
+  }
+
+  function snap() {
+    const t = target();
+    pos.x = t.x; pos.y = t.y; pos.tilt = 0;
+    paint();
+  }
+
+  word.addEventListener('pointerenter', (e) => {
+    if (e.pointerType !== 'mouse' || broken) return;
+    if (!img) make();
+    mouse.x = e.clientX; mouse.y = e.clientY;
+    on = true;
+    snap();                             // il éclot SOUS la souris, pas en glissant depuis le coin
+    img.classList.add('is-on');
+  });
+
+  word.addEventListener('pointermove', (e) => {
+    if (!on || e.pointerType !== 'mouse') return;
+    mouse.x = e.clientX; mouse.y = e.clientY;
+    if (still.matches) { snap(); return; }
+    if (!raf) raf = requestAnimationFrame(tick);
+  });
+
+  function hide() {
+    on = false;
+    if (img) img.classList.remove('is-on');
+  }
+
+  word.addEventListener('pointerleave', hide);
+  // La page qui défile sous une souris immobile emporte le mot : l'image, elle,
+  // resterait plantée en l'air.
+  addEventListener('scroll', () => { if (on) hide(); }, { passive: true });
+})();
+
+/* ---------- L'adresse de contact ---------- */
+// L'adresse n'est écrite en entier dans aucun fichier du site : le HTML n'en
+// porte que les deux moitiés, et le « @ » y est un contenu généré par le CSS.
+// Un robot qui lit le HTML sans exécuter le JS n'y trouve donc ni adresse ni
+// `mailto:`. Ici on remplace le `<span>` par un vrai lien, avec un vrai « @ »
+// dans le texte — c'est ce qui le rend copiable.
+(function () {
+  for (const el of document.querySelectorAll('[data-mail]')) {
+    const at = el.querySelector('.contact__at');
+    if (!at) continue;
+    at.replaceWith('@');
+    const [user, domain] = el.textContent.trim().split('@');
+    const link = document.createElement('a');
+    link.className = el.className;
+    link.href = 'mailto:' + user + '@' + domain;
+    link.append(...el.childNodes);
+    el.replaceWith(link);
+  }
+})();

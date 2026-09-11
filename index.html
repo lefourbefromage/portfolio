@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vincent Waldmann — Webdesigner & Intégrateur</title>
 <meta name="description" content="Webdesigner et intégrateur depuis 2013. Treize ans à concevoir et intégrer des sites à très forte audience, du premier tracé à la mise en ligne.">
-<link rel="stylesheet" href="css/style.css?v=0.26">
+<link rel="stylesheet" href="css/style.css?v=0.27">
 
 <!-- L'ICÔNE DU SITE. Les trois fichiers sont à la RACINE du dépôt et non dans
      `assets/`, qui se range par page : ils n'appartiennent à aucune page, et
@@ -53,7 +53,7 @@
 <!-- LE VOILE DE TRANSITION, en tête et sur les quatre pages : sa moitié
      « arrivée » doit s'exécuter avant le premier rendu, sinon la page apparaît
      un instant à nu avant d'être recouverte. Voir l'en-tête de `js/veil.js`. -->
-<script src="js/veil.js?v=0.26"></script>
+<script src="js/veil.js?v=0.27"></script>
 
 <!-- L'ARRIVÉE SUR L'ACCUEIL, et elle se règle AVANT le premier rendu — d'où ce
      script en tête de page et non dans `main.js`, qui charge en bas. Même parti
@@ -154,7 +154,7 @@
   <span class="banner__flag">Site en cours de construction.</span>
   <span>Des bugs peuvent apparaître.</span>
   <!-- Posé par tools/bump_version.py, avec les ?v= du <head> : ne pas éditer à la main. -->
-  <span class="banner__version">v0.26</span>
+  <span class="banner__version">v0.27</span>
 </div>
 
 <header class="site-header">
@@ -281,18 +281,61 @@
       <p>
         L’essentiel de ces années s’est joué sur des sites à <span class="about__hl">très forte
         audience</span>, là où un écran validé le matin est vu par des centaines de milliers de
-        personnes le soir. On y apprend vite une chose&nbsp;: rien n’est un détail. Un
-        espacement, un libellé, une seconde de chargement — quand tout se voit, chaque
-        décision compte, et c’est une excellente raison de faire les choses bien.
+        personnes le soir. Chaque décision compte, et c’est une excellente raison de faire
+        les choses bien.
       </p>
 
       <p>
-        On me surnomme le <span class="about__hl">couteau suisse</span>, et ça me va plutôt
-        bien&nbsp;: webdesign, création print, intégration — je passe d’un bout à l’autre de la
-        chaîne sans changer de casquette. Et dès que le sujet part côté back, je préfère
-        comprendre comment ça marche&nbsp;; ça rend les conversations avec les développeurs
-        nettement plus courtes.
+        Mes collègues m’ont souvent comparé à un <span class="about__hl">couteau suisse</span>,
+        pour ma polyvalence et mon envie de comprendre ce qui m’entoure. UX, product design,
+        création print ou intégration de site&nbsp;: je passe d’un bout à l’autre de la chaîne
+        sans changer de casquette. J’aime comprendre les gens avec qui je travaille, pour
+        échanger facilement avec eux et éviter ainsi de livrer
+        <!-- Le mème au survol : l'image est fabriquée par main.js (IIFE « Le mème
+             d'À propos »), et elle n'existe qu'à la souris. Sans JS, c'est du texte. -->
+        <span class="about__meme" data-meme="assets/home/about/meme-dev.webp">un concept
+        infaisable</span>.
       </p>
+
+      <p>
+        L’IA divise le métier&nbsp;; pour moi, elle travaille <span class="about__hl">en
+        appui</span>. Détourage, relecture ou écriture de code&nbsp;: elle accélère, mais
+        c’est moi qui tiens le crayon — je comprends ce qu’elle produit et je le corrige.
+      </p>
+
+      <!-- Des savoir-faire, pas des logos : les stickers du hero disent déjà les
+           outils, mais ils sont décoratifs (alt vide) — ici, c'est du texte qu'on lit. -->
+      <div class="about__skills">
+        <div class="about__skill-group">
+          <h3 class="about__skill-title">Design</h3>
+          <ul class="about__skill-list">
+            <li>UX Research</li>
+            <li>UX Design</li>
+            <li>UI Design</li>
+            <li>Wireframing</li>
+            <li>Design System</li>
+            <li>Graphic Design</li>
+          </ul>
+        </div>
+        <div class="about__skill-group">
+          <h3 class="about__skill-title">Dev</h3>
+          <ul class="about__skill-list">
+            <li>HTML / CSS</li>
+            <li>Sass / Less</li>
+            <li>JavaScript</li>
+            <li>Responsive design</li>
+          </ul>
+        </div>
+        <div class="about__skill-group">
+          <h3 class="about__skill-title">Outils</h3>
+          <ul class="about__skill-list">
+            <li>Figma</li>
+            <li>Suite Adobe</li>
+            <li>Affinity</li>
+            <li>Git / GitHub</li>
+          </ul>
+        </div>
+      </div>
 
       <!-- Bouton volontairement en <span> : le PDF n'existe pas encore, et on ne laisse
            pas d'ancre morte sur le site. À repasser en
@@ -550,12 +593,15 @@
       </p>
     </div>
 
-    <a class="contact__mail" href="mailto:adresse@a-completer.fr">
-      adresse@a-completer.fr
+    <!-- L'adresse n'est écrite nulle part en entier, exprès : ni arobase ni lien de
+         messagerie dans ce fichier, pour les robots qui ratissent le HTML. L'arobase
+         est dessinée par le CSS, et main.js monte le vrai lien (« L'adresse de contact »). -->
+    <span class="contact__mail" data-mail>
+      <span>contact</span><span class="contact__at"></span><span>vincentw.fr</span>
       <svg class="contact__arrow" width="14" height="14" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <path d="M1 9L9 1M9 1H2M9 1V8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
-    </a>
+    </span>
 
     <ul class="contact__links">
       <li><a class="contact__link" href="https://www.linkedin.com/in/vincent-waldmann-7989b893/" target="_blank" rel="noopener">LinkedIn</a></li>
@@ -589,6 +635,6 @@
   </div>
 </footer>
 
-<script src="js/main.js?v=0.26"></script>
+<script src="js/main.js?v=0.27"></script>
 </body>
 </html>

@@ -50,6 +50,35 @@ frappe : il épingle la clé personnelle avec `IdentitiesOnly yes`. Utiliser `gi
 clair dans une URL de remote propose la clé *professionnelle* et échoue sur
 `Permission denied (publickey)`. Garde l'alias dans tout remote ajouté ici.
 
+**Les commits signent avec l'adresse noreply de GitHub**
+(`7112782+lefourbefromage@users.noreply.github.com`), posée dans le `git config` LOCAL du
+dépôt — le global garde le Gmail pour le reste. Le dépôt étant public, l'auteur de chaque
+commit se lit en ajoutant `.patch` à son URL : c'est la fuite d'adresse la plus sûre qui
+soit, et les robots qui ratissent GitHub la connaissent. Les 26 premiers commits portent
+encore le Gmail ; il a été décidé de ne pas réécrire l'historique.
+
+### L'adresse de contact
+
+**C'est `contact`, sur le domaine du site, et elle n'est écrite en entier dans AUCUN fichier
+du dépôt** — ce fichier compris : il est public lui aussi, servi à la racine du domaine. Ni
+`@`, ni `mailto:` dans `index.html`. C'est une redirection OVH vers le Gmail : si elle se
+fait spammer, on la coupe ou on en change sans toucher à la boîte perso.
+
+Le HTML porte les deux moitiés dans un `<span data-mail>`, séparées par un
+`<span class="contact__at">` vide dont le CSS dessine l'arobase en `::before`. Un robot qui
+lit le HTML sans exécuter le JS n'y trouve que `contactvincentw.fr`. La dernière IIFE de
+`js/main.js` remplace le tout par un vrai `<a href="mailto:…">`, avec un vrai `@` dans le
+texte — sans quoi l'adresse ne se copierait pas (un contenu généré n'est pas sélectionnable).
+
+- **sans JS, l'adresse reste LISIBLE mais pas cliquable** : un `<span>`, pas d'ancre morte,
+  même règle que le bouton CV. D'où `a.contact__mail:hover` et non `.contact__mail:hover` —
+  le soulignement ne doit pas promettre un clic qui n'existe pas ;
+- **pas de commentaire qui cite l'arobase en clair** près de l'adresse, ni dans le HTML ni
+  dans le JS : c'est le test à repasser (`grep -nE "@|mailto" index.html`, hors `@media`/
+  `@font-face`/`@keyframes`) ;
+- une autre adresse ailleurs sur le site suit le même balisage : l'IIFE traite tout
+  `[data-mail]`.
+
 Les skills vendorisées (`.agents/`, et les liens symboliques de `.claude/skills/`) sont
 ignorées par git — 5,4 Mo que `skills-lock.json`, lui versionné, permet de restaurer.
 
@@ -63,7 +92,7 @@ fichier se range d'après la PAGE qui le charge, pas d'après son format :
 ```
 assets/
   home/      index.html            hero/  pile/  about/  trail/  projects/   + src/
-  beepz/     projet-beepz.html     onboarding/  mails/            + src/
+  beepz/     projet-beepz.html     onboarding/  mails/
   jm/        projet-jm.html        hero/  sites/  marques/  jacquia/
                                    campagnes/  social/  frise/   + src/
   jimizz/    projet-jimizz.html    marque/  site/  app/  plateformes/       + src/
@@ -101,16 +130,16 @@ raison ; la règle de `.gitignore` tient toujours en une ligne.
 **sections du document** — `marque/` la bande pleine largeur, `site/` le collage en
 perspective et les deux mises en scène, `app/` les trois écrans du dashboard avec la
 fusée et les cinq pièces, `plateformes/` les quatre captures du collage final. Ses
-originaux sont dans `assets/jimizz/src/`, maquette comprise (`maquette.png`, 16 Mo).
+originaux sont dans `assets/jimizz/src/`.
 
 `assets/jm/` a migré avec la refonte de sa page : ses sept dossiers servis sont eux aussi
 des **sections du document** — `hero/` la bande photographique, `sites/` les quatre mises
 en scène, `marques/` les douze vignettes, `jacquia/` la campagne et ses écrans,
 `campagnes/` le collage, `social/` la grille des réseaux, `frise/` la fresque des vingt
 ans — et ses originaux sont
-descendus dans `assets/jm/src/`, y compris la maquette elle-même (`maquette.png`, 20 Mo).
+descendus dans `assets/jm/src/`.
 
-Il lui reste **un dossier de sources hors `src/`** : `social-network/`, 79 Mo d'exports
+Il lui reste **un dossier de sources hors `src/`** : `social-network/`, 47 Mo d'exports
 d'origine que `tools/build_social.py` lit là où ils sont tombés. C'est pour lui seul que
 `.gitignore` garde `assets/jm/*` et ré-autorise les dossiers servis un par un ; le jour où
 ce script ira chercher ses sources dans `src/`, ces lignes se réduisent à `assets/*/src/`.
@@ -119,7 +148,19 @@ ce script ira chercher ses sources dans `src/`, ces lignes se réduisent à `ass
 `assets/jm/social/`, la grille des réseaux de `projet-jm.html` (voir la page J&M). Il lit
 ses sources dans `social-network/`, justement. **`tools/build_shots.py`, lui, ne sert plus
 aucune page** : laissé en place, la matière est bonne et peut revenir, mais ne le prends
-pas pour une dépendance vivante.
+pas pour une dépendance vivante — ses sources sont d'ailleurs parties avec le ménage
+ci-dessous.
+
+**Le ménage du 11 septembre 2026.** Tout ce qu'aucune page ni aucun script ne lisait
+plus a été retiré, à la demande de Vincent : `beepz/mails/board.webp` et la police
+`ClashDisplay-Variable-partial.ttf` du dépôt ; et hors dépôt, dans la Corbeille
+(`~/.Trash/portfolio-originaux-2026-09-11/`, arborescence conservée), les deux
+maquettes PNG, tout `assets/beepz/src/` (aucun script ne produit les visuels de Beepz),
+la source de la marque retirée (`image 50.png`) et les neuf exports de `social-network/`
+écartés de la grille. **Les maquettes de J&M et de Jimizz et les sources de Beepz ne
+sont donc plus sur le disque** : réexporte-les depuis Figma si tu en as besoin. Chaque
+source citée par `build_jm.py`, `build_jimizz.py`, `build_social.py` et
+`build_projects.py` est restée, vérifié manifeste par manifeste.
 
 ## La mise en ligne
 
@@ -136,9 +177,10 @@ supprime pas — et ne touche pas au bouton *Remove* de Settings → Pages, qui 
 La zone DNS chez OVH tient en trois blocs. Les quatre `A` (`185.199.108–111.153`) et les quatre
 `AAAA` (`2606:50c0:8000–8003::153`) sur l'apex, qui sont les adresses de GitHub Pages. Un
 `CNAME` sur `www` vers `lefourbefromage.github.io.` — **avec le point final**, sans quoi OVH
-fabrique `…github.io.vincentw.fr`. Et les trois `MX` plus le `SPF` d'OVH, qui ne servent à rien
-aujourd'hui mais qui sont ce qui permettra une adresse `@vincentw.fr` sans retoucher au
-domaine ; le mode textuel de la zone **remplace tout**, donc ne les perds pas au passage.
+fabrique `…github.io.vincentw.fr`. Et les trois `MX` plus le `SPF` d'OVH, qui portent
+l'adresse de contact du site — une **redirection OVH** vers le Gmail de
+Vincent, pas une boîte (voir « L'adresse de contact ») ; le mode textuel de la zone **remplace
+tout**, donc ne les perds pas au passage.
 
 Les défauts OVH ont été retirés : le `A` de parking vers `213.186.33.5`, le `ftp` en `CNAME`, et
 le `TXT` `"3|welcome"` sur `www`. Ce dernier **empêchait** la création du `CNAME` — un `CNAME`
@@ -716,8 +758,29 @@ rappelle sur place.
 
 Le texte est **du vrai contenu**, écrit avec Vincent : treize ans d'expérience depuis 2013,
 les années sur des sites à très forte audience, et le « couteau suisse ». Le nombre d'années
-est écrit en toutes lettres dans le chapô — un commentaire HTML rappelle de l'incrémenter. L'ancienne liste de compétences
-(`.about__skills`) a disparu avec la refonte — les stickers du hero disent déjà les outils.
+est écrit en toutes lettres dans le chapô — un commentaire HTML rappelle de l'incrémenter.
+Un quatrième paragraphe dit la place de l'IA dans son travail — en appui, jamais aux
+commandes — et il est de Vincent sur le fond : ne le durcis ni ne l'adoucis sans lui.
+
+**« un concept infaisable » porte un mème au survol** (`data-meme`, IIFE « Le mème
+d'À propos », la dernière de `js/main.js`) : l'image suit la souris au-dessus d'elle, en
+la rattrapant et en penchant du côté où l'on va, et passe dessous près du haut de la
+fenêtre. Demandé par Vincent, c'est le seul clin d'œil de la page. Trois règles :
+l'image est fabriquée par le JS et **seulement au premier survol** (0 Ko tant qu'on ne
+passe pas dessus) ; **rien sans souris** — pas même le soulignement rose (`is-live`),
+qui promettrait un effet qui ne viendra pas ; et un scroll la replie, sans quoi elle
+resterait plantée en l'air pendant que le mot s'en va. Source dans
+`assets/home/src/meme-dev.png` (335 × 550, donc un peu molle sur écran retina à
+192–240 px d'affichage), `.webp` servi dans `assets/home/about/`.
+
+**Les compétences sont revenues, en pastilles** (`.about__skills`), en trois familles —
+Design, Dev, Outils —, fournies par Vincent. Une première liste avait été retirée à la
+refonte au motif que les stickers du hero disaient déjà les outils ; mais ces stickers sont
+décoratifs (`alt=""`), donc ni un lecteur d'écran, ni un outil de tri de candidatures, ni un
+recruteur qui survole ne les lit. Les pastilles sont du TEXTE, et c'est leur raison d'être.
+Elles se posent avant le bouton CV : le fil du parcours part de sous ce bouton et ne dépend
+que du bas d'À propos, donc allonger le texte ne le décale pas (vérifié, toujours à 64px du
+bord du bouton).
 
 ## La section parcours (`#parcours`, « Carnet de routes »)
 
@@ -1438,8 +1501,8 @@ Garamond italique**, demandé par la maquette.
 
 ## La page Jacquie & Michel (`projet-jm.html`)
 
-Intégration de la maquette refaite par Vincent, gardée hors dépôt dans
-`assets/jm/src/maquette.png` (1512 px de large, 20 Mo). **Elle a remplacé la version
+Intégration de la maquette refaite par Vincent (1512 px de large ; le PNG n'est plus sur
+le disque, voir « Le ménage du 11 septembre 2026 »). **Elle a remplacé la version
 précédente EN ENTIER** : les trois volets, la fiche de course, les notes de terrain, la
 porte NSFW et le mur de vingt visuels réseaux ont disparu avec elle. Ne les remonte pas
 par morceaux.
@@ -1661,8 +1724,8 @@ ce sont les charnières du propos.
 
 ## La page Jimizz (`projet-jimizz.html`)
 
-Intégration de la maquette de Vincent, gardée hors dépôt dans
-`assets/jimizz/src/maquette.png` (1512 px de large, 16 Mo).
+Intégration de la maquette de Vincent (1512 px de large ; le PNG n'est plus sur le
+disque, voir « Le ménage du 11 septembre 2026 »).
 
 **Elle est bâtie sur LE MÊME GABARIT que `projet-jm.html`**, et ce n'est pas une
 impression : les deux PNG donnent les mêmes nombres au pixel — panneau de couverture à
@@ -2312,7 +2375,7 @@ Ces points ne sont pas encore arbitrés — demande plutôt que de supposer :
   leurs textes sont des **placeholders assumés**, marqués par la pastille `.todo`
   (« À compléter »). N'invente pas de projets ni de client à sa place : demande-lui le
   contenu. À propos et le parcours, eux, sont écrits pour de bon.
-  L'adresse de `#contact` est `adresse@a-completer.fr`. Les liens réseaux — **LinkedIn,
+  L'adresse de `#contact`, elle, est réglée — voir « L'adresse de contact ». Les liens réseaux — **LinkedIn,
   Behance et Dribbble** — sont de vrais `<a>` (nouvel onglet), et ce sont les trois mêmes
   que porte le footer des quatre pages : garde les deux listes d'accord. GitHub a été
   retiré.

@@ -2057,6 +2057,110 @@ a.pcard:hover { border-color: rgb(var(--cream-rgb) / .28); }
   color: var(--cream);
 }
 
+/* --- Le mème au survol ---
+   « un concept infaisable » fait apparaître un mème au-dessus de la souris. Le
+   partage habituel : le JS fabrique l'image au premier survol et ne pose que
+   `--x`, `--y`, `--tilt` et la classe `is-on` ; tout le dessin est ici.
+
+   Le soulignement n'existe qu'avec `is-live`, que le JS ne pose que sur un
+   appareil à souris : sans survol possible (écran tactile, sans JS), rien ne
+   promet un effet qui n'arrivera pas, et la phrase reste une phrase. */
+.about__meme.is-live {
+  text-decoration: underline dotted var(--pink);
+  text-decoration-thickness: 2px;
+  text-underline-offset: .22em;
+  color: var(--cream);
+}
+
+.meme-float {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 8500;                 /* au-dessus du bandeau (8000), sous le voile (9000) */
+  width: clamp(180px, 15vw, 240px);
+  height: auto;
+  pointer-events: none;
+  translate: var(--x, 0) var(--y, 0);
+  rotate: var(--tilt, 0deg);
+  scale: .55;
+  opacity: 0;
+  transform-origin: 50% 100%;    /* il éclot depuis la souris, qui est sous lui */
+  filter: drop-shadow(0 18px 28px rgb(var(--ink-rgb) / .65));
+  transition: opacity .16s ease, scale .2s ease;
+}
+
+/* Trop près du haut de la fenêtre, il passe SOUS la souris : il éclot alors
+   depuis son bord haut. */
+.meme-float.is-below { transform-origin: 50% 0; }
+
+.meme-float.is-on {
+  scale: 1;
+  opacity: 1;
+  transition: opacity .2s ease, scale .45s var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .meme-float, .meme-float.is-on { scale: 1; transition: opacity .16s ease; }
+}
+
+/* --- Les compétences ---
+   Trois familles, une par ligne : le libellé dans une colonne fixe, les pastilles
+   à droite, qui passent à la ligne d'elles-mêmes. Des savoir-faire en TEXTE, pas
+   des logos — les stickers du hero sont décoratifs, rien ne les lit. Sous 620px
+   le libellé passe au-dessus de ses pastilles. */
+.about__skills {
+  display: grid;
+  gap: clamp(14px, 1.4vw, 20px);
+  margin: clamp(34px, 3.6vw, 52px) 0 clamp(36px, 4vw, 56px);
+  padding-top: clamp(26px, 2.8vw, 40px);
+  border-top: 1px dashed rgb(var(--cream-rgb) / .18);
+}
+
+.about__skill-group {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  align-items: baseline;
+  gap: 12px 20px;
+}
+
+.about__skill-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(14px, 1.1vw, 16px);
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--green);
+}
+
+.about__skill-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.about__skill-list li {
+  padding: .5em 1.05em;
+  border: 1px solid rgb(var(--cream-rgb) / .22);
+  border-radius: 999px;
+  background: rgb(var(--navy-rgb) / .55);
+  font-family: var(--font-display);
+  font-size: clamp(14px, 1.05vw, 16px);
+  font-weight: 500;
+  line-height: 1.2;
+  color: rgb(var(--cream-rgb) / .88);
+  white-space: nowrap;
+}
+
+/* Libellé au-dessus : l'écart ENTRE familles doit alors dépasser nettement celui
+   du libellé à ses pastilles, sinon « Dev » se lit comme la fin de Design. */
+@media (max-width: 620px) {
+  .about__skills { gap: 26px; }
+  .about__skill-group { grid-template-columns: 1fr; gap: 10px; }
+}
+
 /* --- Le bouton CV --- */
 .about__cv {
   font-family: var(--font-display);
@@ -2088,7 +2192,12 @@ a.pcard:hover { border-color: rgb(var(--cream-rgb) / .28); }
   transition: border-color .2s ease;
 }
 
-.contact__mail:hover { border-bottom-color: var(--pink); }
+a.contact__mail:hover { border-bottom-color: var(--pink); }
+
+/* Le « @ » n'existe pas dans le HTML : sans JS, c'est ce contenu généré qui
+   l'affiche — lisible, mais pas copiable ni cliquable. main.js remplace ce
+   `<span>` par un vrai « @ » en montant le lien. */
+.contact__at::before { content: "@"; }
 
 .contact__arrow { width: .38em; height: .38em; }
 
