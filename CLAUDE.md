@@ -13,8 +13,15 @@ servis tels qu'ils sont écrits. Tous les textes destinés aux visiteurs sont en
 ## Lancer le site
 
 Le serveur de dev est déclaré dans `.claude/launch.json` — démarre-le avec le panneau
-navigateur (`preview_start` avec `{name: "portfolio"}`), jamais avec Bash. C'est un simple
-`python3 -m http.server 4173`. Il n'y a ni build, ni lint, ni tests.
+navigateur (`preview_start` avec `{name: "portfolio"}`), jamais avec Bash. Il n'y a ni build,
+ni lint, ni tests.
+
+Ce n'est plus `python3 -m http.server` mais `tools/serve.py`, qui est ce module **plus une
+seule règle** : servir `projet-beepz.html` à l'adresse `/projet-beepz`. C'est ce que fait
+GitHub Pages, et les liens internes du site sont désormais sans extension — avec le module nu,
+la navigation entre pages tombe en 404 en local alors qu'elle marche en ligne, ce qui fait
+chercher un bug là où il n'y en a pas. Le « / » final reste un 404 des deux côtés, et c'est
+voulu : voir « Les URL sans extension ».
 
 **Le panneau met `style.css` et `main.js` en cache de façon agressive.** Un rechargement
 ordinaire — même `navigate` avec `force: true` — continue de servir l'ancien fichier en
@@ -115,6 +122,22 @@ racine. Il n'y a **ni workflow ni étape de build** — GitHub sert le dépôt t
 **le dépôt EST le site**. Un fichier ajouté à la racine est en ligne peu après le push, sans
 rien déclarer nulle part.
 
+**L'adresse est `https://vincentw.fr`**, domaine pris chez OVH le 11 septembre 2026. Le fichier
+`CNAME` à la racine du dépôt porte ce nom : c'est lui qui déclare l'apex comme forme canonique,
+et **GitHub redirige `www` vers l'apex tout seul**, il n'y a rien à configurer pour ça. Ne le
+supprime pas — et ne touche pas au bouton *Remove* de Settings → Pages, qui l'effacerait.
+
+La zone DNS chez OVH tient en trois blocs. Les quatre `A` (`185.199.108–111.153`) et les quatre
+`AAAA` (`2606:50c0:8000–8003::153`) sur l'apex, qui sont les adresses de GitHub Pages. Un
+`CNAME` sur `www` vers `lefourbefromage.github.io.` — **avec le point final**, sans quoi OVH
+fabrique `…github.io.vincentw.fr`. Et les trois `MX` plus le `SPF` d'OVH, qui ne servent à rien
+aujourd'hui mais qui sont ce qui permettra une adresse `@vincentw.fr` sans retoucher au
+domaine ; le mode textuel de la zone **remplace tout**, donc ne les perds pas au passage.
+
+Les défauts OVH ont été retirés : le `A` de parking vers `213.186.33.5`, le `ftp` en `CNAME`, et
+le `TXT` `"3|welcome"` sur `www`. Ce dernier **empêchait** la création du `CNAME` — un `CNAME`
+ne peut coexister avec aucun autre enregistrement sur le même nom.
+
 Il y a eu un workflow `.github/workflows/pages.yml` ici, retiré : il misait sur
 `actions/configure-pages` avec `enablement: true` pour activer Pages tout seul, et cette
 étape échoue sur `Create Pages site failed. Error: Resource not accessible by integration`.
@@ -127,13 +150,33 @@ Trois conséquences à ne pas oublier :
 - **le dépôt est public**, c'est ce qui rend Pages gratuit. Tout ce qui est commité ici est
   lisible de tous, historique compris : pas de clé, pas d'adresse privée, pas de brouillon
   qu'on ne veut pas voir ;
-- **le site est servi depuis un sous-chemin**, `/portfolio/`, et non depuis la racine du
-  domaine. **Tous les chemins doivent donc rester relatifs** (`assets/home/pile/photo1.png`, pas
-  `/assets/home/pile/photo1.png`) : un chemin absolu marche en local et casse en ligne. C'est déjà le
-  cas partout, garde-le ;
+- **le site est servi depuis la RACINE du domaine**, et non plus depuis `/portfolio/`.
+  **Garde quand même tous les chemins relatifs** (`assets/home/pile/photo1.png`, pas
+  `/assets/home/pile/photo1.png`) : la raison d'origine a disparu, mais c'est ce qui laisserait
+  le site fonctionner sous un sous-chemin, et c'est surtout ce qui interdit les URL à dossier —
+  voir juste en dessous ;
 - **Jekyll tourne** sur ce mode de publication, d'où le `.nojekyll` à la racine. Sans lui, un
   fichier ou un dossier commençant par un souligné serait ignoré et ne serait jamais servi.
   Ne le supprime pas.
+
+### Les URL sans extension
+
+Les liens internes ne portent pas de `.html` : `projet-beepz` et non `projet-beepz.html`, `./`
+et `./#projets` pour l'accueil. **Aucun fichier n'a été déplacé pour ça** — GitHub Pages sert
+`projet-beepz.html` à l'adresse `/projet-beepz` de lui-même, en 200 direct et sans redirection.
+Les liens restent **relatifs**, aucun `/` absolu n'a été introduit.
+
+**Ne convertis pas les pages en dossiers** (`projet-beepz/index.html`), qui est pourtant la
+manière habituelle d'obtenir des URL propres. Elle donne des adresses à slash final, et **à
+`/projet-beepz/` tous les chemins relatifs se résolvent depuis `/projet-beepz/`** :
+`css/style.css` deviendrait `/projet-beepz/css/style.css`, et la page se chargerait sans style
+ni images. C'est pour ça que `/projet-beepz/` rend un 404 en ligne comme en local — c'est une
+bonne nouvelle, pas un défaut.
+
+**Les anciennes URL en `.html` restent servies**, GitHub Pages ne sachant pas rediriger côté
+serveur. Sans conséquence pour un visiteur, mais un moteur de recherche y voit deux adresses
+pour un même contenu ; une balise `<link rel="canonical">` par page reste à ajouter si le sujet
+devient réel.
 
 ## Système de design
 
@@ -1901,8 +1944,8 @@ Ces points ne sont pas encore arbitrés — demande plutôt que de supposer :
   cartes d'étape passent derrière « L'ASCENSION » et les deux textes se croisent : c'est
   **connu et assumé**, pas un bug. Ne le rattrape pas par un fond ou un dégradé sous le titre,
   le sujet sera traité par la refonte.
-- **L'hébergement**, donc si les chemins doivent rester relatifs et si une étape de
-  minification est un jour nécessaire.
+- **Une étape de minification**, si le poids servi devient un sujet. L'hébergement, lui,
+  n'est plus une question ouverte — voir « La mise en ligne ».
 - **La source de vérité du design** : savoir si le fichier Figma fait toujours foi.
 - **La police du texte courant sur les pages J&M et Jimizz.** Leurs maquettes composent
   toute la page en Clash Display, corps compris ; le reste du site donne Inter au texte
