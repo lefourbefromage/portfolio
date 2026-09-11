@@ -16,6 +16,7 @@ Dépendances : `numpy`, `scipy`, `matplotlib` pour les générateurs, `Pillow` p
 | `build_projects.py` | les 17 `.webp` de `assets/home/projects/` | ✅ déterministe |
 | `build_jm.py` | les 25 `.webp` de `assets/jm/` | ✅ déterministe |
 | `build_jimizz.py` | les 17 `.webp` de `assets/jimizz/` | ✅ déterministe |
+| `bump_version.py` | le numéro `v0.N` du bandeau et les `?v=` du CSS et du JS, dans les quatre pages — à lancer avant chaque commit | ✅ idempotent |
 | `build_social.py`, `build_shots.py` | plus rien : la refonte de `projet-jm.html` a emporté la facette qui les affichait | — |
 
 ```bash

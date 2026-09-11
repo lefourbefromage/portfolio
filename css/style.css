@@ -399,6 +399,23 @@ html { scroll-padding-top: var(--banner-h); }
   .banner__flag::before { animation: banner-pulse 1.8s ease-in-out infinite; }
 }
 
+/* Le numéro de version, pour vérifier depuis un téléphone qu'une mise en ligne
+   est arrivée. Il est posé par `tools/bump_version.py` avec le `?v=` des
+   ressources : le lire, c'est savoir que le CSS et le JS sont de la même
+   livraison. Une pastille à filet d'encre, en casse normale — « V0.25 » en
+   capitales se lirait mal. Chiffres tabulaires : il ne tressaute pas d'une
+   version à l'autre. */
+.banner__version {
+  padding: 0 .6em;
+  border: 1px solid rgb(var(--ink-rgb) / .32);
+  border-radius: 999px;
+  font-size: .86em;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .04em;
+  text-transform: none;
+  color: var(--ink);
+}
+
 @keyframes banner-pulse {
   0%, 100% { opacity: 1;  transform: scale(1);   }
   50%      { opacity: .3; transform: scale(.72); }

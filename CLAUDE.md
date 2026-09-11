@@ -30,8 +30,12 @@ instances des IIFE enregistrées, ce qui produit un état incompréhensible. Le 
 fiable :
 
 ```js
-await fetch('css/style.css', {cache: 'reload'}); await fetch('js/main.js', {cache: 'reload'}); location.reload();
+for (const e of document.querySelectorAll('link[href^="css/"], script[src^="js/"]')) await fetch(e.getAttribute('href') || e.getAttribute('src'), {cache: 'reload'}); location.reload();
 ```
+
+Il relit les URL **telles que la page les écrit** : elles portent un `?v=` (voir « Le
+numéro de version »), et un `fetch('css/style.css')` nu rafraîchirait une autre adresse
+que celle que la page charge.
 
 Si une modification semble sans effet, compare les règles de `document.styleSheets` avec un
 `fetch()` frais du même fichier avant de conclure que le code est en cause. Et quand le
@@ -326,6 +330,27 @@ c'est le panneau d'encre qui couvre tout, bandeau compris. La visionneuse, elle,
 
 Aucun JS, aucune fermeture : il n'y a rien à mémoriser, et il doit rester sous les yeux tant
 que le débogage n'est pas fini.
+
+### Le numéro de version
+
+Le bandeau se termine par une pastille `v0.N` (`.banner__version`), demandée par Vincent
+pour voir **depuis son téléphone** si une mise en ligne est arrivée. **N est le numéro du
+commit qui la livre** — le nombre de commits de `main` plus un —, donc il se lit dans
+l'historique et il n'y a rien à retenir : v0.25 est le 25e commit.
+
+**Lance `python3 tools/bump_version.py` juste avant chaque commit qui touche au site.** Il
+réécrit les quatre pages, et il est idempotent : le relancer avant de commiter redonne le
+même numéro. Ne l'édite pas à la main.
+
+**Le même numéro est posé en `?v=` sur `css/style.css`, `js/veil.js` et `js/main.js`**, et
+c'est ce qui rend l'étiquette digne de foi. Sans lui, un navigateur mobile peut servir le
+HTML neuf avec le CSS ou le JS de la veille — c'est exactement ce qui a fait croire à un
+correctif raté. Une URL qui change ne peut pas venir du cache, donc lire v0.N, c'est savoir
+que les trois ressources sont de la même livraison. Ce qui peut encore retarder, c'est le
+HTML lui-même : GitHub Pages le sert avec dix minutes de cache.
+
+Le jour où le bandeau part, la pastille part avec lui ; les `?v=` peuvent rester, ils ne
+coûtent rien et continuent de protéger les mises en ligne.
 
 ## La structure de la page
 
