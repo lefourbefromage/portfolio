@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vincent Waldmann — Webdesigner & Intégrateur</title>
 <meta name="description" content="Webdesigner et intégrateur depuis 2013. Treize ans à concevoir et intégrer des sites à très forte audience, du premier tracé à la mise en ligne.">
-<link rel="stylesheet" href="css/style.css?v=0.25">
+<link rel="stylesheet" href="css/style.css?v=0.26">
 
 <!-- L'ICÔNE DU SITE. Les trois fichiers sont à la RACINE du dépôt et non dans
      `assets/`, qui se range par page : ils n'appartiennent à aucune page, et
@@ -53,7 +53,7 @@
 <!-- LE VOILE DE TRANSITION, en tête et sur les quatre pages : sa moitié
      « arrivée » doit s'exécuter avant le premier rendu, sinon la page apparaît
      un instant à nu avant d'être recouverte. Voir l'en-tête de `js/veil.js`. -->
-<script src="js/veil.js?v=0.25"></script>
+<script src="js/veil.js?v=0.26"></script>
 
 <!-- L'ARRIVÉE SUR L'ACCUEIL, et elle se règle AVANT le premier rendu — d'où ce
      script en tête de page et non dans `main.js`, qui charge en bas. Même parti
@@ -154,7 +154,7 @@
   <span class="banner__flag">Site en cours de construction.</span>
   <span>Des bugs peuvent apparaître.</span>
   <!-- Posé par tools/bump_version.py, avec les ?v= du <head> : ne pas éditer à la main. -->
-  <span class="banner__version">v0.25</span>
+  <span class="banner__version">v0.26</span>
 </div>
 
 <header class="site-header">
@@ -163,7 +163,7 @@
     <span>Vincent</span>
   </div>
   <nav class="main-nav">
-    <a href="#a-propos">à propos</a>
+    <a href="#a-propos">À propos</a>
     <a href="#parcours">Parcours</a>
     <a href="#projets">Projets</a>
   </nav>
@@ -173,6 +173,19 @@
       <path d="M1 9L9 1M9 1H2M9 1V8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
   </a>
+  <!-- En mobile, le menu se replie derrière ce mousqueton : fermé, le doigt s'ouvre
+       quand on touche. Le panneau est fabriqué par `js/main.js` en clonant la nav
+       ci-dessus — une seule liste de liens à tenir. Sans JS le bouton reste masqué
+       et la nav s'affiche comme avant. -->
+  <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="menu-panel" aria-label="Ouvrir le menu">
+    <svg class="menu-toggle__icon" viewBox="0 0 24 32" width="20" height="27" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M18.5 9C18.5 4.8 15.6 2.5 12 2.5 8 2.5 5.5 5.2 5.5 9.5l2.1 15.7c.5 2.8 2 4.3 4.5 4.3 2.7 0 4.5-1.8 4.9-4.5M16.6 10.4 18.5 9"/>
+      <g class="menu-toggle__gate">
+        <path d="M17 25 18.5 9"/>
+        <path d="M17.3 22.2 17.7 17.8" stroke-width="4.4"/>
+      </g>
+    </svg>
+  </button>
 </header>
 
 <main>
@@ -576,6 +589,6 @@
   </div>
 </footer>
 
-<script src="js/main.js?v=0.25"></script>
+<script src="js/main.js?v=0.26"></script>
 </body>
 </html>

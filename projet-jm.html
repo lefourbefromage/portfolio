@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Jacquie &amp; Michel — Vincent Waldmann</title>
 <meta name="description" content="Douze ans en interne chez Jacquie &amp; Michel : les sites de la marque, ses campagnes et les visuels des réseaux sociaux.">
-<link rel="stylesheet" href="css/style.css?v=0.25">
+<link rel="stylesheet" href="css/style.css?v=0.26">
 
 <!-- L'ICÔNE DU SITE. Les trois fichiers sont à la RACINE du dépôt et non dans
      `assets/`, qui se range par page : ils n'appartiennent à aucune page, et
@@ -53,7 +53,7 @@
 <!-- LE VOILE DE TRANSITION, en tête et sur les quatre pages : sa moitié
      « arrivée » doit s'exécuter avant le premier rendu, sinon la page apparaît
      un instant à nu avant d'être recouverte. Voir l'en-tête de `js/veil.js`. -->
-<script src="js/veil.js?v=0.25"></script>
+<script src="js/veil.js?v=0.26"></script>
 
 <!-- Même amorce de motion que `projet-beepz.html`, et pour les mêmes raisons :
      la classe est posée AVANT le premier rendu, elle n'est pas posée du tout en
@@ -80,7 +80,7 @@
   <span class="banner__flag">Site en cours de construction.</span>
   <span>Des bugs peuvent apparaître.</span>
   <!-- Posé par tools/bump_version.py, avec les ?v= du <head> : ne pas éditer à la main. -->
-  <span class="banner__version">v0.25</span>
+  <span class="banner__version">v0.26</span>
 </div>
 
 <header class="site-header">
@@ -89,7 +89,7 @@
     <span>Vincent</span>
   </a>
   <nav class="main-nav">
-    <a href="./#a-propos">à propos</a>
+    <a href="./#a-propos">À propos</a>
     <a href="./#parcours">Parcours</a>
     <a href="./#projets">Projets</a>
   </nav>
@@ -99,6 +99,19 @@
       <path d="M1 9L9 1M9 1H2M9 1V8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
   </a>
+  <!-- En mobile, le menu se replie derrière ce mousqueton : fermé, le doigt s'ouvre
+       quand on touche. Le panneau est fabriqué par `js/main.js` en clonant la nav
+       ci-dessus — une seule liste de liens à tenir. Sans JS le bouton reste masqué
+       et la nav s'affiche comme avant. -->
+  <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="menu-panel" aria-label="Ouvrir le menu">
+    <svg class="menu-toggle__icon" viewBox="0 0 24 32" width="20" height="27" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M18.5 9C18.5 4.8 15.6 2.5 12 2.5 8 2.5 5.5 5.2 5.5 9.5l2.1 15.7c.5 2.8 2 4.3 4.5 4.3 2.7 0 4.5-1.8 4.9-4.5M16.6 10.4 18.5 9"/>
+      <g class="menu-toggle__gate">
+        <path d="M17 25 18.5 9"/>
+        <path d="M17.3 22.2 17.7 17.8" stroke-width="4.4"/>
+      </g>
+    </svg>
+  </button>
 </header>
 
 <!-- ==========================================================================
@@ -116,7 +129,8 @@
 
      TOUS LES .webp SONT PRODUITS PAR `tools/build_jm.py`, jamais à la main :
      c'est lui qui tient les tailles, les alternatives textuelles et le
-     traitement de la couverture. Les originaux restent dans `assets/jm/src/`,
+     traitement de la couverture. Une exception : les seize de la grille des
+     réseaux (`assets/jm/social/`), qui sortent de `tools/build_social.py`. Les originaux restent dans `assets/jm/src/`,
      hors dépôt. Si tu changes une largeur dans le CSS, relance-le — il dira
      aussitôt si la source suit encore.
 
@@ -369,10 +383,24 @@
     </section>
   </div>
 
-  <!-- Rien entre JacquIA et le collage : ce texte-là est REMONTÉ dans la tête
-       « Les campagnes marketing », juste avant JacquIA. Il y était à l'identique,
-       au mot près, et le laisser aux deux endroits l'aurait fait lire deux fois
-       à 1 500 px d'écart. -->
+  <!-- ---------------- L'ÉNONCÉ DES RÉSEAUX ----------------
+       Le second `.jm-statement` de la page, même rôle que le premier : une
+       phrase qui pose ce que les images d'après vont montrer. Il fait la
+       transition entre JacquIA, une campagne, et le collage, le quotidien.
+
+       Ce n'est PAS le texte que la maquette plaçait ici : celui-là est remonté
+       dans la tête « Les campagnes marketing », juste avant JacquIA, et le
+       laisser aux deux endroits l'aurait fait lire deux fois à 1 500 px d'écart.
+       Celui-ci a été écrit pour ce seul endroit. -->
+  <div class="proj-wrap">
+    <p class="proj-lede jm-statement" data-reveal="soft">
+      Entre deux campagnes, c’est sur les réseaux sociaux que la marque se fait
+      entendre, au quotidien.<br>
+      Un clin d’œil de saison, une affiche d’événement, une trouvaille qui fait
+      parler&nbsp;: chaque visuel entretient la complicité avec le public
+      français.
+    </p>
+  </div>
 
   <!-- ---------------- LE COLLAGE ----------------
        Trois pièces qui se CHEVAUCHENT — le Bitomètre passe sur l'affiche des
@@ -388,6 +416,58 @@
       <img class="jm-social__piece jm-social__piece--bitometre" data-parallax src="assets/jm/campagnes/bitometre.webp" width="631" height="426" loading="lazy" decoding="async"
            alt="Visuel du Bitomètre : une règle géante à table, « la règle qui va clore les débats ».">
     </section>
+  </div>
+
+  <!-- ---------------- LA GRILLE DES RÉSEAUX ----------------
+       Seize visuels, quatre par rangée en desktop, deux en mobile. Le collage
+       montre trois temps forts ; la grille montre le RYTHME — la même marque
+       tenue d'une fête à l'autre, d'une année à l'autre.
+
+       LES CASES SONT CARRÉES, LES FICHIERS NE LE SONT PAS : le recadrage est en
+       CSS, donc la visionneuse ouvre chaque visuel en ENTIER. Quand le centre
+       coupe le titre, c'est un `object-position` dans le CSS qui recale la case
+       — d'où les classes à modificateur, et elles seules.
+
+       Les visuels déjà dans le collage (Halloween, le Bitomètre) et les quatre
+       ordinateurs des sites n'y sont pas repris : on les verrait deux fois.
+
+       PAS DE `data-parallax`, même consigne que les deux autres grilles. -->
+  <div class="proj-wrap">
+    <ul class="jm-reseaux" data-reveal="group"
+        data-viewer="Les réseaux sociaux" aria-label="Seize visuels publiés sur les réseaux sociaux">
+      <li><img src="assets/jm/social/insta-voix-off.webp" width="694" height="867" loading="lazy" decoding="async"
+               alt="Post Instagram : « Devenez la voix-off de Jacquie &amp; Michel », appel à participer à la campagne JacquIA."></li>
+      <li><img src="assets/jm/social/poisson-avril-2018.webp" width="930" height="694" loading="lazy" decoding="async"
+               alt="Poisson d’avril : deux burgers baptisés « Le Jacquie » et « Le Michel », « avec notre légendaire sauce secrète »."></li>
+      <li><img src="assets/jm/social/paques-2017.webp" width="694" height="776" loading="lazy" decoding="async"
+               alt="Visuel de Pâques : « À Pâques, il n’y a pas que le chocolat qui va prendre… »."></li>
+      <li><img src="assets/jm/social/happy-hour.webp" width="706" height="694" loading="lazy" decoding="async"
+               alt="Visuel animé pour Jacquie &amp; Michel TV : « Dès 16 h, vous serez plutôt… foot ou porno ? »."></li>
+      <li><img src="assets/jm/social/calendrier-avent-2017.webp" width="942" height="694" loading="lazy" decoding="async"
+               alt="Le calendrier de l’avent : une tablette posée au milieu d’une mise à plat de Noël."></li>
+      <li><img src="assets/jm/social/store-fete-des-meres-2023.webp" width="694" height="694" loading="lazy" decoding="async"
+               alt="Fête des mères pour la boutique : « Lui faire plaisir, vous faire plaisir », avec un code promotionnel."></li>
+      <li><img class="jm-reseaux__img--presidentielle" src="assets/jm/social/presidentielle-2018.webp" width="1014" height="694" loading="lazy" decoding="async"
+               alt="Affiche électorale détournée, sur fond de campagne : « Votez @jacquiemichelx »."></li>
+      <li><img src="assets/jm/social/insta-jeu-de-cartes.webp" width="694" height="868" loading="lazy" decoding="async"
+               alt="Post Instagram pour le jeu de cartes de la marque : « Deux choix, zéro échappatoire »."></li>
+      <li><img class="jm-reseaux__img--black-friday" src="assets/jm/social/store-black-friday.webp" width="2116" height="694" loading="lazy" decoding="async"
+               alt="Bannière Black Friday de la boutique : « J’en profite »."></li>
+      <li><img src="assets/jm/social/mail-journee-du-baiser.webp" width="694" height="796" loading="lazy" decoding="async"
+               alt="Journée internationale du baiser : un couple qui s’embrasse et un lubrifiant offert avec le code KISSME."></li>
+      <li><img class="jm-reseaux__img--avril-2015" src="assets/jm/social/poisson-avril-2015.webp" width="917" height="694" loading="lazy" decoding="async"
+               alt="Poisson d’avril : Jacquie &amp; Michel lance son yaourt à boire, « 100 % naturel »."></li>
+      <li><img class="jm-reseaux__img--tshirts" src="assets/jm/social/tshirts-foot.webp" width="1167" height="694" loading="lazy" decoding="async"
+               alt="Deux t-shirts noirs floqués, présentés de face et de dos, « Cassage de reins » au dos."></li>
+      <li><img src="assets/jm/social/store-produit.webp" width="836" height="694" loading="lazy" decoding="async"
+               alt="Visuel produit pour la boutique : « Ceci n’est pas une flûte »."></li>
+      <li><img class="jm-reseaux__img--blue-monday" src="assets/jm/social/insta-blue-monday.webp" width="694" height="1233" loading="lazy" decoding="async"
+               alt="Story Instagram « Blue Monday » : une modèle en lingerie sur un fond bleu et rose."></li>
+      <li><img src="assets/jm/social/store-saint-valentin-2024.webp" width="1757" height="694" loading="lazy" decoding="async"
+               alt="Bannière de la Saint-Valentin pour la boutique : un homme cache un bouquet de roses, « Trompez-la sans vous tromper »."></li>
+      <li><img src="assets/jm/social/store-ete.webp" width="2116" height="694" loading="lazy" decoding="async"
+               alt="Bannière d’été de la boutique : « Canicule, offre », sur un fond jaune et des produits de la marque."></li>
+    </ul>
   </div>
 
   <!-- ---------------- LA FRESQUE DES VINGT ANS ----------------
@@ -437,7 +517,7 @@
   </div>
 </footer>
 
-<script src="js/main.js?v=0.25"></script>
+<script src="js/main.js?v=0.26"></script>
 
 </body>
 </html>

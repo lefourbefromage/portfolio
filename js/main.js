@@ -581,6 +581,10 @@
   function targetFor(dir) {
     if (!auto || still.matches) return null;
 
+    // Menu mobile ouvert : la page est verrouillée sous le panneau, et un geste
+    // ne doit pas lancer une marche qu'on ne verrait pas.
+    if (document.documentElement.classList.contains('menu-open')) return null;
+
     // Une sortie en cours absorbe les gestes, et ce test passe AVANT `pinned()` :
     // la sortie traverse la traîne, donc la scène se décolle en cours de route.
     // Sans ça la page se remettrait à défiler par-dessus l'animation, et les deux
@@ -679,6 +683,49 @@
     window.addEventListener('keydown', onKey);
   }
   still.addEventListener('change', () => window.location.reload());
+
+  /* ---------- Les liens « Parcours » arrivent sur la carte OUVERTE ----------
+     L'ancre `#parcours` pose le haut de la section, c'est-à-dire le petit carton
+     d'AVANT la révélation : on arrivait devant une vignette, à scroller encore
+     pour voir la carte. On vise donc la première étape (`MARKS[0]`), qui tombe
+     20vh après la fin de l'ouverture — carte dépliée, première carte d'étape
+     affichée, et le mode auto repart de là comme d'une marque ordinaire.
+
+     Deux chemins, un seul point d'arrivée :
+     - un lien de la page (header, footer, menu mobile) : on prend la main sur le
+       clic et on défile en douceur jusque-là. L'ancre reste posée dans l'URL ;
+     - une arrivée d'une page projet sur `./#parcours` : le navigateur saute
+       d'abord sur l'ancre, on repose la page au `load` — moment où il cesse de
+       re-viser le fragment. Le voile de transition couvre ce saut.
+
+     En mouvement réduit la section est une frise, sans carte à ouvrir : l'ancre
+     garde son comportement normal. */
+  if (!still.matches) {
+    const openY = () => pageYFor(MARKS[0]);
+
+    document.addEventListener('click', (e) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const a = e.target.closest('a[href]');
+      if (!a || a.hash !== '#parcours' || a.pathname !== location.pathname) return;
+      e.preventDefault();
+      glide = null;
+      if (location.hash !== '#parcours') history.pushState(null, '', '#parcours');
+      window.scrollTo({ top: openY(), behavior: 'smooth' });
+    });
+
+    // Un rechargement garde la position restaurée par le navigateur : ce n'est
+    // pas une arrivée.
+    const nav = performance.getEntriesByType('navigation')[0];
+    if (location.hash === '#parcours' && !(nav && nav.type === 'reload')) {
+      let free = false;
+      ['wheel', 'touchstart', 'keydown'].forEach((type) => {
+        window.addEventListener(type, () => { free = true; }, { passive: true, once: true });
+      });
+      const put = () => { if (!free) window.scrollTo({ top: openY(), behavior: 'instant' }); };
+      put();
+      window.addEventListener('load', put);
+    }
+  }
 
   refresh();
 })();
@@ -1115,4 +1162,181 @@
   // Au chargement : la page peut déjà être positionnée plus bas (ancre, position
   // restaurée), et les pièces doivent partir de leur vraie place.
   image();
+})();
+
+/* ---------- Le header : il s'efface en descendant, revient en remontant ----------
+   Le JS ne pose que deux classes sur `.site-header` — `is-stuck` dès que la page
+   a quitté son sommet (le dégradé d'encre apparaît), `is-hidden` quand on
+   descend. Tout le dessin est dans le CSS, comme `--out` du tas de photos.
+
+   On CUMULE les déplacements dans un même sens au lieu de réagir au moindre
+   pixel : l'inertie d'un trackpad envoie des deltas d'un pixel dans les deux
+   sens en fin de course, et le header clignoterait. Un peu vers le haut suffit
+   à le faire revenir (UP), il faut un vrai geste vers le bas pour le chasser
+   (DOWN).
+
+   Un clic sur une ancre de la page le cache et GÈLE la détection jusqu'à la
+   fin du défilement lissé. Sans ça, un saut vers une section plus haute le
+   laissait affiché pile par-dessus la tête de la section visée — le calage des
+   ancres (`scroll-padding-top`) ne compte que le bandeau.
+
+   En mouvement réduit on garde le comportement : c'est un changement d'état,
+   pas une animation, et le CSS y coupe la transition. */
+(function () {
+  const header = document.querySelector('.site-header');
+  if (!header) return;
+
+  const UP = 8;
+  const DOWN = 24;
+  // Temps sans scroll au bout duquel un saut d'ancre est considéré comme posé.
+  const SETTLE = 220;
+
+  let last = window.scrollY;
+  let run = 0;          // cumul signé du déplacement dans le sens courant
+  let hold = 0;         // minuteur du gel pendant un saut d'ancre
+  let ticking = false;
+
+  const hide = (on) => header.classList.toggle('is-hidden', on);
+
+  function render() {
+    ticking = false;
+    const y = window.scrollY;
+    const d = y - last;
+    last = y;
+
+    // Tant que le header n'a pas quitté sa place dans le flux, il est chez lui :
+    // ni dégradé, ni masquage.
+    const top = y <= header.offsetHeight;
+    header.classList.toggle('is-stuck', !top);
+
+    if (hold) return;
+    if (top) { hide(false); run = 0; return; }
+
+    run = (d > 0) === (run > 0) ? run + d : d;
+    if (run > DOWN) hide(true);
+    else if (run < -UP) hide(false);
+  }
+
+  function release() {
+    hold = 0;
+    last = window.scrollY;
+    run = 0;
+  }
+
+  window.addEventListener('scroll', () => {
+    if (hold) { clearTimeout(hold); hold = setTimeout(release, SETTLE); }
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(render);
+  }, { passive: true });
+
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('a[href^="#"]');
+    if (!a || a.getAttribute('href') === '#') return;
+    hide(true);
+    clearTimeout(hold);
+    hold = setTimeout(release, SETTLE);
+  });
+
+  // Au chargement la page peut déjà être plus bas (ancre, position restaurée) :
+  // le dégradé doit être là, le header reste affiché.
+  render();
+})();
+
+/* ---------- Le menu mobile : le mousqueton ----------
+   Sous 900px la nav du header se replie derrière un bouton dessiné en
+   mousqueton : fermé au repos, son doigt s'ouvre quand le menu s'ouvre et se
+   referme d'un coup sec quand il se ferme. Le JS ne pose qu'un état — la classe
+   `menu-open` sur la racine et `aria-expanded` sur le bouton — et tout le
+   dessin est dans le CSS.
+
+   LE PANNEAU EST FABRIQUÉ ICI, EN CLONANT LA NAV DU HEADER, et les liens réseaux
+   du footer : il n'y a qu'une liste de liens à tenir par page. C'est du chrome,
+   donc la règle de la visionneuse s'applique — sans JS, `(scripting: enabled)`
+   est faux, le bouton reste masqué et la nav s'affiche comme avant.
+
+   Ouvert, il se comporte comme une modale : le reste de la page est `inert`,
+   le scroll est verrouillé (par le CSS), Échap le ferme et le focus revient au
+   bouton. Pas de `<dialog>` : sa couche supérieure passerait par-dessus le
+   bouton, et c'est justement le mousqueton qu'on doit voir s'ouvrir. */
+(function () {
+  const header = document.querySelector('.site-header');
+  const toggle = header && header.querySelector('.menu-toggle');
+  const links = header ? header.querySelectorAll('.main-nav a') : [];
+  if (!toggle || !links.length) return;
+
+  const root = document.documentElement;
+  const narrow = window.matchMedia('(max-width: 900px)');
+
+  const panel = document.createElement('div');
+  panel.className = 'menu-panel';
+  panel.id = 'menu-panel';
+
+  const nav = document.createElement('nav');
+  nav.className = 'menu-panel__nav';
+  nav.setAttribute('aria-label', 'Menu');
+  links.forEach((a, i) => {
+    const item = document.createElement('a');
+    item.href = a.getAttribute('href');
+    // Le rang de l'entrée, pour le retard de sa révélation : le JS pose un
+    // nombre, le CSS en fait une cascade.
+    item.style.setProperty('--i', i);
+    const label = document.createElement('span');
+    label.className = 'menu-panel__label';
+    label.textContent = a.textContent.trim();
+    item.append(label);
+    nav.append(item);
+  });
+  panel.append(nav);
+
+  const social = document.querySelectorAll('.site-footer__nav[aria-label="Réseaux"] a');
+  if (social.length) {
+    const foot = document.createElement('div');
+    foot.className = 'menu-panel__foot';
+    foot.style.setProperty('--i', links.length);
+    social.forEach((a) => foot.append(a.cloneNode(true)));
+    panel.append(foot);
+  }
+
+  header.after(panel);
+
+  let open = false;
+
+  function set(on, { focus = true } = {}) {
+    if (on === open) return;
+    open = on;
+    root.classList.toggle('menu-open', on);
+    toggle.setAttribute('aria-expanded', String(on));
+    toggle.setAttribute('aria-label', on ? 'Fermer le menu' : 'Ouvrir le menu');
+    for (const el of document.body.children) {
+      if (el !== header && el !== panel) el.inert = on;
+    }
+    if (on) {
+      header.classList.remove('is-hidden');
+      if (focus) nav.querySelector('a').focus({ preventScroll: true });
+    } else if (focus && panel.contains(document.activeElement)) {
+      toggle.focus({ preventScroll: true });
+    }
+  }
+
+  toggle.addEventListener('click', () => set(!open));
+
+  // Un lien du panneau ferme le menu AVANT que le navigateur ne suive l'ancre :
+  // le verrou de scroll saute dans le même tour, donc le défilement lissé part
+  // de là où on était. Le header, lui, se cache pendant le saut (IIFE du header).
+  panel.addEventListener('click', (e) => {
+    if (e.target.closest('a')) set(false, { focus: false });
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (open && e.key === 'Escape') set(false);
+  });
+
+  // Passé 900px le bouton disparaît : un menu resté ouvert n'aurait plus de
+  // quoi se fermer.
+  narrow.addEventListener('change', () => { if (!narrow.matches) set(false, { focus: false }); });
+
+  // Retour par Précédent depuis une page projet : la page sort du cache avec le
+  // menu dans l'état où on l'a quittée.
+  window.addEventListener('pageshow', (e) => { if (e.persisted) set(false, { focus: false }); });
 })();

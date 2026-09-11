@@ -65,7 +65,7 @@ assets/
   home/      index.html            hero/  pile/  about/  trail/  projects/   + src/
   beepz/     projet-beepz.html     onboarding/  mails/            + src/
   jm/        projet-jm.html        hero/  sites/  marques/  jacquia/
-                                   campagnes/  frise/            + src/
+                                   campagnes/  social/  frise/   + src/
   jimizz/    projet-jimizz.html    marque/  site/  app/  plateformes/       + src/
 ```
 
@@ -103,10 +103,11 @@ perspective et les deux mises en scène, `app/` les trois écrans du dashboard a
 fusée et les cinq pièces, `plateformes/` les quatre captures du collage final. Ses
 originaux sont dans `assets/jimizz/src/`, maquette comprise (`maquette.png`, 16 Mo).
 
-`assets/jm/` a migré avec la refonte de sa page : ses six dossiers servis sont eux aussi
+`assets/jm/` a migré avec la refonte de sa page : ses sept dossiers servis sont eux aussi
 des **sections du document** — `hero/` la bande photographique, `sites/` les quatre mises
 en scène, `marques/` les douze vignettes, `jacquia/` la campagne et ses écrans,
-`campagnes/` le collage, `frise/` la fresque des vingt ans — et ses originaux sont
+`campagnes/` le collage, `social/` la grille des réseaux, `frise/` la fresque des vingt
+ans — et ses originaux sont
 descendus dans `assets/jm/src/`, y compris la maquette elle-même (`maquette.png`, 20 Mo).
 
 Il lui reste **un dossier de sources hors `src/`** : `social-network/`, 79 Mo d'exports
@@ -114,10 +115,11 @@ d'origine que `tools/build_social.py` lit là où ils sont tombés. C'est pour l
 `.gitignore` garde `assets/jm/*` et ré-autorise les dossiers servis un par un ; le jour où
 ce script ira chercher ses sources dans `src/`, ces lignes se réduisent à `assets/*/src/`.
 
-**`tools/build_shots.py` et `tools/build_social.py` ne servent plus aucune page**, non
-plus que les vingt `.webp` de `assets/jm/social/` : la refonte de `projet-jm.html` a
-emporté la facette qui les affichait. Ils sont laissés en place — la matière est bonne et
-peut revenir — mais ne les prends pas pour des dépendances vivantes.
+**`tools/build_social.py` sert de nouveau** : il produit les seize `.webp` de
+`assets/jm/social/`, la grille des réseaux de `projet-jm.html` (voir la page J&M). Il lit
+ses sources dans `social-network/`, justement. **`tools/build_shots.py`, lui, ne sert plus
+aucune page** : laissé en place, la matière est bonne et peut revenir, mais ne le prends
+pas pour une dépendance vivante.
 
 ## La mise en ligne
 
@@ -273,6 +275,9 @@ Trois familles, toutes auto-hébergées dans `fonts/` en woff2 variable.
 - **EB Garamond** (`--font-serif`, graisses 400–800) — **en italique seulement**. Réservé à
   quatre usages, tous décidés par la maquette : les œils des **quatre** sections, les mots mis
   en avant dans le texte d'À propos, l'année des cartes d'étape, et le « Avancement » du HUD. C'est la respiration du reste : ne l'étends pas sans le demander.
+  S'y ajoutent deux usages demandés depuis, par les maquettes de Vincent : la ligne de
+  sous-titre des cartes projets (`.pcard__tag`), et « Vincent » dans l'intro du hero,
+  **en mobile seulement** — l'affiche mobile le veut, le desktop garde Clash.
 
 **L'interlignage des grands titres n'est pas le même partout sur les pages projet**, et
 c'est mesuré, pas choisi : les titres de couverture (une seule ligne) sont à 1,12, les
@@ -307,10 +312,12 @@ fond foncé uniquement »**, et elle est assumée : c'est ce qui le fait sortir 
 sombre de bout en bout, et c'est ce qu'on lui demande. Aucune cinquième couleur pour
 autant — le texte, les hachures du bord bas et la pastille qui bat sont de l'encre.
 
-**Sa hauteur est un token, `--banner-h`, et pas une hauteur libre**, parce que trois choses
+**Sa hauteur est un token, `--banner-h`, et pas une hauteur libre**, parce que quatre choses
 la lisent :
 
 - la barre elle-même (`min-height`) ;
+- **le header**, collant JUSTE SOUS elle (`top: var(--banner-h, 0px)`) — voir « Le header »
+  plus bas. Même repli à `0px` que la tête du parcours, et pour la même raison ;
 - le calage des ancres, `scroll-padding-top` sur `html` — sans quoi un lien du header
   poserait sa section SOUS la barre. Il ne concerne que le saut vers un fragment et
   `scrollIntoView` : les `scrollTo` du mode auto du parcours, qui visent des positions
@@ -322,7 +329,7 @@ la lisent :
   la règle du parcours.
 
 Sous 520px les deux phrases ne tiennent plus sur une ligne : `--banner-h` passe à 58px et
-les trois lecteurs suivent. Le seuil est mesuré (460px de texte à 11px de corps), pas choisi.
+les quatre lecteurs suivent. Le seuil est mesuré (460px de texte à 11px de corps), pas choisi.
 
 **Il est à `z-index: 8000`, donc SOUS le voile de transition** (9000) : entre deux pages,
 c'est le panneau d'encre qui couvre tout, bandeau compris. La visionneuse, elle, est un
@@ -351,6 +358,82 @@ HTML lui-même : GitHub Pages le sert avec dix minutes de cache.
 
 Le jour où le bandeau part, la pastille part avec lui ; les `?v=` peuvent rester, ils ne
 coûtent rien et continuent de protéger les mises en ligne.
+
+## Le header
+
+**Il est collant, et il s'efface quand on descend** : un geste vers le bas le fait remonter
+sous le bandeau, le moindre geste vers le haut le fait revenir. Demandé par Vincent, sur les
+quatre pages — c'est le même `<header class="site-header">` partout.
+
+**`sticky` et pas `fixed`**, pour la même raison que tout le reste : il garde sa place dans le
+flux, donc rien sous lui n'a à être décalé d'une hauteur à recopier, et au sommet de la page
+il est exactement là où il a toujours été. Visuellement c'est la même chose. Il est à
+`z-index: 7000` — sous le bandeau (8000), qu'il traverse en s'effaçant, et sous le voile
+(9000).
+
+**Le partage habituel** : le JS (`js/main.js`, dernière IIFE) ne pose que deux classes,
+`is-stuck` dès que la page a quitté son sommet et `is-hidden` en descendant ; le dessin est
+dans le CSS.
+
+- **le dégradé d'encre est un `::before` pleine largeur** (le header, lui, reste borné à
+  1512px) qui DÉBORDE sous lui de `--header-fade` : c'est ce qui le fond dans la page au lieu
+  de tracer un bord. Il n'apparaît qu'avec `is-stuck`, sans quoi il assombrirait le haut du
+  panneau du hero au chargement ;
+- **le masquage remonte de sa hauteur PLUS `--header-fade`**, sinon la frange du dégradé
+  resterait visible sous le bandeau ;
+- **les déplacements se CUMULENT dans un même sens** (8px vers le haut pour revenir, 24px vers
+  le bas pour partir) : l'inertie d'un trackpad envoie des deltas d'un pixel dans les deux
+  sens en fin de course, et un seuil nul le ferait clignoter ;
+- **un clic sur une ancre de la page le cache et gèle la détection** jusqu'à 220ms sans
+  scroll. Sans ça, un saut vers une section plus HAUTE le laissait affiché pile sur la tête
+  de la section — `scroll-padding-top` ne compte que le bandeau, et il ne faut pas lui
+  ajouter le header : les sauts vers le bas se poseraient 70px trop bas, et celui vers
+  `#parcours` avant l'épinglage de la scène ;
+- **il revient au clavier** (`:has(:focus-visible)`) — pas `:focus-within`, qui le garderait
+  affiché après un clic de souris sur un lien du menu, pendant le saut.
+
+Remonter dans le parcours le fait revenir par-dessus la tête de la carte, y compris pendant
+une marche du mode auto vers l'arrière. C'est le comportement demandé — il suffit de
+redescendre d'un cran.
+
+### En mobile : le mousqueton
+
+Sous 900px la nav se replie derrière un bouton rond dessiné en **mousqueton** — demandé
+par Vincent, qui trouvait la nav en seconde ligne « posée ». Fermé au repos ; à
+l'ouverture son doigt pivote vers l'intérieur et le mousqueton se balance ; à la
+fermeture le doigt **claque** — une courbe qui dépasse, le seul rebond du site, et c'est
+voulu. La barre tombe de 105 à 68px.
+
+- **le dessin est dans les quatre pages** (`.menu-toggle`, un SVG en viewBox 24 × 32) :
+  un D asymétrique, un bec en haut, et le doigt dans un `<g>` avec sa bague de
+  verrouillage. **Le doigt pivote autour de sa charnière** (`transform-origin: 17px 25px`,
+  en unités du viewBox grâce à `transform-box: view-box`) : si tu retouches le tracé,
+  recale l'origine sur le bas du doigt. Sans la bague, à 20px de haut, il se lisait comme
+  un trombone ;
+- **le panneau est fabriqué par le JS en clonant la nav du header**, plus les liens réseaux
+  du footer : aucune liste de liens à tenir en double. Il est posé juste après le header,
+  en `fixed`, à `z-index: 6990` — SOUS la barre, pour que le logo, « Discutons » et le
+  mousqueton restent en place pendant qu'il se déroule (`clip-path`, du haut vers le bas) ;
+- **pas de `<dialog>`**, contrairement à la visionneuse : sa couche supérieure passerait
+  par-dessus le bouton, et c'est justement le mousqueton qu'on doit voir s'ouvrir. Le
+  comportement de modale est donc fait à la main : reste de la page en `inert`, scroll
+  verrouillé, Échap, focus rendu au bouton. **Le verrou est sur `html` SEUL** : l'avoir mis
+  aussi sur `body` faisait disparaître le bandeau et le header dès qu'on ouvrait le menu
+  au milieu de la page — plus aucun moyen de le refermer. `html` portant `overflow-x: clip`,
+  l'`overflow` de `body` n'est plus reporté sur la fenêtre ; `body` devient alors son propre
+  conteneur de défilement, et les deux barres collantes se recalent sur lui, tout en haut
+  du document. Teste toujours l'ouverture APRÈS avoir scrollé. Le mode auto du parcours est débrayé menu ouvert, par un
+  garde dans `targetFor()` ;
+- **un lien du panneau ferme le menu AVANT que l'ancre ne soit suivie** : le verrou saute
+  dans le même tour, donc le défilement lissé part de là où on était, et le header se
+  cache pendant le saut ;
+- **tout est sous `@media (scripting: enabled)`** : sans JS, ni bouton ni panneau, et la
+  nav retombe en seconde ligne comme avant. Si `main.js` ne charge pas, le bouton est
+  mort — la nav du footer reste, et c'est un risque accepté plutôt qu'un saut de mise en
+  page à chaque chargement ;
+- les entrées portent le numéro de leur section (`01.` À propos, `02.` Parcours, `03.`
+  Projets) en Garamond italique vert, et un filet pointillé qui se trace de gauche à
+  droite — le trait du parcours. C'est le sixième usage du Garamond.
 
 ## La structure de la page
 
@@ -450,6 +533,43 @@ aux événements. `.hero__decor` est de nouveau en `pointer-events: none` de bou
 et `.decor--sticker` ne porte plus que sa rotation de repos et son ombre. Ne le remonte
 pas.
 
+**En mobile (≤ 900px), le hero est une AFFICHE dessinée par Vincent** (maquette de 810px
+de large, hors dépôt) : une rangée de trois stickers (HTML, Figma, Affinity), l'intro et le
+titre sur toute la largeur, une rangée de quatre (Adobe, Github, UI/UX, Sass & Less), puis
+le « Scroll to explore » et le collage, agrandis. Elle a remplacé deux versions intermédiaires
+— texte centré dans un panneau nu, puis stickers éparpillés autour — : ne les fais pas
+revenir.
+
+Même convention que le desktop : un **cadre de 778 × 1014 px de maquette**, tout posé en %
+de ce cadre, les textes en `cqw`. La composition se met donc à l'échelle d'un seul tenant, à
+toute largeur — ce qui veut dire aussi qu'elle grandit sur tablette (941px de haut à 768).
+
+- **La hauteur du cadre est DÉDUITE, pas dessinée.** Le « Scroll to explore » appartient au
+  tas de photos, qui remonte de `--bite` sur le panneau. La maquette le pose à 96,5vw sous
+  le haut du panneau ; il tombe à 28,7vw au-dessus de son bas (30,75vw de morsure moins
+  2,04vw de marge dans la scène) : le panneau fait donc 125,2vw pour 96vw de large, soit
+  778 × 1014. **Toucher à `--bite` ou à la largeur de la scène en mobile oblige à
+  recalculer ce rapport**, sinon le « Scroll to explore » monte sur les stickers ;
+- le hero est bordé de **2vw** (16px sur 810), d'où un panneau de 96vw ;
+- les stickers sont posés par leur **centre** (`translate: -50% -50%`, que ces stickers ne
+  portent nulle part ailleurs — il se compose avec `--rot` sans l'écraser). Leurs
+  rotations se lisent sur l'inclinaison du TEXTE de chaque sticker et pas sur sa boîte :
+  plusieurs dessins sont déjà penchés dans le fichier, et le triangle de Github est
+  presque carré, sa boîte ne dit rien de son angle ;
+- **les badges « Basé en France » / « Disponible » sont masqués en mobile** : l'affiche ne
+  les montre pas. Les petites lignes aussi, leur géométrie n'existant qu'au cadre de 599 ;
+- **« Vincent » passe en Garamond italique en mobile**, comme sur l'affiche. Le desktop
+  garde Clash.
+
+Mesuré à 390px, ramené aux coordonnées de la maquette : intro, titre, stickers et « Scroll
+to explore » tombent à 0–12px de maquette de leur place, et rien ne se touche de 360 à
+768px.
+
+**Mesure ça photos posées** : le panneau masqué gèle `pile-land` sur sa première image, où
+les photos sont décalées. Termine les animations
+(`document.getAnimations().forEach(a => a.finish())`) avant de lire quoi que ce soit — une
+mesure prise sans ça s'était trompée de près du double.
+
 ## Le tas de photos (`js/main.js`, première IIFE)
 
 Sous le hero, à cheval sur le haut d'À propos. Tout — le « Scroll to explore », le tracé
@@ -528,10 +648,16 @@ du tas quitte l'écran aux deux tiers**, donc des bornes plus tardives la jouaie
 - La sortie **reste linéaire**. N'y remets pas d'assouplissement : c'est un parallaxe, donc
   proportionnel au scroll, et l'effet vient de l'écart entre les photos, pas d'une courbe.
 
-En mobile le collage **déborde des deux côtés** plutôt que de rétrécir : `width: 170%` et
-`margin-left: -35%` sur la scène, donc son cadre en `aspect-ratio` grandit d'autant et les
-hauteurs suivent toutes seules. `--bite` est remis à l'échelle en conséquence (20,9 %). Le
-débord est clos par le `overflow-x: clip` de `html`.
+En mobile le collage **déborde des deux côtés** plutôt que de rétrécir : `width: 250%` et
+`margin-left: -75%` sur la scène, donc son cadre en `aspect-ratio` grandit d'autant et les
+hauteurs suivent toutes seules. C'est l'échelle de l'affiche mobile de Vincent (la photo du
+randonneur y fait 48,6vw) ; à 170 %, l'ancienne valeur, le collage se lisait comme une frise
+de vignettes. `--bite` suit la même règle qu'en desktop, remise à l'échelle :
+12,3 % × 2,5 = 30,75 %. Le « Scroll to explore » passe à 4,5vw — il tombait sur le plancher
+de son `clamp`, 12px. Le débord est clos par le `overflow-x: clip` de `html`.
+
+**La hauteur du hero mobile dépend de ces deux nombres** (voir « Le hero ») : change-les, et
+recalcule son cadre.
 
 Sous `prefers-reduced-motion: reduce`, ni l'animation de chargement ni le JS ne tournent : le
 défaut `--out: 0` posé sur `.pile__scene` laisse le collage en place, immobile.
@@ -676,6 +802,15 @@ vitesse au sol.
 s'efface au scroll (`opacity: calc(1 - var(--open) * 2.8)`, l'opacité étant bornée par le
 navigateur, pas besoin de clamp) ; `.trail__intro` reparaît en haut à gauche à l'ouverture.
 Le premier est `aria-hidden` et n'est pas un `<h2>` — sans quoi le titre serait doublé.
+
+**Les liens « Parcours » arrivent sur la carte OUVERTE**, demandé par Vincent : l'ancre
+`#parcours` posait le petit carton d'avant la révélation, et il fallait encore scroller pour
+voir la carte. Le parcours vise donc la première étape (`MARKS[0]`) — carte dépliée,
+première carte d'étape affichée. Un clic sur un lien de la page est intercepté et défile en
+douceur jusque-là, l'ancre restant dans l'URL ; une arrivée depuis une page projet
+(`./#parcours`) est reposée au `load`, sous le voile de transition. Rien en mouvement
+réduit, où il n'y a pas de carte à ouvrir, ni au rechargement, où la position restaurée
+prime. Le point d'arrivée se déduit des marques : il suit tout changement de `data-at`.
 
 **La révélation ne coûte rien** : mesurée à 8,3 ms médians, exactement comme la marche. Un
 `clip-path: inset()` est un découpage de rectangle arrondi, pas une recomposition.
@@ -1349,7 +1484,7 @@ d'environ 78 px au-dessus et en dessous : c'est un décor de fond, pas un cadre.
 PAR-DESSUS le texte, quel que soit l'ordre du DOM.
 
 L'ordre est : `couverture > bande photo > l'arrivée > quatre sites > énoncé > douze marques
-> les campagnes > JacquIA > collage > fresque`. Il n'y a que **trois titres visibles dans
+> les campagnes > JacquIA > énoncé des réseaux > collage > grille des réseaux > fresque`. Il n'y a que **trois titres visibles dans
 toute la page** — le `h1`, « Douze ans dans la maison » et « Les campagnes marketing » — et
 c'est voulu ; les blocs d'images sont des `<section>` nommées par `aria-label`.
 
@@ -1386,6 +1521,12 @@ valeur de centrage posée là serait effacée à la première révélation.
 Le texte de cette tête était AUSSI dans le PNG, centré après les écrans de JacquIA, au mot
 près. Il n'y est plus qu'ici — le laisser aux deux endroits le faisait lire deux fois à
 1 500 px d'écart.
+
+**La place qu'il laissait vide porte désormais un second `.jm-statement`**, demandé par
+Vincent parce que JacquIA et le collage se suivaient sans transition. Ce n'est pas le texte
+de la maquette revenu : c'est une phrase écrite pour cet endroit, qui passe de la campagne au
+quotidien des réseaux sociaux et à la place des visuels auprès du public français. Même
+format que l'énoncé du chantier — centré, 24 px, 910 px de large.
 
 **Les trois plafonds du site tiennent** : les deux titres font 50 px pile, l'œil 24, le
 corps du hero 20. Les paragraphes centrés montent à **24 px**, ce qui les met dans le
@@ -1486,6 +1627,33 @@ manifeste. Il est idempotent et **n'agrandit jamais**.
 en scène, les trois écrans de JacquIA, les trois du collage et la couverture sortent à leur
 taille native, donc molles sur un écran retina. Il faut les réexporter deux fois plus grand
 depuis Figma. Les douze marques, la bannière et la fresque, elles, sont à la bonne taille.
+
+### La grille des réseaux
+
+Sous le collage, **seize visuels des réseaux sociaux, quatre par rangée en desktop et deux
+sous 620 px** — demandé par Vincent. Le collage montre trois temps forts, la grille montre
+le rythme : la même marque tenue d'une fête à l'autre, sur dix ans.
+
+**Les cases sont carrées, les fichiers ne le sont pas**, et c'est le point. Les sources
+vont de la story verticale (0,56) à la bannière de boutique (3:1) : aucune case ne les
+tiendrait toutes entières, et des cases à hauteur variable casseraient les rangées. Le
+recadrage est donc en CSS (`aspect-ratio: 1` + `object-fit: cover`) et **jamais dans
+l'export** — c'est ce qui laisse la visionneuse ouvrir chaque visuel EN ENTIER. Cinq
+cases ont leur titre loin du centre et portent un `object-position` à modificateur,
+relevé sur le rendu ; les onze autres tiennent au centre.
+
+**Ce qui n'y est pas, et pourquoi** : Halloween et le Bitomètre sont déjà dans le collage
+juste au-dessus ; les quatre ordinateurs de `social-network/` (elite, jmtv, pornovoisines,
+pornudeo) doublent les mises en scène des sites ; la story « Instagram Story 1@2x » est
+reprise, mais trois bannières très allongées (Pâques et Halloween de la boutique, fête des
+pères) ne gardent rien de lisible en carré.
+Pas de parallaxe, même consigne que les deux autres grilles.
+
+Les `.webp` sortent de **`tools/build_social.py`**, qui ramène le PETIT côté de chaque
+source à la case en densité 2 (694 px) — c'est lui qui remplit la case — et n'agrandit
+jamais. Il ne lit pas le CSS : la case est déduite de la grille (cadre, colonnes,
+gouttière), trois nombres en tête du script. Il signale les fichiers de `social/` que plus
+rien ne charge. 1,1 Mo pour les seize, tous en `loading="lazy"`.
 
 Deux titres portent un `<br>` volontaire (« Douze ans / dans la maison », et l'énoncé du
 chantier après « optimisation. ») : ils ne se produiraient pas tout seuls à ces largeurs, et
@@ -1865,7 +2033,7 @@ ne fait que le déclencher, le CSS que le dessiner. Cinq valeurs :
 | valeur | effet |
 |---|---|
 | `data-reveal` | le bloc monte de 10 px et se fond |
-| `data-reveal="group"` | le conteneur ne bouge pas, ses enfants se posent l'un après l'autre (70 ms d'écart, **jusqu'à douze**) |
+| `data-reveal="group"` | le conteneur ne bouge pas, ses enfants se posent l'un après l'autre (70 ms d'écart, **jusqu'à seize**) |
 | `data-reveal="group scatter"` | un groupe dont chaque enfant part de SON décalage, et plus lentement |
 | `data-reveal="pin"` | seule la pastille du volet (`::before`) éclot, de 0,72 à 1 |
 | `data-reveal="zoom"` | une bande pleine largeur se referme sur son cadre, de 1,045 à 1 |
@@ -1885,6 +2053,7 @@ pas, elle saute.
 La cascade allait jusqu'à **quatre** enfants ; elle va à douze depuis la grille des marques
 de la page J&M, où les huit dernières cases se posaient toutes ensemble. La traîne fait
 770 ms sur un mur d'images, et rien n'a changé sur les groupes de trois ou quatre de Beepz.
+Puis à **seize** pour la grille des réseaux, même page, même raison : 1 050 ms de traîne.
 
 **`.js-motion` porte tous les états masqués, et elle est posée par un script en TÊTE de
 page**, avant le premier rendu — pas depuis `main.js` en bas. C'est ce qui évite de voir la
@@ -2112,12 +2281,13 @@ porter la même valeur.
 Quatre autres scripts de `tools/` ne génèrent rien : ils **transforment** des originaux en
 `.webp` servis, et ce sont eux qu'on relance quand un visuel change — `build_projects.py`
 pour la section projets de l'accueil, `build_jm.py` pour toute la page J&M,
-`build_jimizz.py` pour toute la page Jimizz, et `build_social.py` / `build_shots.py`, qui
-ne servent plus aucune page depuis la refonte.
+`build_jimizz.py` pour toute la page Jimizz, `build_social.py` pour la grille des réseaux
+de la page J&M, et `build_shots.py`, qui ne sert plus aucune page depuis la refonte.
 
-**Les trois `build_*` vivants partagent une seule règle**, et c'est elle qui les rend
+**Les trois premiers `build_*` partagent une seule règle**, et c'est elle qui les rend
 utiles : ils vont lire les `width: %` des pièces DANS `css/style.css` plutôt que de les
-redire. Une taille écrite deux fois, c'est toujours la seconde qui ment. Ils n'agrandissent
+redire. `build_social.py` n'en a pas besoin — ses cases de grille ne portent aucune
+largeur en CSS, c'est la grille qui les décide. Une taille écrite deux fois, c'est toujours la seconde qui ment. Ils n'agrandissent
 jamais et listent en fin de passe les sources trop petites pour la densité 2, avec l'échelle
 d'export Figma qui corrigerait.
 

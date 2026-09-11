@@ -430,14 +430,66 @@ html { scroll-padding-top: var(--banner-h); }
   .banner { letter-spacing: .05em; }
 }
 
-/* ---------- Header ---------- */
+/* ---------- Header ----------
+   IL EST COLLANT, ET IL S'EFFACE QUAND ON DESCEND. Un geste vers le bas le fait
+   remonter sous le bandeau ; le moindre geste vers le haut le fait revenir. Le
+   JS (`js/main.js`, dernière IIFE) ne pose que la classe `is-hidden` — et
+   `is-stuck` dès que la page a quitté son sommet — tout le dessin est ici.
+
+   `sticky` et pas `fixed` : il garde sa place dans le flux, donc rien sous lui
+   n'a à être décalé, et au sommet de la page il est exactement là où il était.
+   Il colle SOUS le bandeau de chantier (`--banner-h`, avec le même repli à 0
+   que la tête du parcours) et passe dessous en s'effaçant — 7000, sous le
+   bandeau (8000) et le voile (9000).
+
+   Le dégradé est un `::before` pleine largeur — le header, lui, reste borné à
+   1512px — qui DÉBORDE sous lui de `--header-fade` : c'est ce qui fond l'encre
+   dans la page au lieu de tracer un bord net. Il n'apparaît qu'avec `is-stuck`,
+   sans quoi il assombrirait le haut du panneau du hero au chargement. */
 .site-header {
+  --header-fade: 48px;
+  position: sticky;
+  top: var(--banner-h, 0px);
+  z-index: 7000;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: clamp(16px, 1.8vw, 22px) clamp(20px, 2.6vw, 40px);
   max-width: 1512px;
   margin-inline: auto;
+  transition: translate .42s var(--ease-out);
+}
+
+.site-header::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  bottom: calc(-1 * var(--header-fade));
+  left: 50%;
+  width: 100vw;
+  translate: -50% 0;
+  background: linear-gradient(to bottom,
+    rgb(var(--ink-rgb) / .92) 0%,
+    rgb(var(--ink-rgb) / .7) 55%,
+    rgb(var(--ink-rgb) / 0) 100%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .3s ease;
+}
+
+.site-header.is-stuck::before { opacity: 1; }
+
+/* Il remonte de sa hauteur PLUS le dégradé, sinon la frange resterait visible
+   sous le bandeau. Il revient au clavier : un lien du header qui prend le focus
+   ne doit pas rester caché. `:focus-visible` et pas `:focus-within`, sans quoi
+   un clic de souris sur un lien du menu le garderait affiché pendant le saut. */
+.site-header.is-hidden:not(:has(:focus-visible)) {
+  translate: 0 calc(-100% - var(--header-fade));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-header { transition: none; }
 }
 
 .logo {
@@ -457,8 +509,6 @@ html { scroll-padding-top: var(--banner-h); }
   color: var(--pink);
 }
 
-.main-nav a:first-child { text-transform: uppercase; }
-
 .btn-contact {
   font-family: var(--font-display);
   display: inline-flex;
@@ -477,6 +527,220 @@ html { scroll-padding-top: var(--banner-h); }
 .btn-contact__arrow { color: var(--pink); }
 
 .btn-contact:hover { background-color: rgb(var(--cream-rgb) / .08); }
+
+/* ---------- Le menu mobile : le mousqueton ----------
+   Sous 900px la nav se replie derrière un bouton rond dessiné en MOUSQUETON —
+   c'est le « Carnet de routes » qui prête son matériel au header. Fermé au
+   repos ; le menu s'ouvre, son doigt s'ouvre vers l'intérieur et le mousqueton
+   se balance ; le menu se ferme, le doigt claque (une courbe qui dépasse, c'est
+   le seul endroit du site qui rebondit, et c'est le bruit du mousqueton).
+
+   Le doigt pivote autour de sa charnière, en bas : `transform-box: view-box`
+   et l'origine en unités du viewBox, sans quoi l'origine se résoudrait sur la
+   boîte d'un trait vertical, de largeur nulle.
+
+   Tout tient sous `(scripting: enabled)` : sans JS, ni bouton ni panneau, et
+   la nav reste affichée par la règle mobile plus bas, comme avant. */
+.menu-toggle,
+.menu-panel { display: none; }
+
+.menu-toggle {
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--border-cream);
+  border-radius: 50%;
+  background: none;
+  color: var(--pink);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color .2s ease;
+}
+
+.menu-toggle:hover { background-color: rgb(var(--cream-rgb) / .08); }
+
+.menu-toggle__icon {
+  overflow: visible;
+  rotate: 20deg;
+  transition: rotate .7s cubic-bezier(.34, 1.56, .64, 1);
+}
+
+.menu-toggle__gate {
+  transform-box: view-box;
+  transform-origin: 17px 25px;
+  /* La fermeture : le doigt revient d'un coup et dépasse un peu — il claque. */
+  transition: transform .42s cubic-bezier(.34, 1.8, .64, 1);
+}
+
+.menu-toggle[aria-expanded="true"] .menu-toggle__icon { rotate: -8deg; }
+
+.menu-toggle[aria-expanded="true"] .menu-toggle__gate {
+  transform: rotate(-30deg);
+  transition: transform .5s var(--ease-out) .08s;
+}
+
+@media (max-width: 900px) and (scripting: enabled) {
+  .site-header { padding-block: 12px; column-gap: 10px; }
+  .site-header .main-nav { display: none; }
+  .site-header .btn-contact { margin-left: auto; }
+  .menu-toggle { display: inline-grid; }
+
+  /* Le panneau passe SOUS le header (7000) et le bandeau (8000) : le logo, le
+     bouton « Discutons » et le mousqueton restent là, posés sur l'encre. Il se
+     déroule depuis le bas de la barre, comme une page de carnet qu'on déplie —
+     un `clip-path`, donc rien ne bouge dessous, on découvre. */
+  .menu-panel {
+    --menu-bar: 68px;
+    position: fixed;
+    inset: 0;
+    z-index: 6990;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 40px;
+    padding: calc(var(--banner-h, 0px) + var(--menu-bar) + clamp(20px, 6vh, 56px))
+             clamp(20px, 6vw, 40px)
+             calc(clamp(24px, 5vh, 44px) + env(safe-area-inset-bottom));
+    overflow-y: auto;
+    background: linear-gradient(to bottom, var(--navy), var(--ink) 78%);
+    isolation: isolate;
+    clip-path: inset(0 0 100% 0);
+    visibility: hidden;
+    transition: clip-path .45s var(--ease-out), visibility 0s linear .45s;
+  }
+
+  /* La carte topographique du hero, en fond, qui s'éteint vers le bas. */
+  .menu-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: url("../assets/home/hero/topo.svg") center 20% / cover no-repeat;
+    opacity: .3;
+    -webkit-mask-image: linear-gradient(to bottom, #000 30%, transparent 90%);
+            mask-image: linear-gradient(to bottom, #000 30%, transparent 90%);
+    pointer-events: none;
+  }
+
+  html.menu-open .menu-panel {
+    clip-path: inset(0);
+    visibility: visible;
+    transition: clip-path .65s var(--ease-out), visibility 0s;
+  }
+
+  /* Le verrou de scroll, sur la RACINE SEULE. Surtout pas sur `body` aussi :
+     `html` portant déjà `overflow-x: clip`, l'`overflow` de `body` n'est plus
+     reporté sur la fenêtre, donc `body` devient un conteneur de défilement à
+     part entière — et le bandeau comme le header, collants, se recalent sur lui,
+     c'est-à-dire tout en haut du document. Ouvert au milieu de la page, le menu
+     perdait ainsi la barre et le bouton pour le refermer. */
+  html.menu-open { overflow: hidden; }
+
+  /* Les trois entrées : numéro d'ordre en Garamond italique vert, comme les
+     œils des sections — 01. À propos, 02. Parcours, 03. Projets, les mêmes
+     numéros qu'elles portent sur la page. Entre elles, un filet POINTILLÉ qui se
+     trace de gauche à droite : le trait du parcours. */
+  .menu-panel__nav {
+    display: flex;
+    flex-direction: column;
+    counter-reset: menu;
+  }
+
+  .menu-panel__nav a {
+    --d: calc(var(--i) * 80ms + 160ms);
+    counter-increment: menu;
+    position: relative;
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    padding-block: 18px;
+    overflow: hidden;
+    font-family: var(--font-display);
+    font-size: clamp(36px, 11vw, 50px);
+    font-weight: 700;
+    line-height: 1.05;
+    color: var(--cream);
+  }
+
+  .menu-panel__nav a::before {
+    content: counter(menu, decimal-leading-zero) ".";
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: .46em;
+    color: var(--green);
+  }
+
+  .menu-panel__label { display: inline-block; }
+  .menu-panel__label::first-letter { text-transform: uppercase; }
+
+  .menu-panel__nav a::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 1px;
+    background: repeating-linear-gradient(to right,
+      rgb(var(--cream-rgb) / .32) 0 6px, transparent 6px 12px);
+    clip-path: inset(0 100% 0 0);
+  }
+
+  /* Les états sont écrits en dur des deux côtés : à l'aller chaque ligne sort de
+     sous son propre bord (d'où l'`overflow: hidden` du lien) avec son retard ;
+     au retour tout redescend ensemble, vite, sans retard. */
+  .menu-panel__nav a::before,
+  .menu-panel__label {
+    translate: 0 115%;
+    transition: translate .25s ease;
+  }
+
+  .menu-panel__nav a::after { transition: clip-path .25s ease; }
+
+  html.menu-open .menu-panel__nav a::before,
+  html.menu-open .menu-panel__label {
+    translate: 0 0;
+    transition: translate .8s var(--ease-out) var(--d);
+  }
+
+  html.menu-open .menu-panel__nav a::after {
+    clip-path: inset(0);
+    transition: clip-path 1s var(--ease-out) calc(var(--d) + 120ms);
+  }
+
+  /* Les liens réseaux du footer, clonés, en pied de panneau. */
+  .menu-panel__foot {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 24px;
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 600;
+    opacity: 0;
+    translate: 0 16px;
+    transition: opacity .2s ease, translate .2s ease;
+  }
+
+  .menu-panel__foot a { color: var(--pink); padding-block: 10px; }
+
+  html.menu-open .menu-panel__foot {
+    opacity: 1;
+    translate: 0 0;
+    transition: opacity .6s ease calc(var(--i) * 80ms + 260ms),
+                translate .8s var(--ease-out) calc(var(--i) * 80ms + 260ms);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-toggle__icon,
+  .menu-toggle__gate,
+  .menu-panel,
+  .menu-panel *,
+  .menu-panel *::before,
+  .menu-panel *::after { transition: none !important; }
+}
 
 /* ---------- Hero ---------- */
 .hero {
@@ -1890,11 +2154,24 @@ a.pcard:hover { border-color: rgb(var(--cream-rgb) / .28); }
   .main-nav { order: 3; width: 100%; justify-content: center; }
 
   /* Le collage déborde des deux côtés plutôt que de rétrécir : la scène fait
-     170 % de large, donc son cadre en aspect-ratio grandit d'autant et les
+     250 % de large, donc son cadre en aspect-ratio grandit d'autant et les
      hauteurs suivent. Le débord est clos par le `overflow-x: clip` de html.
-     La morsure sur le hero est remise à l'échelle : -4,62 % × 1,7. */
-  .pile { padding-inline: 0; --bite: 20.9%; }
-  .pile__scene { width: 170%; margin-left: -35%; }
+
+     250 % et pas moins : c'est l'échelle de la maquette mobile de Vincent, où la
+     photo du randonneur fait 48,6vw (19,52 % du cadre × 250 %). La scène a
+     longtemps fait 170 % — le collage se lisait alors comme une frise de
+     vignettes au bas de l'écran.
+
+     La morsure suit la même échelle : 12,3 % × 2,5 = 30,75 %. Et le hero en
+     DÉPEND — la hauteur de son affiche mobile est déduite de la position du
+     « Scroll to explore », qui appartient à cette scène. Touche à l'un, recalcule
+     l'autre (voir le hero plus bas). */
+  .pile { padding-inline: 0; --bite: 30.75%; }
+  .pile__scene { width: 250%; margin-left: -75%; }
+
+  /* Le « Scroll to explore » tombait sur le plancher de son clamp (12px) :
+     la maquette le veut à 4,5vw, 17,6px à 390. En `vw` comme tout le collage. */
+  .pile__hint { font-size: 4.5vw; }
 
   /* Plus de colonnes, donc plus de flotteur à réserver : les trois cartes
      s'empilent, pleine largeur. Le survol n'existant pas ici, l'état actif ne
@@ -1902,7 +2179,30 @@ a.pcard:hover { border-color: rgb(var(--cream-rgb) / .28); }
   .projects { display: block; }
   .projects::before { content: none; }
   .pcard { width: auto; }
-  .projects__item.is-active .pcard { scale: 1; }
+
+  /* Les trois cartes se ressemblent : `is-active` part du HTML sur la première
+     (c'est elle qui montre son groupement sans JS, en desktop), mais ici il n'y a
+     plus de groupement à désigner — la carte « active » n'avait donc rien de plus
+     que les autres, sinon un filet qui la faisait lire comme sélectionnée. Le
+     survol est neutralisé avec elle : sur un écran tactile il RESTE collé à la
+     carte qu'on vient de toucher, et redonnait ce même filet.
+
+     La bordure ne revient qu'au focus clavier (`:focus-visible`), comme demandé
+     par Vincent — mobile seulement, le desktop garde son état actif. */
+  .projects__item.is-active .pcard,
+  a.pcard:hover {
+    border-color: rgb(var(--cream-rgb) / .1);
+    background: rgb(var(--navy-rgb) / .34);
+    scale: 1;
+  }
+  .projects__item.is-active .pcard__tag { color: rgb(var(--cream-rgb) / .8); }
+  /* `.projects__item` en tête n'est pas décoratif : sans lui, ce sélecteur
+     (0,2,1) perdait contre la carte active neutralisée juste au-dessus (0,3,0),
+     et la PREMIÈRE carte n'avait plus de focus visible du tout. */
+  .projects__item a.pcard:focus-visible {
+    outline: none;
+    border-color: rgb(var(--cream-rgb) / .5);
+  }
 
   /* LES GROUPEMENTS SONT MASQUÉS EN MOBILE, et c'est une consigne de Vincent.
      Ils sont restés longtemps affichés ici, chacun en clair sous sa carte : la
@@ -1922,17 +2222,75 @@ a.pcard:hover { border-color: rgb(var(--cream-rgb) / .28); }
   .pcluster { display: none; }
   .site-footer__inner { justify-content: flex-start; }
 
-  /* Pas de cadre fixe en dessous : le panneau reprend une hauteur libre et le
-     contenu le remplit. Le décor y est masqué de toute façon. */
-  .hero__panel { aspect-ratio: auto; min-height: 480px; }
-  .hero__content { position: relative; inset: auto; aspect-ratio: auto; height: 100%; }
-  .hero__title-line { font-size: 10cqw; }
-  .hero__intro { font-size: 3cqw; }
-  .hero__badges { font-size: 2.2cqw; }
+  /* LE HERO MOBILE EST UNE AFFICHE, dessinée par Vincent (maquette de 810px de
+     large) : trois stickers, l'intro et le titre sur toute la largeur, quatre
+     stickers, puis le « Scroll to explore ». Tout est posé en % d'un CADRE de
+     778 × 1014 px de maquette — même convention que le cadre de 599 du desktop —
+     et les tailles de texte sont en `cqw` : la composition se met à l'échelle
+     d'un seul tenant, à toute largeur.
 
-  .decor--sticker, .decor--underline, .decor--path-left, .decor--path-right {
-    display: none;
+     La HAUTEUR du cadre n'est pas dessinée, elle est DÉDUITE. Le « Scroll to
+     explore » appartient au tas de photos, qui remonte de `--bite` sur le
+     panneau ; la maquette le pose à 96,5vw sous le haut du panneau, et il tombe
+     à 28,7vw au-dessus de son bas (30,75vw de morsure moins 2,04vw de marge dans
+     la scène). Le panneau fait donc 125,2vw de haut pour 96vw de large :
+     778 × 1014. Si tu touches à `--bite` ou à la largeur de la scène en mobile,
+     recalcule ce rapport — sinon le « Scroll to explore » monte sur les stickers.
+
+     Le panneau fait 96vw parce que le hero est bordé de 2vw, comme la maquette
+     (16px sur 810). */
+  .hero { padding-inline: 2vw; }
+  .hero__panel { aspect-ratio: 778 / 1014; }
+
+  /* Le texte part d'une hauteur fixe du cadre, en `cqw` — le cadre ayant un
+     rapport fixe, c'est la même chose qu'un % de sa hauteur, et `padding-top`
+     en % se résoudrait sur la largeur. */
+  .hero__content {
+    inset: 0;
+    aspect-ratio: auto;
+    justify-content: flex-start;
+    padding-top: 40.5cqw;
   }
+  .hero__intro { font-size: 6.76cqw; gap: .4em; margin-bottom: 1.4cqw; }
+
+  /* « Vincent » en Garamond italique : c'est la maquette mobile qui le veut, et
+     c'est un usage de plus pour cette famille, réservée ailleurs à six usages.
+     Le desktop garde Clash. */
+  .hero__intro-name {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 700;
+    padding: .02em .42em .08em;
+    border-radius: .14em;
+  }
+  .hero__title-line { font-size: 12.4cqw; }
+  .hero__title-line--ghost { width: 94cqw; }
+
+  /* Les badges ne figurent pas dans l'affiche : masqués ici seulement. */
+  .hero__badges { display: none; }
+
+  /* Les petites lignes ne sont pas reprises : elles relient des stickers à des
+     mots du titre, et cette géométrie n'existe qu'au cadre de 599. */
+  .decor--underline, .decor--path-left, .decor--path-right { display: none; }
+
+  /* Les stickers, en deux rangées : leur boîte recouvre le panneau entier, et
+     chacun est posé par son CENTRE (`translate`, que ces stickers ne portent
+     nulle part ailleurs — il se compose avec la rotation de `--rot` sans
+     l'écraser). Centres, largeurs et rotations sont relevés sur la maquette ;
+     les rotations se lisent sur l'inclinaison du TEXTE de chaque sticker, le
+     dessin étant déjà penché dans le fichier pour certains. */
+  .hero__decor { inset: 0; aspect-ratio: auto; }
+  .decor--sticker { translate: -50% -50%; }
+
+  /* Au-dessus du titre */
+  .sticker-2 { left: 22%;   top: 19.6%; width: 18.5%; --rot: -14deg; } /* HTML */
+  .sticker-1 { left: 48.8%; top: 15.2%; width: 20.2%; --rot:   0deg; } /* Figma */
+  .sticker-6 { left: 79%;   top: 20.3%; width: 23%;   --rot:  20deg; } /* Affinity */
+  /* En dessous */
+  .sticker-4 { left: 17%;   top: 65.7%; width: 22.9%; --rot:  15deg; } /* Adobe */
+  .sticker-5 { left: 44.3%; top: 65.2%; width: 15.1%; --rot: -20deg; } /* Github */
+  .sticker-7 { left: 63.4%; top: 66%;   width: 16.6%; --rot:  -4deg; } /* UI/UX */
+  .sticker-3 { left: 87.9%; top: 65.9%; width: 21.6%; --rot:  20deg; } /* Sass & Less */
 
   /* The map stays interactive on small screens — it is one composited
      transform, so it scrubs smoothly on touch. Just tighten the labels. */
@@ -3709,7 +4067,11 @@ a.case-foot__next:hover { color: var(--cream); }
    compte douze : avant, elle s'arrêtait à quatre et les huit dernières cases se
    posaient toutes ensemble, ce qui se voyait tout de suite. La traîne fait
    770 ms sur un mur d'images, et c'est le bon prix — sur les groupes de trois ou
-   quatre de la page Beepz, rien n'a changé. */
+   quatre de la page Beepz, rien n'a changé.
+
+   Elle est allée ensuite jusqu'à SEIZE pour la grille des réseaux, même page,
+   même raison : les quatre dernières cases se posaient d'un bloc. 1 050 ms de
+   traîne, pour seize cases. */
 .js-motion [data-reveal~="group"][data-reveal-in] > :nth-child(2)  { transition-delay:  70ms; }
 .js-motion [data-reveal~="group"][data-reveal-in] > :nth-child(3)  { transition-delay: 140ms; }
 .js-motion [data-reveal~="group"][data-reveal-in] > :nth-child(4)  { transition-delay: 210ms; }
@@ -3721,6 +4083,10 @@ a.case-foot__next:hover { color: var(--cream); }
 .js-motion [data-reveal~="group"][data-reveal-in] > :nth-child(10) { transition-delay: 630ms; }
 .js-motion [data-reveal~="group"][data-reveal-in] > :nth-child(11) { transition-delay: 700ms; }
 .js-motion [data-reveal~="group"][data-reveal-in] > :nth-child(12) { transition-delay: 770ms; }
+.js-motion [data-reveal~="group"][data-reveal-in] > :nth-child(13) { transition-delay: 840ms; }
+.js-motion [data-reveal~="group"][data-reveal-in] > :nth-child(14) { transition-delay: 910ms; }
+.js-motion [data-reveal~="group"][data-reveal-in] > :nth-child(15) { transition-delay: 980ms; }
+.js-motion [data-reveal~="group"][data-reveal-in] > :nth-child(16) { transition-delay: 1050ms; }
 
 /* Un `scatter` respire plus longtemps que la cascade ordinaire : ses pièces
    viennent de plus loin — 30 à 60 px — et une durée de bloc de texte les ferait
@@ -4627,6 +4993,45 @@ a.case-foot__next:hover { color: var(--cream); }
 .jm-social__piece--halloween { --out-x:  34px; --out-y: 20px; --out-r:  2.5deg; }
 .jm-social__piece--bitometre { --out-x:   0px; --out-y: 60px; --out-r: -1.5deg; }
 
+/* ---------- La grille des réseaux ----------
+   Seize visuels, quatre colonnes — deux sous 620 px, voir le responsive. Même
+   gouttière que les quatre sites, parce que c'est le même geste : une grille de
+   pièces à plat.
+
+   LES CASES SONT CARRÉES ET LES FICHIERS NE LE SONT PAS. Les visuels vont de la
+   story verticale (0,56) à la bannière de boutique (3:1) : aucune case ne les
+   tiendrait tous entiers, et des cases à hauteur variable casseraient les
+   rangées. On recadre donc ICI, pas dans l'export — c'est ce qui laisse la
+   visionneuse ouvrir chaque visuel en entier.
+
+   Le centre suffit à onze d'entre eux. Les cinq autres ont leur titre loin du
+   centre, et c'est tout ce que portent les modificateurs — des valeurs relevées
+   sur le rendu, pas au jugé. Le petit côté des fichiers est calé sur la case en
+   densité 2 par `tools/build_social.py`. */
+.jm-reseaux {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(10px, 1.9vw, 28px);
+  margin: 0;
+  padding: 0;
+}
+
+.jm-reseaux img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: clamp(6px, .95vw, 14px);
+}
+
+.jm-reseaux__img--presidentielle { object-position: 100% 50%; } /* le slogan va jusqu'au bord droit */
+.jm-reseaux__img--black-friday   { object-position: 40% 50%; }  /* sinon le B de BLACK tombe */
+.jm-reseaux__img--avril-2015     { object-position: 25% 50%; }  /* le logo et le slogan sont à gauche */
+.jm-reseaux__img--tshirts        { object-position: 62% 50%; }  /* garde le flocage du dos lisible */
+.jm-reseaux__img--blue-monday    { object-position: 50% 8%; }   /* le titre est en haut de la story */
+
 /* ---------- La fresque des vingt ans ----------
    Pleine largeur, et l'inclinaison des trois panneaux est CUITE dans l'image —
    ne la refais pas en CSS, elle emporte des ombres et des découpes qu'aucune
@@ -4704,6 +5109,10 @@ a.case-foot__next:hover { color: var(--cream); }
      d'un coup d'œil. */
   .jm-sites { grid-template-columns: minmax(0, 1fr); }
   .jm-brands { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  /* Les réseaux passent à deux colonnes, comme demandé : à quatre, une case
+     tomberait sous 85 px sur un écran de 375, où une affiche ne se lit plus. */
+  .jm-reseaux { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
   .proj-hero__skills-list { grid-auto-flow: row; gap: 10px; }
 
