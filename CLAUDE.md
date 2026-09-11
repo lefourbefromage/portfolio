@@ -59,6 +59,13 @@ encore le Gmail ; il a été décidé de ne pas réécrire l'historique.
 
 ### L'adresse de contact
 
+**EN ATTENDANT, le site affiche une adresse Gmail pro de Vincent**, parce que la redirection
+OVH ne livre encore rien (le domaine date du 11 septembre 2026, et le quota des redirections
+affichait 0 / 1000 alors que la redirection figurait dans la liste). Même balisage, mêmes
+deux moitiés — seul le contenu des deux `<span>` a changé, un commentaire HTML le rappelle
+sur place. Le jour où un test envoyé depuis une autre boîte arrive bien, on remet `contact`
+et le domaine du site.
+
 **C'est `contact`, sur le domaine du site, et elle n'est écrite en entier dans AUCUN fichier
 du dépôt** — ce fichier compris : il est public lui aussi, servi à la racine du domaine. Ni
 `@`, ni `mailto:` dans `index.html`. C'est une redirection OVH vers le Gmail : si elle se
