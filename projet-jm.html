@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jacquie &amp; Michel — Vincent Waldmann</title>
+<meta name="description" content="Douze ans en interne chez Jacquie &amp; Michel : les sites de la marque, ses campagnes et les visuels des réseaux sociaux.">
+<link rel="stylesheet" href="css/style.css">
+
+<!-- Même amorce de motion que `projet-beepz.html`, et pour les mêmes raisons :
+     la classe est posée AVANT le premier rendu, elle n'est pas posée du tout en
+     mouvement réduit, et un garde-fou de 2,5 s la retire si `main.js` ne s'est
+     jamais annoncé. Si tu touches à l'une des deux pages, touche à l'autre. -->
+<script>
+  (function () {
+    var html = document.documentElement;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    html.classList.add('js-motion');
+    setTimeout(function () {
+      if (html.dataset.motion !== 'ready') html.classList.remove('js-motion');
+    }, 2500);
+  })();
+</script>
+</head>
+<body>
+
+<header class="site-header">
+  <a class="logo" href="index.html">
+    <span>Waldmann</span>
+    <span>Vincent</span>
+  </a>
+  <nav class="main-nav">
+    <a href="index.html#a-propos">à propos</a>
+    <a href="index.html#parcours">Parcours</a>
+    <a href="index.html#projets">Projets</a>
+  </nav>
+  <a href="index.html#contact" class="btn-contact">
+    Discutons
+    <svg class="btn-contact__arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M1 9L9 1M9 1H2M9 1V8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </a>
+</header>
+
+<!-- ==========================================================================
+     LA PAGE JACQUIE & MICHEL
+
+     Intégration de la maquette de Vincent (`assets/jm/src/maquette.png`, hors
+     dépôt). Elle a REMPLACÉ la version précédente en entier — les trois volets,
+     la fiche de course, les notes de terrain, la porte NSFW et le mur de vingt
+     visuels réseaux ont disparu avec elle. Ne les remonte pas par morceaux : la
+     page ne raconte plus un dossier, elle montre une suite de pièces.
+
+     LA STRUCTURE EST TOUJOURS LA MÊME, cinq fois de suite : une phrase, puis ce
+     qu'elle a produit. C'est ce qui tient l'ensemble sans un seul intertitre —
+     il n'y a que trois titres visibles dans toute la page, et c'est voulu.
+
+     TOUS LES .webp SONT PRODUITS PAR `tools/build_jm.py`, jamais à la main :
+     c'est lui qui tient les tailles, les alternatives textuelles et le
+     traitement de la couverture. Les originaux restent dans `assets/jm/src/`,
+     hors dépôt. Si tu changes une largeur dans le CSS, relance-le — il dira
+     aussitôt si la source suit encore.
+
+     LES `data-reveal` SONT LA SOURCE DE VÉRITÉ DE LA MOTION, comme sur la page
+     Beepz et comme les `data-at` des étapes du parcours. Le JS ne fait que les
+     déclencher, le CSS que les dessiner. Quatre valeurs sont en usage ici :
+
+       `data-reveal`                le bloc monte de 10 px et se fond ;
+       `data-reveal="group"`        ses enfants se posent l'un après l'autre ;
+       `data-reveal="group scatter"` idem, mais chaque pièce part de son propre
+                                    décalage, déclaré dans SA règle CSS ;
+       `data-reveal="zoom"`         une bande pleine largeur se referme sur son
+                                    cadre.
+
+     `data-parallax` MARCHE PAREIL, et c'est un mécanisme SÉPARÉ : le JS y pose
+     un seul nombre, `--par` entre -1 et 1 selon la place de la pièce dans la
+     fenêtre, et c'est le CSS qui décide de combien elle dérive (`--par-amp`,
+     dans la règle de chaque pièce). L'attribut est nu, sans valeur : on doit
+     pouvoir lire ici CE QUI bouge sans avoir à ouvrir le JS.
+
+     Les deux cohabitent parce qu'ils n'écrivent pas dans la même propriété — la
+     révélation dans `translate`, le parallaxe dans `transform`, qui se composent
+     d'elles-mêmes. Ne les ramène pas sur la même.
+     ========================================================================== -->
+<main class="proj jm">
+
+  <!-- ---------------- LA COUVERTURE ---------------- -->
+  <!-- Pas de `data-reveal` ici : la couverture est visible au chargement, donc
+       elle joue une ANIMATION et non une transition au scroll — voir
+       `@keyframes proj-panel-in`. -->
+  <div class="proj-wrap">
+    <section class="proj-hero">
+      <span class="proj-hero__relief" aria-hidden="true"></span>
+
+      <div class="proj-hero__grid">
+        <p class="proj-eyebrow proj-hero__eyebrow">On dit merci qui&nbsp;?</p>
+
+        <div class="proj-hero__text">
+          <!-- `.proj-line` est le CACHE, le span dedans est ce qui monte : un élément ne
+               peut pas se rogner lui-même et glisser en même temps. Les lignes sont
+               découpées à la main — sans JS, le titre s'affiche simplement d'un bloc. -->
+          <h1 class="proj-title proj-hero__title"><span class="proj-line"><span>Jacquie &amp; Michel</span></span></h1>
+          <p class="proj-text proj-hero__intro">
+            J&amp;M est une marque française de contenu pour adultes fondée en
+            1999, devenue l’un des sites X les plus populaires du pays grâce à son
+            positionnement «&nbsp;amateur&nbsp;» et une stratégie marketing très
+            visible, au point de s’imposer bien au-delà de son public initial dans
+            la culture populaire française.
+          </p>
+        </div>
+
+        <!-- Les compétences, et pas une fiche de course : la version précédente
+             de cette page portait un tableau « Années / Durée / Contexte /
+             Rôles ». La maquette n'en garde que ce qu'on cherche vraiment ici. -->
+        <div class="proj-hero__skills">
+          <h2 class="proj-hero__skills-title">Skills</h2>
+          <ul class="proj-hero__skills-list">
+            <li>UI/UX</li>
+            <li>Intégration</li>
+            <li>Graphisme</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ---------------- LA BANDE PHOTOGRAPHIQUE ----------------
+       Décorative : `alt=""`, donc la visionneuse ne l'ouvrira pas (son filtre
+       est l'alternative textuelle, pas une liste de classes). Le fichier servi
+       est transparent dans ses noirs, ce qui laisse passer le motif topo posé
+       dessous — voir l'en-tête de `tools/build_jm.py`. -->
+  <section class="proj-band jm-cover">
+    <span class="jm-cover__relief" aria-hidden="true"></span>
+    <img class="proj-band__img" src="assets/jm/hero/cover.webp" width="1512" height="637"
+         decoding="async" alt="" data-reveal="zoom" data-parallax>
+  </section>
+
+  <!-- ---------------- 01 · L'ARRIVÉE ----------------
+       `.proj-block` est l'hôte du carré topo : il occupe le CADRE là où
+       `.proj-intro` n'occupe que la colonne, et c'est ce qui laisse le décor
+       déborder à gauche du texte. Les quatre sections de ce dessin le portent,
+       sur les deux pages — voir le CSS. -->
+  <div class="proj-wrap">
+    <section class="proj-block" aria-labelledby="jm-douze">
+      <img class="proj-block__topo" src="assets/home/about/topo-square-left.svg"
+           width="266" height="266" loading="lazy" decoding="async" alt="" aria-hidden="true"
+           data-parallax>
+
+      <div class="proj-intro">
+        <!-- Le saut de ligne est dans la maquette et il ne se produirait pas tout
+             seul : à la largeur de cette colonne, « Douze ans dans la » tiendrait
+             sur la première ligne et laisserait « maison » seul en dessous. -->
+        <h2 class="proj-title" id="jm-douze" data-reveal="lines">
+          <span class="proj-line"><span>Douze ans</span></span>
+          <span class="proj-line"><span>dans la maison</span></span>
+        </h2>
+        <p class="proj-lede" data-reveal="soft">
+          Je suis arrivé au tout début de l’équipe, et j’ai grandi avec la marque —
+          assez tôt pour l’aider à prendre sa place dans le paysage français, assez
+          longtemps pour reprendre une à une toutes les surfaces sur lesquelles elle
+          se montre.
+        </p>
+      </div>
+    </section>
+  </div>
+
+  <!-- ---------------- LES QUATRE SITES ----------------
+       Les appareils, le décor et l'ombre sont DANS la photo : il n'y a plus de
+       `.stage` dessinée en CSS comme dans la version précédente.
+
+       PAS DE `data-parallax` ICI, ET C'EST DEMANDÉ : ces quatre mises en scène
+       n'ont qu'une révélation au scroll. Même chose pour la grille des marques
+       plus bas. Elles ont porté un cisaillement par colonne, retiré à la
+       demande de Vincent — voir la note du bloc « Le parallaxe » dans le CSS. -->
+  <div class="proj-wrap">
+    <ul class="jm-sites" data-reveal="group"
+        data-viewer="Les sites de la marque" aria-label="Quatre sites du groupe">
+      <li><img src="assets/jm/sites/jm.webp" width="719" height="719" loading="lazy" decoding="async"
+               alt="Le site Jacquie &amp; Michel affiché sur un ordinateur portable posé en forêt : en-tête sombre, bandeau promotionnel et grille de vidéos."></li>
+      <li><img src="assets/jm/sites/pornovoisines.webp" width="719" height="719" loading="lazy" decoding="async"
+               alt="Le site PornoVoisines sur un ordinateur portable : interface claire, formulaire de recherche et grilles de profils."></li>
+      <li><img src="assets/jm/sites/pornudeo.webp" width="719" height="720" loading="lazy" decoding="async"
+               alt="Le site Pornudeo sur une tablette : rail de navigation à gauche, bannière pleine largeur et rangées de vignettes."></li>
+      <li><img src="assets/jm/sites/elite.webp" width="719" height="720" loading="lazy" decoding="async"
+               alt="Le site Jacquie &amp; Michel Élite sur une tablette inclinée : lecteur en grand et sélections éditoriales."></li>
+    </ul>
+  </div>
+
+  <!-- ---------------- L'ÉNONCÉ DU CHANTIER ----------------
+       Le saut de ligne est VOULU : la maquette sépare le constat de ce qu'il a
+       fallu en faire. Ce n'est pas un habillage, c'est la charnière du propos. -->
+  <div class="proj-wrap">
+    <p class="proj-lede jm-statement" data-reveal="soft">
+      L’état des lieux était sans ambiguïté&nbsp;: un design vieilli et aucune
+      optimisation.<br>
+      Il n’y avait pas d’ajustement à faire, il fallait tout reprendre depuis le
+      début, pour que les guidelines et les bonnes pratiques s’appliquent enfin
+      partout.
+    </p>
+  </div>
+
+  <!-- ---------------- LES DOUZE MARQUES ----------------
+       Chaque vignette porte son fond ET son logotype dans l'image, comme les
+       icônes de carte de l'accueil : aucune couleur de marque n'est redite en
+       CSS, et rien ne vient s'ajouter à la palette du site.
+
+       Un `group` et non un `data-reveal` simple : la cascade va jusqu'à douze
+       depuis cette grille, c'est elle qui a fait allonger l'échelle des retards
+       dans le CSS. -->
+  <div class="proj-wrap">
+    <ul class="jm-brands" data-reveal="group"
+        data-viewer="Les marques du groupe" aria-label="Douze marques du groupe">
+      <li><img src="assets/jm/marques/maison-du-porno.webp" width="938" height="492" loading="lazy" decoding="async" alt="Logotype de La Maison du Porno."></li>
+      <li><img src="assets/jm/marques/illicoporno.webp" width="938" height="492" loading="lazy" decoding="async" alt="Logotype d’IllicoPorno."></li>
+      <li><img src="assets/jm/marques/colmax.webp" width="938" height="492" loading="lazy" decoding="async" alt="Logotype de Colmax."></li>
+      <li><img src="assets/jm/marques/elite.webp" width="938" height="492" loading="lazy" decoding="async" alt="Logotype de Jacquie &amp; Michel Élite."></li>
+      <li><img src="assets/jm/marques/jmtv.webp" width="938" height="492" loading="lazy" decoding="async" alt="Logotype de Jacquie &amp; Michel TV."></li>
+      <li><img src="assets/jm/marques/porno-baguette.webp" width="938" height="492" loading="lazy" decoding="async" alt="Logotype de Porno Baguette."></li>
+      <li><img src="assets/jm/marques/hotvideo.webp" width="938" height="492" loading="lazy" decoding="async" alt="Logotype de Hot Video."></li>
+      <li><img src="assets/jm/marques/jmtv2.webp" width="938" height="492" loading="lazy" decoding="async" alt="Logotype de Jacquie &amp; Michel TV2."></li>
+      <li><img src="assets/jm/marques/madame-porno.webp" width="938" height="492" loading="lazy" decoding="async" alt="Logotype de Madame Porno."></li>
+      <li><img src="assets/jm/marques/pornudeo.webp" width="938" height="492" loading="lazy" decoding="async" alt="Logotype de Pornudeo."></li>
+      <li><img src="assets/jm/marques/pornovoisines.webp" width="938" height="492" loading="lazy" decoding="async" alt="Logotype de PornoVoisines."></li>
+      <li><img src="assets/jm/marques/tyjam.webp" width="938" height="492" loading="lazy" decoding="async" alt="Logotype de Tyjam."></li>
+    </ul>
+  </div>
+
+  <!-- ---------------- LES CAMPAGNES, LA TÊTE ----------------
+       Elle annonce les DEUX blocs qui suivent, JacquIA et le collage : c'est
+       pour ça qu'elle est ici et pas ailleurs. Elle occupe très exactement le
+       vide de 601 px que le PNG de la maquette laissait entre les marques et
+       JacquIA — ce calque y était masqué à l'export, ce n'était pas un accident
+       de mise en page.
+
+       Même grille que « Douze ans dans la maison » (`.proj-intro`), et c'est
+       vérifié sur la maquette : titre à 112 px, texte à 720 px, tous deux calés
+       en haut. Ne lui donne pas une grille à elle. -->
+  <div class="proj-wrap">
+    <section class="proj-block" aria-labelledby="jm-campagnes-titre">
+      <img class="proj-block__topo" src="assets/home/about/topo-square-left.svg"
+           width="266" height="266" loading="lazy" decoding="async" alt="" aria-hidden="true"
+           data-parallax>
+
+      <div class="proj-intro">
+        <h2 class="proj-title" id="jm-campagnes-titre" data-reveal="lines">
+          <span class="proj-line"><span>Les campagnes</span></span>
+          <span class="proj-line"><span>marketing</span></span>
+        </h2>
+        <p class="proj-lede" data-reveal="soft">
+          Jacquie &amp; Michel a toujours été connu pour ses campagnes marketing
+          innovantes et impactantes. Le meilleur exemple&nbsp;: le fameux
+          «&nbsp;On dit merci qui&nbsp;?&nbsp;» est devenu une expression courante
+          dans la culture populaire française.
+        </p>
+      </div>
+    </section>
+  </div>
+
+  <!-- ---------------- JACQUIA ----------------
+       La bannière puis ses trois écrans, en escalier. Tout est posé en % d'un
+       cadre de 1472 × 1819 — même convention que le tas de photos de l'accueil,
+       donc le bloc se met à l'échelle d'un seul tenant.
+
+       L'ORDRE DU DOM EST L'ORDRE DE PEINTURE (tout est en `z-index: auto`) et
+       c'est aussi celui de la cascade : la bannière d'abord, les écrans ensuite,
+       de gauche à droite. Ne les réordonne pas sans le vouloir. -->
+  <!-- PAS DE `data-viewer` ICI, ET C'EST VOULU : le site de la campagne est encore
+       en ligne, donc l'ouvrir en grand dans une visionneuse serait proposer la
+       photocopie à côté de l'original. Le bouton sous la composition l'emporte,
+       et c'est le seul bloc de la page dans ce cas — les quatre autres montrent
+       des pièces qui n'existent plus qu'en image. Sans le groupe, les images
+       restent des images : ni curseur `zoom-in`, ni cible de clic, ni arrêt au
+       clavier. -->
+  <div class="proj-wrap">
+    <section class="jm-jacquia" data-reveal="group scatter"
+             aria-label="La campagne JacquIA">
+      <!-- LA BANNIÈRE EST LE LIEN, et le libellé n'apparaît qu'au survol : c'est
+           l'image entière qu'on clique, pas un bouton posé à côté d'elle.
+
+           `rel="noopener"` est obligatoire avec `target="_blank"` — sans lui la
+           page ouverte garde une référence sur celle-ci via `window.opener` — et
+           l'`aria-label` porte tout le sens, ce qui permet à la pastille d'être
+           `aria-hidden` : au lecteur d'écran, un « Voir le site » qui double le
+           libellé du lien ne dit rien de plus.
+
+           Le voile et la pastille reviennent AUSSI au clavier (`:focus-visible`)
+           et restent visibles sur un écran tactile, où il n'y a pas de survol —
+           sans ça le lien serait invisible pour qui ne peut pas pointer. -->
+      <a class="jm-jacquia__site" href="https://jacquia.com/" target="_blank" rel="noopener"
+         aria-label="Voir le site JacquIA en ligne (nouvel onglet)" data-parallax>
+        <img class="jm-jacquia__banner" src="assets/jm/jacquia/banner.webp" width="2918" height="1472" loading="lazy" decoding="async"
+             alt="La page de campagne JacquIA : « Devenez la voix-off de Jacquie &amp; Michel », sur un fond magenta, avec le bouton « Lancer le test ».">
+        <span class="jm-jacquia__veil" aria-hidden="true"></span>
+        <span class="jm-jacquia__hover" aria-hidden="true">
+          <span class="case-btn">
+            Voir le site
+            <svg class="case-btn__arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" focusable="false">
+              <path d="M1 9L9 1M9 1H2M9 1V8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+        </span>
+      </a>
+
+      <img class="jm-jacquia__phone jm-jacquia__phone--1" data-parallax src="assets/jm/jacquia/ecran-accueil.webp" width="444" height="788" loading="lazy" decoding="async"
+           alt="L’écran d’accueil de JacquIA sur téléphone : le titre de la campagne et le bouton de lancement.">
+      <img class="jm-jacquia__phone jm-jacquia__phone--2" data-parallax src="assets/jm/jacquia/ecran-enregistrement.webp" width="444" height="788" loading="lazy" decoding="async"
+           alt="L’écran d’enregistrement : « Dites très fort ON DIT MERCI QUI ?! » et un décompte.">
+      <img class="jm-jacquia__phone jm-jacquia__phone--3" data-parallax src="assets/jm/jacquia/ecran-resultat.webp" width="444" height="788" loading="lazy" decoding="async"
+           alt="L’écran de résultat : un score sur 100 et le commentaire du jury.">
+    </section>
+  </div>
+
+  <!-- Rien entre JacquIA et le collage : ce texte-là est REMONTÉ dans la tête
+       « Les campagnes marketing », juste avant JacquIA. Il y était à l'identique,
+       au mot près, et le laisser aux deux endroits l'aurait fait lire deux fois
+       à 1 500 px d'écart. -->
+
+  <!-- ---------------- LE COLLAGE ----------------
+       Trois pièces qui se CHEVAUCHENT — le Bitomètre passe sur l'affiche des
+       Swame Awards. Garde les recouvrements : posées côte à côte, elles se
+       liraient comme trois visuels perdus au milieu du cadre. -->
+  <div class="proj-wrap">
+    <section class="jm-social" data-reveal="group scatter"
+             data-viewer="Les campagnes" aria-label="Trois campagnes">
+      <img class="jm-social__piece jm-social__piece--awards" data-parallax src="assets/jm/campagnes/swame-awards.webp" width="548" height="771" loading="lazy" decoding="async"
+           alt="Affiche des Swame Awards 2024 : un lettrage graffiti et 20 000 € à gagner.">
+      <img class="jm-social__piece jm-social__piece--halloween" data-parallax src="assets/jm/campagnes/halloween.webp" width="545" height="527" loading="lazy" decoding="async"
+           alt="Visuel d’Halloween : un fantôme en drap blanc dans un lit, « Joyeux Halloween ».">
+      <img class="jm-social__piece jm-social__piece--bitometre" data-parallax src="assets/jm/campagnes/bitometre.webp" width="631" height="426" loading="lazy" decoding="async"
+           alt="Visuel du Bitomètre : une règle géante à table, « la règle qui va clore les débats ».">
+    </section>
+  </div>
+
+  <!-- ---------------- LA FRESQUE DES VINGT ANS ----------------
+       Pleine largeur, et l'inclinaison des trois panneaux est CUITE dans
+       l'image : ne la refais pas en CSS. -->
+  <section class="proj-band jm-frise" data-viewer="Les vingt ans de Jacquie &amp; Michel"
+           aria-label="La page anniversaire des vingt ans">
+    <img class="proj-band__img" src="assets/jm/frise/vingt-ans.webp" width="3022" height="1909" loading="lazy" decoding="async"
+         data-reveal="zoom" data-parallax
+         alt="La page anniversaire des vingt ans de Jacquie &amp; Michel, présentée en trois panneaux inclinés : une frise chronologique sur fond bleu, ponctuée d’anecdotes, de captures d’époque et de vignettes découpées.">
+  </section>
+
+  <nav class="case-foot" data-reveal aria-label="Navigation entre projets">
+    <a class="case-foot__back" href="index.html#projets">
+      <svg class="case-back__arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true" focusable="false">
+        <path d="M9 5H1M5 1L1 5L5 9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Tous les projets
+    </a>
+
+    <a class="case-foot__next" href="projet-beepz.html">Projet suivant — Beepz</a>
+  </nav>
+
+</main>
+
+<footer class="site-footer">
+  <div class="site-footer__inner">
+    <a class="logo" href="index.html">
+      <span>Waldmann</span>
+      <span>Vincent</span>
+    </a>
+
+    <nav class="site-footer__nav">
+      <a href="index.html#a-propos">À propos</a>
+      <a href="index.html#parcours">Parcours</a>
+      <a href="index.html#projets">Projets</a>
+      <a href="index.html#contact">Contact</a>
+    </nav>
+
+    <p class="site-footer__note">© 2026 — écrit à la main, sans framework.</p>
+  </div>
+</footer>
+
+<script src="js/main.js"></script>
+
+</body>
+</html>

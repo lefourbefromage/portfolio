@@ -33,7 +33,7 @@ color = "#22345f"
 cs = ax.contour(field, levels=levels, colors=color, linewidths=1.1, antialiased=True)
 
 fig.savefig(
-    REPO / "assets" / "hero-topo-raw.svg",
+    REPO / "assets" / "home" / "src" / "hero-topo-raw.svg",
     transparent=True,
     dpi=100,
 )

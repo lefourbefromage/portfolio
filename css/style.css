@@ -88,6 +88,75 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* ==========================================================================
+   LES TRANSITIONS DE PAGE
+
+   Le site est multi-pages, sans routeur et sans étape de build : la transition
+   est donc celle du NAVIGATEUR, `@view-transition`, et pas un chargement
+   scripté. Trois conséquences, toutes voulues :
+
+     — rien n'est intercepté. Le clic reste une navigation ordinaire, et le
+       bouton Précédent, l'ouverture dans un nouvel onglet et le rechargement
+       marchent exactement comme avant ;
+     — les IIFE de `main.js` n'ont rien à réinitialiser, puisque le document est
+       bel et bien remplacé. C'est tout le coût qu'aurait eu un remplacement de
+       `<main>` en fetch, et il est évité ;
+     — sur un navigateur qui ne connaît pas la règle, la navigation est celle
+       d'hier : pas de transition, et rien de cassé. Il n'y a donc AUCUN repli à
+       écrire, et surtout pas une seconde mécanique à tenir d'accord.
+
+   Elle ne joue qu'entre DEUX pages qui la déclarent toutes les deux. Les quatre
+   pages du site partageant cette feuille de style, c'est acquis pour elles et
+   pour elles seules : un lien sortant ne transitionne pas.
+
+   LE MOUVEMENT EST LE MÊME PARTOUT — accueil → projet, projet → projet, retour
+   — et c'est une consigne : un seul vocabulaire de mouvement, rien à tenir page
+   par page. Il reprend celui des révélations des pages projet, ça monte de
+   quelques pixels et ça se fond, sur la même courbe `--ease-out`. */
+@view-transition { navigation: auto; }
+
+/* LES DEUX ANIMATIONS ONT LA MÊME DURÉE, et ce n'est pas une coquetterie : la
+   page sortante garde son opacité PLEINE du début à la fin — elle ne fait que
+   monter — et c'est l'entrante qui la recouvre en se révélant par-dessus. Si la
+   sortante s'effaçait la première, on verrait au travers pendant quelques
+   images, sur un site dont le fond est d'encre de bout en bout.
+
+   D'où aussi le retour à `mix-blend-mode: normal` : le `plus-lighter` posé par
+   défaut est fait pour un fondu croisé dont les deux opacités se complètent
+   exactement, ce qui n'est pas le cas ici. Il éclaircirait le milieu du
+   mouvement. */
+::view-transition-old(root),
+::view-transition-new(root) { mix-blend-mode: normal; }
+
+::view-transition-old(root) { animation: page-leave 360ms var(--ease-out) both; }
+::view-transition-new(root) { animation: page-enter 360ms var(--ease-out) both; }
+
+/* `transform` ET NON `translate`, à l'inverse du reste du site. Ailleurs les deux
+   propriétés sont séparées exprès, parce qu'une pièce peut porter une rotation de
+   repos, une révélation et un parallaxe à la fois. Ici il n'y a rien à composer :
+   le morphing de boîte vit sur `::view-transition-group`, pas sur ces deux-là, qui
+   n'ont donc aucune transformation à eux. C'est aussi la forme documentée. */
+@keyframes page-leave { to   { transform: translateY(-12px); } }
+@keyframes page-enter { from { opacity: 0; transform: translateY(16px); } }
+
+/* En mouvement réduit, la navigation redevient un remplacement net. On neutralise
+   les ANIMATIONS et non la règle `@view-transition` elle-même : la transition a
+   bien lieu, elle ne dure rien — c'est le seul moyen de ne pas laisser un
+   navigateur à moitié dans l'un et à moitié dans l'autre. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) { animation: none !important; }
+}
+
+/* L'ARRIVÉE NE DÉFILE PAS SOUS LES YEUX. `scroll-behavior: smooth` vaut aussi
+   pour le saut vers l'ancre d'une NAVIGATION, et pas seulement pour le clic sur
+   une ancre interne : revenir sur `index.html#projets` faisait descendre la page
+   en douceur… à travers les 717 vh du parcours. La classe est posée par le
+   script en tête d'`index.html` et retirée au `load`, donc elle ne couvre que
+   l'arrivée — les ancres du header gardent leur défilement lissé. */
+html.is-arriving { scroll-behavior: auto; }
+
 /* ---------- Header ---------- */
 .site-header {
   display: flex;
@@ -629,7 +698,7 @@ body {
      rend la déformation possible : le SVG est étiré différemment en largeur et en
      hauteur (jusqu'à 3,8x d'écart en mobile), et sans ça les bouts ronds partiraient
      en biseaux et les tirets seraient écrasés d'un côté. Là, ils restent nets.
-     Les valeurs sont celles de `separator.svg`. */
+     Les valeurs sont celles de `src/home/separator.svg`. */
   vector-effect: non-scaling-stroke;
   stroke-width: 5;
   stroke-dasharray: 10 10;
@@ -673,7 +742,7 @@ body {
   top: -2800px;
   width: 12800px;
   height: 12800px;
-  background: url("../assets/trail-relief.svg") 0 0 / 1400px 1400px repeat;
+  background: url("../assets/home/trail/relief.svg") 0 0 / 1400px 1400px repeat;
 }
 
 /* --- the route: dashed grey ahead, solid green behind --- */
@@ -1176,95 +1245,198 @@ body {
 }
 
 /* ---------- Projets ---------- */
+/* Trois cartes à gauche, UN emplacement à droite où les trois groupements se
+   superposent : survoler une carte fait entrer le sien.
+
+   La mise en page tient à DEUX choses, et c'est ce qui permet aux versions
+   desktop et mobile de sortir de la même structure. Chaque groupement vit dans
+   le `<li>` de sa carte — pas dans un conteneur à part qu'il faudrait tenir
+   d'accord — et `display: contents` efface la boîte du `<li>` sans lui retirer
+   sa classe : les cartes se suivent donc en colonne, et les groupements sont
+   posés par-dessus la moitié droite.
+
+   Le `::before` flottant est ce qui DONNE sa hauteur à la section. Les trois
+   groupements étant absolus, ils n'en donnent aucune ; le flotteur en réserve
+   exactement autant en `padding-bottom` — un pourcentage se résolvant sur la
+   LARGEUR du conteneur, 53 % × 640/780 = 43,5 % rend précisément la hauteur du
+   cadre de référence, à toute largeur d'écran et sans un seul nombre en dur.
+   D'où le `flow-root` : sans lui la hauteur d'un flotteur ne compte pas.
+
+   En mobile tout ça tombe (voir la requête média) : les cartes s'empilent pleine
+   largeur et les groupements sont MASQUÉS — sans survol, ils n'ont plus rien à
+   répondre. Voir la note de la requête média. */
 .projects {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(18px, 2vw, 32px);
-  margin-top: clamp(36px, 6vh, 68px);
+  position: relative;
+  display: flow-root;
+  margin: clamp(36px, 6vh, 68px) 0 0;
+  padding: 0;
+  list-style: none;
 }
 
-.project {
-  padding: clamp(16px, 1.4vw, 22px);
-  border: 1px solid rgb(var(--cream-rgb) / .12);
-  border-radius: 18px;
-  background: rgb(var(--navy-rgb) / .38);
+.projects::before {
+  content: '';
+  float: right;
+  width: 53%;
+  padding-bottom: 43.5%;
 }
 
-.project--todo {
-  border-style: dashed;
-  background: rgb(var(--navy-rgb) / .2);
+.projects__item { display: contents; }
+
+/* ---- La carte ---- */
+.pcard {
+  width: 45%;
+  display: flex;
+  align-items: center;
+  gap: clamp(14px, 1.5vw, 24px);
+  margin-bottom: clamp(10px, 1vw, 16px);
+  padding: clamp(13px, 1.3vw, 20px);
+  border: 1px solid rgb(var(--cream-rgb) / .1);
+  border-radius: clamp(14px, 1.3vw, 20px);
+  background: rgb(var(--navy-rgb) / .34);
+  color: inherit;
+  text-decoration: none;
+  /* Le survol change trois choses d'un coup ; à 220 ms `ease` suffit, la courbe
+     ne se voit pas — même règle que les autres survols du site. */
+  transition: border-color .22s ease, background-color .22s ease, scale .28s var(--ease-out);
 }
 
-.project__frame {
-  display: grid;
-  place-items: center;
-  aspect-ratio: 16 / 10;
-  margin-bottom: 20px;
-  border: 1px dashed rgb(var(--cream-rgb) / .18);
-  border-radius: 12px;
-  background: rgb(var(--ink-rgb) / .5);
+.projects__item:last-child .pcard { margin-bottom: 0; }
+
+a.pcard:hover { border-color: rgb(var(--cream-rgb) / .28); }
+
+/* La carte active se détache par son filet et son fond, et prend juste ce qu'il
+   faut d'échelle pour dépasser des deux autres. Elle grandit sans pousser ses
+   voisines : `scale` ne recalcule pas la mise en page. */
+.projects__item.is-active .pcard {
+  border-color: rgb(var(--cream-rgb) / .5);
+  background: rgb(var(--navy-rgb) / .62);
+  scale: 1.035;
 }
 
-.project__frame span {
+/* Chaque icône porte son fond de marque ET ses coins arrondis dans le PNG — pas
+   de couleur de logo à redire ici, donc rien qui vienne s'ajouter à la palette
+   du site. Il ne reste qu'une boîte carrée à dimensionner. */
+.pcard__icon {
+  flex: none;
+  display: block;
+  width: clamp(58px, 7.2vw, 110px);
+  height: auto;
+  aspect-ratio: 1;
+}
+
+.pcard__text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+
+.pcard__name {
   font-family: var(--font-display);
-  font-size: clamp(11px, .9vw, 13px);
-  letter-spacing: .16em;
-  text-transform: uppercase;
-  color: rgb(var(--cream-rgb) / .45);
-}
-
-.project__index {
-  font-family: var(--font-display);
-  margin: 0;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: .18em;
-  color: var(--green);
-}
-
-.project__title {
-  font-family: var(--font-display);
-  margin: 6px 0 0;
-  font-size: clamp(20px, 1.8vw, 26px);
+  font-size: clamp(19px, 2.05vw, 29px);
   font-weight: 700;
-  line-height: 1.15;
+  line-height: 1.2;
   color: var(--cream);
 }
 
-.project__meta {
-  margin: 6px 0 0;
-  font-size: 13px;
-  color: rgb(var(--cream-rgb) / .58);
+/* Cinquième usage du Garamond italique, demandé par la maquette : la ligne de
+   sous-titre de chaque carte. Son œil est plus petit que celui d'Inter, d'où la
+   taille légèrement relevée — même compensation que `.about__hl`. */
+.pcard__tag {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: clamp(15px, 1.65vw, 24px);
+  line-height: 1.3;
+  color: rgb(var(--cream-rgb) / .8);
 }
 
-.project__dot { margin: 0 7px; color: rgb(var(--cream-rgb) / .38); }
+.projects__item.is-active .pcard__tag { color: var(--cream); }
 
-.project__desc {
-  margin: 12px 0 0;
-  font-size: 15px;
-  line-height: 1.6;
-  color: rgb(var(--cream-rgb) / .66);
+/* ---- Le groupement de visuels ----
+   Même convention que le hero et le tas de photos : un cadre de référence, et
+   tout dedans posé en POURCENTAGE de ce cadre. Le calage tient donc à toute
+   largeur d'écran sans une ligne de JS. Le cadre vaut 780 × 640. */
+.pcluster {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 53%;
+  aspect-ratio: 780 / 640;
+  visibility: hidden;
+  pointer-events: none;
+  /* Le groupement qui part s'efface d'abord ; on ne le retire du rendu qu'une
+     fois ses pièces fondues, sinon il disparaîtrait d'un coup. */
+  transition: visibility 0s linear .45s;
 }
 
-/* La carte devient un lien dès que sa page projet existe. `<a>` et non `<article>` :
-   toute la carte est cliquable, plutôt qu'un lien perdu dans un coin. */
-a.project { display: block; transition: border-color .2s ease, background-color .2s ease; }
+.projects__item.is-active .pcluster { visibility: visible; transition-delay: 0s; }
 
-a.project:hover {
-  border-color: rgb(var(--cream-rgb) / .3);
-  background: rgb(var(--navy-rgb) / .58);
+.pcluster__item {
+  position: absolute;
+  height: auto;
+  opacity: 0;
+  /* Au repos une pièce ne porte que sa rotation ; l'entrée ajoute son décalage,
+     son échelle et sa rotation propres. Les deux états sont écrits en dur — rien
+     n'est interpolé au travers d'une variable, qui changerait d'un coup. */
+  translate: var(--out-x, 0) var(--out-y, 0);
+  rotate: calc(var(--rot, 0deg) + var(--out-r, 0deg));
+  scale: var(--out-s, 1);
+  transition:
+    opacity .42s var(--ease-out),
+    translate .62s var(--ease-out),
+    rotate .62s var(--ease-out),
+    scale .62s var(--ease-out);
 }
 
-.project__more {
-  font-family: var(--font-display);
-  display: inline-flex;
-  align-items: center;
-  gap: .6em;
-  margin: 16px 0 0;
-  font-size: clamp(12px, 1vw, 14px);
-  font-weight: 600;
-  letter-spacing: .04em;
-  color: var(--pink);
+.projects__item.is-active .pcluster__item {
+  opacity: 1;
+  translate: 0 0;
+  rotate: var(--rot, 0deg);
+  scale: 1;
+  /* Le décalage n'appartient qu'à l'ENTRÉE : les pièces qui partent s'effacent
+     ensemble, sinon la sortie durerait plus longtemps que l'arrivée. */
+  transition-delay: var(--d, 0ms);
+}
+
+/* --- Jacquie & Michel : l'étalement ---
+   Les quatre pièces partent ramassées vers le centre et s'écartent à leur place,
+   de l'arrière vers l'avant.
+
+   Le groupe est SERRÉ : la tablette mord sur le bord droit de la photo au lieu de
+   s'en écarter, et le carton du logo recouvre son coin bas. Une version antérieure
+   les laissait à distance, tablette comprise, plus grande et repoussée dans le
+   coin — le groupe couvrait alors 94 % de la largeur du cadre contre 75 % ici, et
+   se lisait comme trois visuels espacés plutôt que comme une pile. La tablette a
+   été réduite dans le même mouvement : c'est son rapport à la photo qui compte
+   (1,43, contre 1,86 avant), pas sa taille absolue. */
+.pcluster__item--jm-ipad   { left: 41.3%; top: 16.1%; width: 46.2%; z-index: 1; --out-x: -40px; --out-y: 34px;  --out-r: 6deg;  --out-s: .93; --d: 0ms; }
+.pcluster__item--jm-tshirt { left: 12.5%; top: 11.2%; width: 32.3%; z-index: 2; --out-x: 46px;  --out-y: 16px;  --out-r: -5deg; --out-s: .93; --d: 70ms; }
+.pcluster__item--jm-logo   { left: 47.2%; top: 47.3%; width: 32.3%; z-index: 3; --rot: 6deg; --out-x: -34px; --out-y: -22px; --out-r: 9deg; --out-s: .9; --d: 140ms; }
+.pcluster__item--jm-toy    { left: 24.8%; top: 45.9%; width: 32.3%; z-index: 4; --out-x: 10px;  --out-y: -28px; --out-r: -8deg; --out-s: .9;  --d: 210ms; }
+
+/* --- Beepz : l'arrivée par la droite ---
+   La voiture entre par le bord droit ; le téléphone et la photo montent. */
+.pcluster__item--bz-phone { left: 3.0%; top: 5.4%; width: 23.9%; z-index: 1; --rot: -3deg; --out-y: 40px; --d: 0ms; }
+.pcluster__item--bz-photo { left: 21.2%; top: 11.5%; width: 42.6%; z-index: 2; --rot: -2deg; --out-y: 54px; --out-r: -6deg; --d: 90ms; }
+.pcluster__item--bz-car   { left: 46.1%; top: 51.9%; width: 50.9%; z-index: 3; --out-x: 130px; --d: 170ms; }
+
+/* --- Jimizz : le décollage ---
+   Les trois pièces maîtresses se CHEVAUCHENT et forment une seule masse — la
+   fusée cabrée, la carte de portefeuille derrière elle, le graphe posé par-dessus
+   — et les pièces flottent autour, deux nettes au fond, deux floues devant. Une
+   version antérieure les avait posées côte à côte, sans contact : la composition
+   se lisait comme quatre éléments perdus au lieu d'un décollage.
+
+   La fusée est la seule pièce du site à porter une rotation à ce point marquée ;
+   elle vit dans `--rot` comme partout ailleurs, jamais dans un `transform`. */
+.pcluster__item--jz-coin1  { left: 0.0%;  top: 6.4%;  width: 18.3%; z-index: 1; --out-y: 60px; --d: 60ms; }
+.pcluster__item--jz-coin2  { left: 7.1%;  top: 49.2%; width: 30.0%; z-index: 1; --out-y: 70px; --d: 100ms; }
+.pcluster__item--jz-rocket { left: 10.3%; top: 5.8%;  width: 26.0%; z-index: 2; --rot: 22deg; --out-y: 90px; --out-s: .94; --d: 0ms; }
+.pcluster__item--jz-wallet { left: 39.7%; top: 14.8%; width: 44.5%; z-index: 3; --rot: -5deg; --out-s: .86; --out-r: -6deg; --d: 120ms; }
+.pcluster__item--jz-stats  { left: 22.4%; top: 46.9%; width: 46.3%; z-index: 4; --rot: -3deg; --out-s: .86; --out-r: 5deg; --d: 200ms; }
+.pcluster__item--jz-coin3  { left: 29.5%; top: 59.4%; width: 36.8%; z-index: 5; --out-y: 80px; --d: 140ms; }
+.pcluster__item--jz-coin4  { left: 58.0%; top: 39.1%; width: 44.0%; z-index: 5; --out-y: 76px; --d: 180ms; }
+
+/* Sans mouvement, on ne joue rien : les pièces sont posées, et le changement de
+   carte est instantané. Même règle que le tas de photos de l'accueil. */
+@media (prefers-reduced-motion: reduce) {
+  .pcard, .pcluster, .pcluster__item { transition: none; }
+  .projects__item.is-active .pcard { scale: 1; }
 }
 
 /* ---------- À propos ---------- */
@@ -1440,7 +1612,30 @@ a.project:hover {
   .pile { padding-inline: 0; --bite: 20.9%; }
   .pile__scene { width: 170%; margin-left: -35%; }
 
-  .projects { grid-template-columns: minmax(0, 1fr); }
+  /* Plus de colonnes, donc plus de flotteur à réserver : les trois cartes
+     s'empilent, pleine largeur. Le survol n'existant pas ici, l'état actif ne
+     pilote plus rien. */
+  .projects { display: block; }
+  .projects::before { content: none; }
+  .pcard { width: auto; }
+  .projects__item.is-active .pcard { scale: 1; }
+
+  /* LES GROUPEMENTS SONT MASQUÉS EN MOBILE, et c'est une consigne de Vincent.
+     Ils sont restés longtemps affichés ici, chacun en clair sous sa carte : la
+     mise en page tenait, mais elle ne racontait plus la même chose. En desktop
+     le groupement est la RÉPONSE au survol — on désigne une carte, son collage
+     entre. Sans survol il n'y a plus de question, et trois collages empilés ne
+     sont qu'un mur d'images de plus entre le visiteur et les trois liens qu'il
+     est venu chercher. Les cartes suffisent, et les pages projet montrent les
+     visuels en grand.
+
+     Ça allège aussi la page d'autant : les quatorze `.webp` des groupements sont
+     en `loading="lazy"`, donc un écran étroit ne les télécharge plus du tout.
+
+     `display: none` et pas `visibility: hidden` : il ne doit rien rester à
+     réserver. Les groupements sont déjà `aria-hidden`, donc rien ne change pour
+     un lecteur d'écran. */
+  .pcluster { display: none; }
   .site-footer__inner { justify-content: flex-start; }
 
   /* Pas de cadre fixe en dessous : le panneau reprend une hauteur libre et le
@@ -1579,15 +1774,18 @@ a.project:hover {
    Le problème que cette page résout n'est pas décoratif : un projet qui couvre
    plusieurs livrables (ici un design système, une landing page et des emails)
    se lit comme trois mini-projets côte à côte si on les aligne. La page les
-   tient ensemble par trois moyens, et ce sont eux qu'il faut préserver :
+   tient ensemble par deux moyens, et ce sont eux qu'il faut préserver :
 
      1. `.case-pivot` énonce le fil rouge AVANT les volets — le socle d'abord,
         les terrains ensuite ;
      2. les trois `.versant` partagent exactement la même grammaire interne
         (numéro, enjeu, texte, visuel, notes) — c'est la répétition qui les
-        fait lire comme un seul récit ;
-     3. `.versant__inherit` rend la dépendance VISIBLE sur les volets 02 et 03 :
-        ils citent ce qu'ils reprennent du socle au lieu de l'affirmer.
+        fait lire comme un seul récit.
+
+   Il y en a eu un troisième, `.versant__inherit` : une bande qui listait en
+   pastilles ce que chaque terrain reprenait au socle. Retirée à la demande de
+   Vincent. Si le lien doit redevenir explicite, il vaut mieux l'écrire dans le
+   texte du volet que de remonter un bandeau.
 
    Fond sombre de bout en bout, comme le reste du site. Le ciel du parcours
    (`--trail-sky`) et la tuile de relief ne reviennent que sur la couverture. */
@@ -1614,7 +1812,7 @@ a.project:hover {
   position: absolute;
   inset: 0;
   opacity: .22;
-  background: url("../assets/trail-relief.svg") 0 0 / 1400px 1400px repeat;
+  background: url("../assets/home/trail/relief.svg") 0 0 / 1400px 1400px repeat;
   -webkit-mask-image: linear-gradient(to bottom, rgb(0 0 0 / 1) 30%, rgb(0 0 0 / 0) 100%);
           mask-image: linear-gradient(to bottom, rgb(0 0 0 / 1) 30%, rgb(0 0 0 / 0) 100%);
 }
@@ -1687,11 +1885,19 @@ a.project:hover {
   align-items: center;
 }
 
+/* La même couverture, mais sans plaques : une seule colonne, et le texte gardé
+   à une largeur de lecture au lieu de s'étaler sur les 1512 px du cadre. C'est
+   l'état de `projet-jm.html` tant que ses visuels n'existent pas — retire le
+   modificateur dans le HTML le jour où les trois plaques arrivent, il n'y a rien
+   d'autre à défaire. */
+.case-hero__grid--solo { grid-template-columns: minmax(0, 1fr); }
+.case-hero__grid--solo .case-hero__text { max-width: 62ch; }
+
 /* Le cadre de référence des plaques, comme `.pile__scene` de l'accueil : elles sont
    posées en % de CE cadre, donc la composition se met à l'échelle d'un seul bloc. */
 .case-hero__plates {
   position: relative;
-  aspect-ratio: 620 / 545;
+  aspect-ratio: 620 / 500;
 }
 
 /* La rotation de repos vit dans `--rot` de chaque plaque, jamais dans un `transform`
@@ -1707,7 +1913,7 @@ a.project:hover {
 /* L'empilement est décidé ici, pas par l'ordre du DOM : la voiture au fond, la photo
    par-dessus, la fiche App Store devant. */
 .plate--car  { z-index: 1; left:  0%; top:  4%; width: 56%; --rot: -4deg; }
-.plate--life { z-index: 2; left: 22%; top: 55%; width: 50%; --rot:  5deg; }
+.plate--weekly { z-index: 2; left: 6%; top: 63%; width: 78%; --rot: -3deg; }
 .plate--app  { z-index: 3; left: 50%; top:  0%; width: 44%; --rot:  3deg; }
 
 .case-hero__title {
@@ -1748,7 +1954,7 @@ a.project:hover {
 
 .topo__cell--wide { flex: 2 1 280px; }
 
-/* Même convention que `.project--todo` : le pointillé dit « pas encore rempli ».
+/* Même convention que la pastille `.todo` : le pointillé dit « pas encore rempli ».
    À retirer quand les quatre cases portent de vraies valeurs. */
 .topo--todo .topo__cell { border-top-style: dashed; }
 .topo--todo .topo__value { color: rgb(var(--cream-rgb) / .45); }
@@ -1834,7 +2040,9 @@ a.project:hover {
 /* ---------- Une section à deux colonnes : le texte, et son illustration ---------- */
 .case-split {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, .62fr);
+  /* 60 % de texte, 40 % d'image : les deux colonnes se partagent l'espace restant
+     une fois la gouttière retirée. */
+  grid-template-columns: minmax(0, 60fr) minmax(0, 40fr);
   gap: clamp(28px, 4vw, 72px);
   align-items: start;
   /* L'écart sous la tête de section vivait sur `.case-body` ; il remonte ici, sinon
@@ -1849,61 +2057,18 @@ a.project:hover {
 
 .case-aside { margin: 0; }
 
-.case-aside__caption {
-  margin: 16px 0 0;
-  font-size: 14px;
-  line-height: 1.55;
-  color: rgb(var(--cream-rgb) / .55);
+/* --- L'image de la colonne de droite --- */
+/* Même traitement que les visuels sombres des volets : filet, ombre, bord à bord.
+   Pas de passe-partout crème, la photo porte déjà son propre fond. */
+.case-aside__shot {
+  overflow: hidden;
+  border: 1px solid rgb(var(--cream-rgb) / .16);
+  border-radius: 14px;
+  background: rgb(var(--ink-rgb) / .5);
+  box-shadow: 0 18px 44px rgb(var(--ink-rgb) / .34);
 }
 
-/* --- Le schéma des trois surfaces --- */
-/* Il illustre le dernier paragraphe et rien d'autre : chaque surface est dessinée
-   dans un langage différent — trait plein, tireté, pointillé — avec un accent de
-   couleur différent. C'est l'envers du fil rouge : le trait qui les relie est ici
-   rompu, et il devient continu à la section suivante. Tout est dans la palette. */
-.gap-diagram {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
-.gap-frame {
-  fill: none;
-  stroke: rgb(var(--cream-rgb) / .55);
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.gap-frame--dashed { stroke-dasharray: 7 5; stroke: rgb(var(--cream-rgb) / .45); }
-.gap-frame--dotted { stroke-dasharray: 1 6;  stroke: rgb(var(--cream-rgb) / .38); }
-
-.gap-bar { fill: rgb(var(--cream-rgb) / .16); }
-.gap-dot { fill: rgb(var(--cream-rgb) / .3); }
-
-/* Trois accents différents pour trois surfaces qui ne parlent pas la même langue. */
-.gap-accent-green { fill: var(--green); }
-.gap-accent-pink { fill: var(--pink); }
-
-/* Le fil rompu : des moignons, et le vide entre eux. */
-.gap-thread {
-  fill: none;
-  stroke: rgb(var(--cream-rgb) / .3);
-  stroke-width: 2;
-  stroke-dasharray: 5 5;
-  stroke-linecap: round;
-}
-
-.gap-break { fill: rgb(var(--cream-rgb) / .3); }
-
-.gap-label {
-  font-family: var(--font-display);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: .16em;
-  text-transform: uppercase;
-  fill: rgb(var(--cream-rgb) / .5);
-}
+.case-aside__shot img { width: 100%; border-radius: 13px; }
 
 /* ---------- Le fil rouge ----------
    Le pivot de la page : il dit pourquoi les trois volets n'en font qu'un, AVANT
@@ -1924,7 +2089,7 @@ a.project:hover {
   position: absolute;
   inset: 0;
   opacity: .14;
-  background: url("../assets/trail-relief.svg") 0 0 / 1400px 1400px repeat;
+  background: url("../assets/home/trail/relief.svg") 0 0 / 1400px 1400px repeat;
   -webkit-mask-image: linear-gradient(to bottom, rgb(0 0 0 / 0) 0%, rgb(0 0 0 / 1) 30%, rgb(0 0 0 / 1) 66%, rgb(0 0 0 / 0) 100%);
           mask-image: linear-gradient(to bottom, rgb(0 0 0 / 0) 0%, rgb(0 0 0 / 1) 30%, rgb(0 0 0 / 1) 66%, rgb(0 0 0 / 0) 100%);
 }
@@ -1959,7 +2124,7 @@ a.project:hover {
 /* ---------- Le sommaire : trois balises ---------- */
 .case-toc {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: clamp(12px, 1.4vw, 20px);
   margin-top: clamp(34px, 5vh, 60px);
 }
@@ -1981,10 +2146,10 @@ a.project:hover {
 }
 
 .case-toc__num {
-  font-family: var(--font-display);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: .18em;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 15px;
+  font-weight: 700;
   color: var(--green);
 }
 
@@ -1997,8 +2162,10 @@ a.project:hover {
 }
 
 .case-toc__role {
-  font-size: 13px;
-  color: rgb(var(--cream-rgb) / .55);
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 15px;
+  color: rgb(var(--cream-rgb) / .6);
 }
 
 /* ---------- Les trois volets ----------
@@ -2049,22 +2216,32 @@ a.project:hover {
   gap: 0 14px;
 }
 
+/* Le prétitre est en Garamond italique, numéro en vert — c'est exactement la
+   grammaire des œils de section de l'accueil (« 01. Sur les sentiers »), appliquée
+   aux volets d'une page projet.
+
+   Deux conséquences à ne pas défaire : l'espacement de lettres SAUTE, un italique
+   humaniste espacé se disloque ; et les tailles montent d'environ 15 %, parce que
+   l'œil de Garamond est plus petit que celui d'Inter — même compensation que le
+   `1.08em` de `.about__hl`. Sans elle, le prétitre paraît en retrait au lieu d'être
+   à la même hauteur apparente. */
 .versant__num {
   order: 0;
-  font-family: var(--font-display);
+  font-family: var(--font-serif);
+  font-style: italic;
   margin: 0;
-  font-size: clamp(13px, 1.1vw, 16px);
-  font-weight: 600;
-  letter-spacing: .18em;
+  font-size: clamp(15px, 1.25vw, 18px);
+  font-weight: 700;
   color: var(--green);
 }
 
 .versant__role {
   order: 1;
+  font-family: var(--font-serif);
+  font-style: italic;
   margin: 0;
-  font-size: clamp(12px, .95vw, 14px);
-  letter-spacing: .04em;
-  color: rgb(var(--cream-rgb) / .55);
+  font-size: clamp(14px, 1.15vw, 17px);
+  color: rgb(var(--cream-rgb) / .6);
 }
 
 .versant__title {
@@ -2101,41 +2278,6 @@ a.project:hover {
   color: var(--pink);
 }
 
-/* La bande d'héritage — le mécanisme de cohérence de la page. Sur les volets 02
-   et 03 seulement : ils citent ce qu'ils reprennent du socle, ce qui rend la
-   dépendance lisible au lieu de la laisser à la charge du lecteur. */
-.versant__inherit {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 12px;
-  margin: clamp(20px, 3vh, 30px) 0 0;
-  padding: 14px clamp(14px, 1.4vw, 20px);
-  border: 1px dashed rgb(var(--cream-rgb) / .2);
-  border-radius: 14px;
-  background: rgb(var(--navy-rgb) / .28);
-}
-
-.versant__inherit-label {
-  font-family: var(--font-display);
-  margin-right: 4px;
-  font-size: clamp(10px, .85vw, 12px);
-  font-weight: 600;
-  letter-spacing: .18em;
-  text-transform: uppercase;
-  color: var(--pink);
-}
-
-.chip {
-  font-family: var(--font-display);
-  padding: .35em .85em;
-  border: 1px solid rgb(var(--cream-rgb) / .2);
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
-  color: rgb(var(--cream-rgb) / .78);
-}
-
 .versant__body {
   max-width: 68ch;
   margin: clamp(22px, 3.4vh, 36px) 0 0;
@@ -2153,7 +2295,7 @@ a.project:hover {
 
 /* ---------- Les visuels ----------
    Deux états. Tant que l'image n'est pas là, `.versant__frame` est un cadre
-   sombre en pointillés, comme `.project__frame` de l'accueil — on n'ouvre pas
+   sombre en pointillés — on n'ouvre pas
    une grande surface claire pour ne rien montrer.
 
    Quand la capture arrive, elle se pose dans `.versant__shot` : un carton crème,
@@ -2172,6 +2314,11 @@ a.project:hover {
   border-radius: 14px;
   background: rgb(var(--ink-rgb) / .5);
 }
+
+/* Le rail de l'onboarding sera une file de téléphones : large et peu haut. Son cadre
+   d'attente doit annoncer cette forme — en 16/10 pleine largeur, il devenait le plus
+   gros bloc du volet, plus gros que la carte, pour ne rien montrer. */
+.versant__frame--rail { aspect-ratio: 16 / 5; }
 
 .versant__frame span {
   padding: 0 16px;
@@ -2205,13 +2352,126 @@ a.project:hover {
 
 .versant__shot--dark img { border-radius: 13px; }
 
-.versant__figure--pair {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(12px, 1.4vw, 22px);
+/* --- La preview avant / après --- */
+/* La page refaite dessous, celle d'avant posée dessus et rognée à gauche de la
+   poignée. Il n'y a QUE le hero : les deux pages entières ont été essayées ici, dans
+   un cadre défilant, et retirées — c'était juste, et c'était trop cher en défilement
+   pour un argument qui se joue en un coup d'œil.
+
+   Deux choses à tenir si tu remplaces les images : même taille, et MÊME CADRAGE. Un
+   décalage entre les deux ferait comparer deux endroits différents, ce qui ne veut
+   rien dire. Elles font 1440 x 928 pour un cadre qui en fait ~1290 : au-delà on paie
+   des octets pour rien, en dessous ça devient mou.
+
+   Le curseur natif fait tout le travail — glissement souris et doigt, clavier, bornes,
+   annonce aux lecteurs d'écran. Le JS n'écrit qu'un nombre, `--pos` ; le trait et la
+   pastille sont des décors. Même partage que les stickers du hero et le tas de photos. */
+.wipe {
+  --pos: 50%;
+  position: relative;
+  border-radius: 13px;
+  overflow: hidden;
 }
 
-.versant__figure--pair .versant__caption { grid-column: 1 / -1; }
+.wipe__base { width: 100%; }
+
+/* `inset()` et non une largeur : la couche du dessus garde la taille du cadre, donc
+   l'image ne se met jamais à l'échelle pendant le balayage — elle se dévoile. */
+.wipe__top {
+  position: absolute;
+  inset: 0;
+  clip-path: inset(0 calc(100% - var(--pos)) 0 0);
+}
+
+.wipe__top img { width: 100%; }
+
+/* Décor pur : la prise est le curseur, qui couvre tout le cadre par-dessus. */
+.wipe__handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--pos);
+  width: 2px;
+  margin-left: -1px;
+  background: var(--cream);
+  box-shadow: 0 0 0 1px rgb(var(--ink-rgb) / .3);
+  pointer-events: none;
+}
+
+.wipe__handle::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 38px;
+  height: 38px;
+  margin: -19px 0 0 -19px;
+  border-radius: 50%;
+  border: 2px solid var(--cream);
+  background: rgb(var(--ink-rgb) / .5);
+}
+
+/* Les deux libellés, en pastille d'encre : les deux hero sont clairs, un texte crème
+   posé nu dessus ne se lirait pas. */
+/* En BAS et non en haut : posés en tête, ils recouvraient les deux logos Beepz —
+   soit précisément ce que la comparaison doit montrer. */
+.wipe__label {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  font-family: var(--font-display);
+  padding: .35em .85em;
+  border-radius: 999px;
+  background: rgb(var(--ink-rgb) / .72);
+  font-size: clamp(10px, .85vw, 12px);
+  font-weight: 600;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--cream);
+  pointer-events: none;
+}
+
+.wipe__label--after {
+  left: auto;
+  right: 12px;
+  color: var(--pink);
+}
+
+/* Le curseur couvre tout le cadre : on glisse n'importe où, pas seulement sur la
+   pastille. Il reste un vrai contrôle de formulaire, simplement invisible.
+   `pan-y` : le geste horizontal lui appartient, le vertical reste au défilement. */
+.wipe__range {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: ew-resize;
+  touch-action: pan-y;
+  -webkit-appearance: none;
+  appearance: none;
+  background: none;
+}
+
+/* Le pouce prend toute la hauteur : le geste s'attrape partout sur la colonne. */
+.wipe__range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 44px;
+  height: 999px;
+}
+
+.wipe__range::-moz-range-thumb {
+  width: 44px;
+  height: 999px;
+  border: 0;
+  border-radius: 0;
+}
+
+/* Le focus se voit sur la pastille, le curseur lui-même étant transparent. */
+.wipe__range:focus-visible ~ .wipe__handle::after {
+  box-shadow: 0 0 0 3px var(--green);
+}
 
 .versant__caption {
   margin: 14px 0 0;
@@ -2219,6 +2479,566 @@ a.project:hover {
   line-height: 1.55;
   color: rgb(var(--cream-rgb) / .55);
 }
+
+/* ---------- Les pièces secondaires ----------
+   LE BUDGET D'IMAGES D'UNE FACETTE, EN DEUX COMPOSANTS : une pièce principale en
+   grand dans `.versant__figure`, puis deux ou trois petites ici. C'est une règle
+   d'édition, pas une contrainte technique — une planche-contact de soixante
+   vignettes a été envisagée pour dire les douze ans de `projet-jm.html`, et
+   écartée au profit de peu de visuels bien choisis. N'élargis pas la bande à six
+   ou huit cases : ce serait refaire la planche par la porte de derrière.
+
+   Les cases réutilisent `.versant__frame` et `.versant__shot` sans y toucher,
+   donc l'état « visuel à venir » et l'état « image posée » sont ceux du reste de
+   la page. Le `aspect-ratio` du cadre vide passe au carré : à 16/10 sur une
+   colonne étroite, les trois cases faisaient une frise trop basse pour se lire. */
+.versant__strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(12px, 1.4vw, 22px);
+  list-style: none;
+  margin: clamp(16px, 2.4vh, 26px) 0 0;
+  padding: 0;
+}
+
+/* Deux pièces au lieu de trois, quand la troisième est passée dans le duo du
+   haut. Un modificateur explicite plutôt qu'un `auto-fit` : la bande de la
+   facette 02 en compte trois, et une règle qui s'adapte toute seule finirait par
+   décider à notre place sur l'une des deux. */
+.versant__strip--pair { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+/* Les trois cases sont une grille à colonnes égales : sans contrainte, la hauteur
+   de la rangée serait celle de la capture la plus haute — le mobile, en portrait,
+   qui ferait 967 px et écraserait les deux autres. On impose donc un cadre 4/3
+   commun, et c'est l'image qui s'y adapte.
+
+   `object-position: top` et non `center` : sur une capture de site, le haut EST le
+   sujet — en-tête, navigation, début de grille. Un recadrage centré couperait
+   justement ce qu'on veut montrer. */
+.versant__strip .versant__shot { aspect-ratio: 4 / 3; }
+
+.versant__strip .versant__shot img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+
+/* Pour une capture en portrait : entière dans la case, sur le fond du cadre,
+   plutôt que rognée en bandeau. */
+.versant__shot--contain img { object-fit: contain; }
+
+
+/* ---------- Les quatre gabarits d'email ----------
+   Une grille à deux colonnes, et les RANGÉES portent le sens : les deux accueils
+   en haut — le même gabarit retourné d'un camp à l'autre —, les deux envois
+   déclenchés en bas. C'est ce qui remplace les légendes, qui ont été retirées de
+   toute la page.
+
+   Le rognage est fait à l'export, pas ici : un email fait 801 x 3167, dont la page
+   ne montre que le haut. Servir l'image entière pour en cacher les trois quarts
+   coûterait près d'un mégaoctet pour rien. Les fichiers font donc 801 x 881, d'où
+   l'`aspect-ratio: 10 / 11` — il DOIT suivre si tu réexportes.
+
+   Ce cadrage n'est pas arbitraire : il s'arrête juste sous le bouton d'appel à
+   l'action des quatre emails, soit ce qu'un destinataire voit sans dérouler.
+
+   La grille est bornée à 880 px pour que chaque email reste autour de sa largeur
+   native (801 px) : au-delà, une capture d'email est simplement agrandie. */
+.mails {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(12px, 1.4vw, 22px);
+  max-width: 880px;
+  margin: clamp(16px, 2.4vh, 26px) auto 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mails .versant__shot { aspect-ratio: 10 / 11; }
+
+.mails .versant__shot img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+
+/* Sur une colonne, deux emails côte à côte tombent sous 150 px de large et ne se
+   lisent plus. La grille passe à une colonne, et la largeur est bornée pour que
+   l'image ne dépasse pas non plus sa taille native. */
+@media (max-width: 620px) {
+  .mails { grid-template-columns: minmax(0, 1fr); max-width: 420px; }
+}
+
+
+/* ---------- La liste des sites ----------
+   Sur la facette des sites de `projet-jm.html`, la preuve du nombre n'est pas une
+   image : « une dizaine de sites » est une affirmation, la liste nommée en est la
+   preuve, et elle tient en dix lignes là où dix captures prendraient trois écrans.
+   Deux groupes seulement — ce qui a été refait, ce qui a été créé — parce que
+   c'est la distinction qui intéresse un recruteur. */
+.worklist {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(16px, 2vw, 32px);
+  margin: clamp(28px, 4.5vh, 46px) 0 0;
+}
+
+.worklist__term {
+  font-family: var(--font-display);
+  margin: 0 0 10px;
+  font-size: clamp(10px, .85vw, 12px);
+  font-weight: 600;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--pink);
+}
+
+.worklist__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.worklist__list li {
+  padding: 9px 0;
+  border-top: 1px solid rgb(var(--cream-rgb) / .14);
+  font-size: clamp(14px, 1.1vw, 16px);
+  color: rgb(var(--cream-rgb) / .82);
+}
+
+/* ---------- La grille des visuels de réseaux sociaux ----------
+   LA SEULE GRILLE D'IMAGES DU SITE, et elle est bornée à une facette : celle où
+   l'argument est la SÉRIE et non la pièce. Ailleurs, c'est `.versant__figure`
+   plus `.versant__strip` — ne généralise pas ce composant, ce serait remettre par
+   la fenêtre la planche-contact écartée.
+
+   MULTI-COLONNES ET NON `grid`, et c'est le point : les visuels arrivent en trois
+   rapports différents (story 9/16, carré, bannière 16/6). Un `grid` alignerait les
+   rangées, donc il faudrait rogner les images ou laisser des trous sous les plus
+   courtes. `columns` laisse chaque visuel à sa forme et remplit les colonnes tout
+   seul. Le prix est connu et accepté : la lecture se fait en colonnes de haut en
+   bas, pas en rangées — invisible sur un mur d'images, à éviter partout où l'ordre
+   compte.
+
+   `columns: 4 220px` fait aussi le responsive sans media query : le navigateur
+   pose autant de colonnes de 220 px minimum qu'il peut, jusqu'à quatre. */
+.gallery {
+  /* TROIS COLONNES ET NON QUATRE, et c'est dicté par le contenu : six des vingt
+     visuels sont des bannières de boutique au rapport 3:1. Sur quatre colonnes
+     (308 px à 1440) elles tombent à 101 px de haut et leur accroche n'est plus
+     lisible ; sur trois (420 px) elles font 138 px et se tiennent. Si tu remontes
+     à quatre, relis d'abord une bannière à l'écran. */
+  columns: 3 260px;
+  column-gap: clamp(12px, 1.4vw, 22px);
+  list-style: none;
+  margin: clamp(28px, 4.5vh, 46px) 0 0;
+  padding: 0;
+}
+
+.gallery > li {
+  break-inside: avoid;
+  margin-bottom: clamp(12px, 1.4vw, 22px);
+}
+
+/* Pas le carton crème de `.versant__shot` ici : douze surfaces claires d'affilée
+   feraient basculer la page, alors que les cartes claires sont RARES sur ce site
+   et que c'est ce qui les fait ressortir. On garde donc le filet et l'ombre, et
+   l'image va bord à bord — même traitement que `.versant__shot--dark`.
+
+   Le cadre identique pour les douze est ce qui fait tenir l'hétérogénéité : des
+   visuels très différents dans une même monture se lisent comme une collection,
+   les mêmes dans douze traitements se lisent comme un fourre-tout. */
+.gallery__shot {
+  overflow: hidden;
+  border: 1px solid rgb(var(--cream-rgb) / .16);
+  border-radius: 13px;
+  background: rgb(var(--ink-rgb) / .5);
+  box-shadow: 0 14px 34px rgb(var(--ink-rgb) / .34);
+}
+
+.gallery__shot img { display: block; width: 100%; }
+
+/* ---------- La mise en scène des captures ----------
+   LES CAPTURES NE SONT PLUS POSÉES À PLAT, elles sont mises en scène : posées sur
+   le terrain du site, dans des appareils, avec de la perspective et une ombre au
+   sol. C'est une demande de Vincent, et la référence était des photos de mockup —
+   un portable posé sur du béton, un téléphone tenu à la main.
+
+   LE DÉCOR EST UNE VRAIE PHOTO DE MONTAGNE, en trois couches superposées :
+
+     1. `.stage__sky`     — la photographie, récupérée sur Unsplash et étalonnée
+                            sur la palette du site par tools/fetch_scenes.py ;
+     2. `.stage__terrain` — la tuile de relief du parcours par-dessus, à 16 %,
+                            qui laisse la signature dessinée du site sur la photo ;
+     3. `.stage__scrim`   — un dégradé d'encre qui éteint le bas du cadre, là où
+                            les appareils sont posés.
+
+   LA TROISIÈME COUCHE N'EST PAS DÉCORATIVE : sans elle, l'appareil se confond
+   avec un fond trop clair. La règle, tenue aussi dans l'étalonnage des photos,
+   est que L'ÉCRAN DOIT RESTER L'ÉLÉMENT LE PLUS CLAIR DE LA SCÈNE.
+
+   L'ordre de peinture tient à l'ordre du DOM (ciel, terrain, voile) plus un
+   `z-index: 1` sur les appareils. Ne réordonne pas ces blocs sans le vouloir.
+
+   L'APPAREIL EST DESSINÉ EN CSS, il n'y a aucune image de mockup. Un capot, une
+   tranche, une ombre portée, et l'écran est la capture elle-même. Le rendu tient
+   à trois choses : la perspective (`perspective` sur la scène, `rotateY` sur les
+   appareils), l'ombre au sol, et le fait que l'écran soit RECADRÉ en 16/10 — une
+   page entière dans un capot de portable ne ressemblerait à rien. */
+.stage {
+  position: relative;
+  overflow: clip;
+  aspect-ratio: 16 / 9;
+  border: 1px solid rgb(var(--cream-rgb) / .14);
+  border-radius: 18px;
+  background: linear-gradient(163deg, var(--navy) 0%, var(--ink) 92%);
+  /* La profondeur est douce : au-delà, les bords de l'écran se déforment et le
+     capot prend un air de rendu 3D bon marché. */
+  perspective: 1600px;
+  perspective-origin: 50% 60%;
+}
+
+/* Le terrain. Même tuile et même échelle que la couverture — c'est le sol de la
+   carte qu'on retrouve. Le masque le fait monter du bas : en haut c'est le ciel,
+   en bas la pente sur laquelle les appareils sont posés. */
+.stage__sky {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.stage__terrain {
+  position: absolute;
+  inset: 0;
+  background: url("../assets/home/trail/relief.svg") 0 0 / 1100px 1100px repeat;
+  opacity: .16;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 8%, #000 62%);
+  mask-image: linear-gradient(to bottom, transparent 8%, #000 62%);
+  pointer-events: none;
+}
+
+/* Le voile : l'encre monte du bas, là où les appareils se posent. */
+.stage__scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg,
+              rgb(var(--ink-rgb) / .18) 0%,
+              rgb(var(--ink-rgb) / .06) 34%,
+              rgb(var(--ink-rgb) / .72) 100%);
+  pointer-events: none;
+}
+
+/* --- Les appareils --- */
+.stage__device { position: absolute; z-index: 1; }
+
+/* L'ombre au sol : une ellipse floue sous l'appareil, écrasée par la perspective.
+   C'est elle qui pose l'objet sur le terrain — sans elle il flotte. */
+.stage__device::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -7%;
+  width: 108%;
+  height: 13%;
+  translate: -50% 0;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(var(--ink-rgb) / .78), transparent);
+  filter: blur(9px);
+  z-index: -1;
+}
+
+/* Le capot : un cadre sombre, un filet crème, et la capture dedans. Le padding
+   est en pourcentage pour que l'épaisseur du cadre suive la taille de l'appareil,
+   qui change entre la grande scène et celles de la bande. */
+.stage__screen {
+  overflow: hidden;
+  padding: 1.1%;
+  border: 1px solid rgb(var(--cream-rgb) / .28);
+  border-radius: 11px;
+  background: #0a1024;
+  box-shadow: 0 26px 54px rgb(var(--ink-rgb) / .62);
+}
+
+.stage__screen img {
+  display: block;
+  width: 100%;
+  border-radius: 6px;
+  /* RECADRÉ EN 16/10, et par le haut : une capture pleine page fait 2174 px de
+     haut, elle n'entre pas dans un écran. On montre ce qu'on verrait vraiment en
+     arrivant sur le site. */
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  object-position: top center;
+}
+
+/* La tranche du portable, sous le capot : un trapèze suggéré par un simple
+   dégradé, en perspective avec le reste. */
+/* HAUTEUR EN PADDING, PAS EN `height`, et c'est le piège de ce composant : le
+   parent est en position absolue et sa hauteur est auto, donc un `height: 2.2%`
+   se résout à zéro et la tranche disparaît sans un mot. Un padding en pourcentage,
+   lui, se résout contre la LARGEUR du parent, qui est définie — la tranche suit
+   donc la taille de l'appareil, ce qui était le but. */
+.stage__base {
+  display: block;
+  width: 104%;
+  height: 0;
+  padding-top: 1.9%;
+  margin: 0 0 0 -2%;
+  border-radius: 0 0 7px 7px;
+  background: linear-gradient(180deg, #2a3350, #0d1428);
+  box-shadow: 0 10px 24px rgb(var(--ink-rgb) / .55);
+}
+
+/* --- La scène à deux appareils : le portable et le téléphone --- */
+/* LES APPAREILS SONT VOLONTAIREMENT PETITS, et c'est le réglage à ne pas
+   défaire : à 64 % de large le portable mangeait le cadre et il ne restait de la
+   montagne qu'un liseré — la scène ne se lisait plus comme une scène. Il en fait
+   56 %, posé bas, ce qui laisse le tiers haut au paysage. Si tu les agrandis,
+   regarde d'abord ce qu'il reste de décor. */
+.stage--duo .stage__laptop {
+  left: 5%;
+  top: 24%;
+  width: 56%;
+  transform: rotateY(-9deg) rotateX(2deg);
+  transform-origin: 100% 50%;
+}
+
+.stage--duo .stage__phone {
+  right: 9%;
+  bottom: 11%;
+  width: 13%;
+  transform: rotateY(11deg) rotateX(2deg);
+  transform-origin: 0 50%;
+}
+
+/* Le téléphone : plus arrondi, cadre plus épais, et l'écran au format d'un
+   téléphone et non d'un portable. */
+.stage__phone .stage__screen {
+  padding: 3%;
+  border-radius: 20px;
+}
+
+.stage__phone .stage__screen img {
+  aspect-ratio: 9 / 19.5;
+  border-radius: 13px;
+}
+
+/* --- La scène à un seul appareil, pour la bande --- */
+/* LA SCÈNE À UN APPAREIL EST EN 4/3, PAS EN 16/9 : un portable en 16/10 posé
+   dans un cadre 16/9 déborde par le bas dès qu'il fait plus de la moitié de la
+   largeur — l'écran plus la tranche sont plus hauts que le cadre. Le 4/3 rend la
+   hauteur qu'il faut, et c'est aussi le format qu'avaient les cases de la bande
+   avant la mise en scène. */
+.stage--solo {
+  aspect-ratio: 4 / 3;
+}
+
+.stage--solo .stage__laptop {
+  left: 50%;
+  top: 24%;
+  width: 72%;
+  transform: translateX(-50%) rotateY(-7deg) rotateX(2deg);
+}
+
+/* Le crédit des photographes. La licence Unsplash ne l'exige pas — c'est la
+   moindre des politesses, et ça coûte une ligne. */
+.scene-credits {
+  margin: clamp(18px, 2.4vh, 26px) 0 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: rgb(var(--cream-rgb) / .45);
+}
+
+@media (max-width: 900px) {
+  /* Moins de profondeur et un cadrage plus serré : à 311 px de large, la
+     perspective se lit comme un défaut d'alignement, et le téléphone deviendrait
+     un timbre. La scène passe donc en 4/3 et les appareils grossissent. */
+  .stage { aspect-ratio: 4 / 3; perspective: none; }
+  .stage--duo .stage__laptop { left: 3%; top: 12%; width: 72%; transform: none; }
+  .stage--duo .stage__phone { right: 5%; bottom: 7%; width: 21%; transform: none; }
+  .stage--solo .stage__laptop { width: 88%; transform: translateX(-50%); }
+}
+
+/* ---------- Le gate « NSFW » ----------
+   Une porte à cliquer devant les blocs de visuels de projet-jm.html : la marque
+   est pour adultes, et la page s'ouvre souvent sur un poste de travail. Un clic,
+   et le bloc apparaît ; un second le referme.
+
+   AUCUN JAVASCRIPT, et c'est le même parti que le curseur avant/après de la page
+   Beepz : une case à cocher native fait tout le travail — clic, clavier, état
+   annoncé aux lecteurs d'écran — et le CSS ne fait que dessiner. Il n'y a donc
+   rien à charger pour que la porte fonctionne, et rien qui puisse échouer.
+
+   L'ORDRE DU DOM COMPTE : l'input vient EN PREMIER, le contenu ensuite, les deux
+   étiquettes après. Tout tient sur le sélecteur frère `~`, qui ne regarde qu'en
+   avant. Déplacer l'input casse la porte en silence.
+
+   CE N'EST PAS UNE CENSURE, c'est une porte. Elle masque à l'écran ; le fichier
+   .webp reste accessible par son URL. Ce qui doit être réellement inaccessible
+   se floute dans le fichier — voir tools/build_shots.py. */
+.nsfw { position: relative; }
+
+/* Hors flux et sans taille, mais focusable : la porte reste atteignable au
+   clavier. `appearance: none` évite qu'un navigateur lui dessine une case. */
+.nsfw__toggle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  appearance: none;
+  opacity: 0;
+}
+
+/* Tant que la porte est fermée, le contenu n'est ni cliquable ni sélectionnable :
+   on ne doit pas pouvoir attraper une image au travers du voile. */
+.nsfw__toggle:not(:checked) ~ .nsfw__content {
+  pointer-events: none;
+  user-select: none;
+}
+
+.nsfw__gate {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  padding: 24px;
+  border-radius: 16px;
+  background: rgb(var(--ink-rgb) / .55);
+  backdrop-filter: blur(26px) saturate(.7);
+  cursor: pointer;
+  transition: opacity .4s var(--ease-out), visibility 0s linear .4s;
+}
+
+/* LE PANNEAU EST COLLANT, ET CE N'EST PAS UN ORNEMENT : le mur de visuels fait
+   2 356 px de haut. Centré dans le voile, le bouton tomberait à 1 178 px du haut
+   du bloc — il faudrait chercher en défilant de quoi ouvrir ce qu'on regarde.
+   Collé à 38 vh, il accompagne le voile tant qu'il est à l'écran, et s'arrête de
+   lui-même au bas du bloc. Ne remplace pas ça par un centrage. */
+.nsfw__panel {
+  position: sticky;
+  top: 38vh;
+  display: grid;
+  gap: 14px;
+  justify-items: center;
+  width: fit-content;
+  margin: clamp(48px, 16vh, 150px) auto;
+  text-align: center;
+}
+
+/* Sans backdrop-filter, le voile serait translucide sur un contenu net : on le
+   rend alors presque opaque. Mieux vaut ne rien laisser voir que trop. */
+@supports not (backdrop-filter: blur(1px)) {
+  .nsfw__gate { background: rgb(var(--ink-rgb) / .97); }
+}
+
+/* `pointer-events` en plus de `visibility` : celle-ci n'est retirée qu'au bout des
+   400 ms du fondu, et sans ça un second clic pendant l'ouverture rabattrait la
+   porte aussitôt. */
+.nsfw__toggle:checked ~ .nsfw__gate {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition-delay: 0s, .4s;
+}
+
+.nsfw__tag {
+  font-family: var(--font-display);
+  padding: 5px 12px;
+  border: 1px solid var(--pink);
+  border-radius: 999px;
+  font-size: clamp(10px, .85vw, 12px);
+  font-weight: 600;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--pink);
+}
+
+.nsfw__note {
+  max-width: 42ch;
+  font-size: clamp(14px, 1.1vw, 16px);
+  line-height: 1.5;
+  color: rgb(var(--cream-rgb) / .78);
+}
+
+.nsfw__cta {
+  font-family: var(--font-display);
+  padding: 11px 22px;
+  border: 1px solid rgb(var(--cream-rgb) / .5);
+  border-radius: 999px;
+  font-size: clamp(13px, 1.1vw, 15px);
+  font-weight: 600;
+  color: var(--cream);
+  transition: background-color .18s ease, color .18s ease, border-color .18s ease;
+}
+
+.nsfw__gate:hover .nsfw__cta,
+.nsfw__toggle:focus-visible ~ .nsfw__gate .nsfw__cta {
+  border-color: var(--cream);
+  background: var(--cream);
+  color: var(--ink);
+}
+
+/* La contre-porte : une pastille discrète en haut à droite, une fois ouvert.
+   Sans elle, on ne peut plus refermer — et sur une page qu'on montre à quelqu'un,
+   c'est le geste qu'on cherche en premier. */
+/* La contre-porte est collante elle aussi, et pour la même raison que le panneau :
+   sur un bloc de 2 356 px, une pastille posée en haut à droite serait hors de vue
+   dès qu'on descend.
+
+   D'où LE RAIL : un calque absolu de la hauteur du bloc, donc sans effet sur la
+   mise en page, dans lequel la pastille peut coller. Une pastille collante posée
+   dans le flux, elle, décalait le contenu de 31 px — et une marge négative pour
+   compenser est le genre de rustine qui se déphase au premier changement de
+   taille de police. Le rail ne capte pas le pointeur, seule la pastille le fait. */
+.nsfw__hide-rail {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.nsfw__hide {
+  position: sticky;
+  top: 12px;
+  display: block;
+  width: fit-content;
+  margin: 12px 12px 0 auto;
+  pointer-events: auto;
+  padding: 7px 14px;
+  border: 1px solid rgb(var(--cream-rgb) / .28);
+  border-radius: 999px;
+  background: rgb(var(--ink-rgb) / .72);
+  backdrop-filter: blur(8px);
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: rgb(var(--cream-rgb) / .8);
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .3s var(--ease-out), visibility 0s linear .3s, color .18s ease, border-color .18s ease;
+}
+
+.nsfw__toggle:checked ~ .nsfw__hide-rail .nsfw__hide {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: .1s, 0s, 0s, 0s;
+}
+
+.nsfw__hide:hover { border-color: var(--cream); color: var(--cream); }
+
+@media (prefers-reduced-motion: reduce) {
+  .nsfw__gate,
+  .nsfw__hide { transition-duration: 0s; }
+}
+
 
 /* ---------- Les pastilles de palette ----------
    LA SEULE ENTORSE à la règle des quatre couleurs du site, et elle est bornée :
@@ -2273,13 +3093,176 @@ a.project:hover {
   color: rgb(var(--cream-rgb) / .55);
 }
 
+/* ---------- La carte du parcours ----------
+   Soixante-sept vignettes de téléphone sont illisibles à l'échelle d'une page web.
+   Ce qui se lit, c'est la STRUCTURE : le tronc, la fourche, les trois branches et
+   leur poids respectif. D'où un diagramme dessiné à la main plutôt qu'une capture
+   de la planche Figma.
+
+   Tout est dans la palette, et le trait pointillé est le même que celui qui relie
+   les volets — c'est le vocabulaire du parcours de l'accueil, appliqué à un autre
+   chemin. Seule la fourche porte le vert : c'est la décision du volet, pas une
+   étape parmi d'autres. */
+/* Le diagramme ne se met pas à l'échelle indéfiniment : sous sa largeur minimale, il
+   garde sa taille et c'est le conteneur qui défile. 860 unités sur 1180, soit 73 % —
+   en dessous, le texte des boîtes passe sous 12 px et la carte ne se lit plus. */
+.flow-wrap { overflow-x: auto; }
+
+.flow {
+  display: block;
+  width: 100%;
+  min-width: 860px;
+  height: auto;
+}
+
+.flow-box {
+  fill: rgb(var(--navy-rgb) / .38);
+  stroke: rgb(var(--cream-rgb) / .22);
+  stroke-width: 1.5;
+}
+
+.flow-box--fork {
+  stroke: var(--green);
+  stroke-width: 2;
+}
+
+.flow-line {
+  fill: none;
+  stroke: rgb(var(--cream-rgb) / .3);
+  stroke-width: 2;
+  stroke-dasharray: 5 5;
+  stroke-linecap: round;
+}
+
+.flow-name {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 600;
+  fill: var(--cream);
+}
+
+.flow-count {
+  font-size: 13px;
+  fill: rgb(var(--cream-rgb) / .55);
+}
+
+/* ---------- Le carrousel des écrans ----------
+   Dix écrans qu'on ATTRAPE et qu'on tire, dans le sens du parcours. Le geste est
+   horizontal, donc la page ne s'allonge pas — c'était la condition pour montrer une
+   séquence sans coûter plusieurs écrans de défilement vertical.
+
+   L'ascenseur natif est masqué : sur un carrousel il est laid et il ment sur la
+   nature du geste. En contrepartie, deux choses sont obligatoires et ne doivent pas
+   sauter — le `tabindex="0"` sur le conteneur, sans quoi la zone devient inatteignable
+   au clavier, et le curseur `grab`, seul indice visuel qu'il reste.
+
+   Le tactile n'est PAS repris par le JS : son inertie native vaut mieux que tout ce
+   qu'on écrirait. Seuls la souris et le stylet passent par le glissement scripté.
+
+   Pas de `overscroll-behavior: contain` : arrivé au bout, le geste repart dans la
+   page. Et `proximity` plutôt que `mandatory` — on doit pouvoir s'arrêter entre deux
+   écrans pour en comparer deux. */
+.rail-wrap {
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  cursor: grab;
+  scrollbar-width: none;
+  /* De quoi laisser respirer l'ombre portée des cadres, en haut comme en bas. */
+  padding: 6px 0 10px;
+}
+
+.rail-wrap::-webkit-scrollbar { display: none; }
+
+.rail-wrap:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 4px;
+}
+
+/* Pendant le glissement, l'aimant est débrayé : il tirerait à contresens à chaque
+   image. Il se rebranche au relâchement et range la position finale. */
+.rail-wrap.is-dragging {
+  cursor: grabbing;
+  scroll-snap-type: none;
+}
+
+.rail {
+  display: flex;
+  gap: clamp(12px, 1.4vw, 22px);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.rail__step {
+  flex: 0 0 clamp(138px, 14vw, 196px);
+  scroll-snap-align: start;
+}
+
+/* Le cadre est posé ICI et pas cuit dans les images : dix captures encadrées dans
+   Figma seraient dix cadres légèrement différents. Une seule règle, dix cadres
+   rigoureusement identiques.
+
+   Les captures ne font pas toutes la même hauteur — 874 px pour certaines, 883 pour
+   les autres. On fixe donc le rapport et l'image le remplit : celles de 874 sont
+   agrandies de 1 %, ce qui rogne deux pixels de chaque côté. Invisible. */
+.rail__phone {
+  aspect-ratio: 402 / 883;
+  overflow: hidden;
+  border-radius: 20px;
+  border: 1px solid rgb(var(--cream-rgb) / .2);
+  background: rgb(var(--ink-rgb) / .5);
+  box-shadow: 0 14px 34px rgb(var(--ink-rgb) / .45);
+}
+
+.rail__phone img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top;
+  border-radius: 19px;
+  /* Sans ça, tirer sur le carrousel déclenche le glisser-déposer natif de l'image
+     et le geste se transforme en fantôme d'image collé au curseur. */
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* ---------- Le bouton sortant ----------
+   Même dessin que `.btn-contact` du header et que le bouton CV d'À propos : pilule
+   crème, texte crème, flèche rose. C'est le troisième et dernier de la famille — si
+   tu en ajoutes un quatrième, groupe les sélecteurs plutôt que de recopier la règle. */
+.case-btn {
+  font-family: var(--font-display);
+  display: inline-flex;
+  align-items: center;
+  gap: .7em;
+  margin-top: clamp(22px, 3.4vh, 36px);
+  padding: .9em 1.6em;
+  border: 1px solid rgb(var(--cream-rgb) / .5);
+  border-radius: 999px;
+  font-size: clamp(14px, 1.15vw, 17px);
+  font-weight: 600;
+  color: var(--cream);
+  transition: background-color .2s ease, border-color .2s ease;
+}
+
+.case-btn:hover {
+  border-color: var(--cream);
+  background: rgb(var(--cream-rgb) / .08);
+}
+
+.case-btn__arrow { color: var(--pink); flex: none; }
+
+/* Le format et le poids, en retrait : c'est une information de service, pas le
+   libellé du bouton. Annoncer 2,6 Mo avant le clic est la moindre des politesses. */
+.case-btn__meta {
+  font-weight: 500;
+  color: rgb(var(--cream-rgb) / .5);
+}
+
 /* ---------- Les notes de terrain ----------
    Trois détails annotés par volet : c'est là que se logent les décisions qui ne
    méritent pas un paragraphe mais qu'on regretterait de ne pas dire. */
-/* `.outcomes` (les acquis du sommet) partage exactement cette grille : même rythme
-   en trois colonnes, même filet en tête. Seul l'œil change, il passe au vert. */
-.versant__notes,
-.outcomes {
+.versant__notes {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: clamp(16px, 2vw, 32px);
@@ -2306,12 +3289,6 @@ a.project:hover {
   line-height: 1.6;
   color: rgb(var(--cream-rgb) / .66);
 }
-
-/* ---------- Le sommet ---------- */
-.outcomes .note__title { color: var(--green); }
-.outcomes .note__text { color: rgb(var(--cream-rgb) / .74); }
-
-.case-summit .case-body { margin-top: clamp(34px, 5vh, 56px); }
 
 /* ---------- Le pied de page projet ---------- */
 .case-foot {
@@ -2345,6 +3322,16 @@ a.project:hover {
   font-weight: 600;
   color: rgb(var(--cream-rgb) / .5);
 }
+
+/* Il a longtemps été un <span> — pas d'ancre morte tant qu'il n'y avait qu'une
+   page projet. Depuis qu'il y en a deux, c'est un vrai lien : il reprend donc la
+   couleur et le survol de son voisin de gauche. Le style gris reste pour la
+   version <span>, le jour où la page suivante n'existe pas encore. */
+a.case-foot__next {
+  color: var(--pink);
+  transition: color .2s ease;
+}
+a.case-foot__next:hover { color: var(--cream); }
 
 /* ---------- La motion de la page projet ----------
 
@@ -2393,30 +3380,162 @@ a.project:hover {
 }
 
 /* Un groupe et une pastille ne bougent pas eux-mêmes. À déclarer APRÈS la règle
-   ci-dessus : même spécificité, c'est l'ordre qui tranche. */
-.js-motion [data-reveal="group"],
+   ci-dessus : même spécificité, c'est l'ordre qui tranche.
+
+   `~=` ET NON `=`, ET C'EST CE QUI PORTE LES VARIANTES. `data-reveal` est une
+   liste de mots séparés par des espaces : `data-reveal="group scatter"` est donc
+   un groupe — même cascade, mêmes retards — dont chaque enfant part en plus de
+   son propre décalage. Il n'y a ainsi qu'une seule échelle de retards à tenir,
+   au lieu d'une par variante. */
+.js-motion [data-reveal~="group"],
 .js-motion [data-reveal="pin"] {
   opacity: 1;
   translate: none;
 }
 
-.js-motion [data-reveal="group"] > * {
+/* Le décalage de départ de chaque enfant vit dans des variables, avec les
+   valeurs d'un groupe ordinaire par défaut : monter de 10 px, sans rotation ni
+   changement d'échelle. Un `scatter` n'a qu'à les redéclarer dans la règle de
+   la pièce concernée. */
+.js-motion [data-reveal~="group"] > * {
   opacity: 0;
-  translate: 0 10px;
-  transition: opacity .32s var(--ease-out), translate .46s var(--ease-out);
+  translate: var(--out-x, 0) var(--out-y, 10px);
+  rotate: var(--out-r, 0deg);
+  scale: var(--out-s, 1);
+  transition: opacity .32s var(--ease-out), translate .46s var(--ease-out),
+              rotate .46s var(--ease-out), scale .46s var(--ease-out);
 }
 
-.js-motion [data-reveal="group"][data-reveal-in] > * {
+/* LES DEUX ÉTATS SONT ÉCRITS EN DUR, comme les groupements de la section projets
+   de l'accueil, et il faut que ça le reste : aucune des variables ci-dessus ne
+   CHANGE d'un état à l'autre, c'est la déclaration qui change. Une variable qui
+   change en cours de transition ne s'interpole pas, elle saute. */
+.js-motion [data-reveal~="group"][data-reveal-in] > * {
   opacity: 1;
   translate: none;
+  rotate: none;
+  scale: none;
 }
 
 /* 70 ms d'écart : assez pour qu'on lise une arrivée en cascade, trop peu pour
    qu'on attende la dernière. Le retard n'est posé que sur l'état révélé, sinon
-   il jouerait aussi au repos. Quatre enfants au plus (les pastilles de palette). */
-.js-motion [data-reveal="group"][data-reveal-in] > :nth-child(2) { transition-delay: 70ms; }
-.js-motion [data-reveal="group"][data-reveal-in] > :nth-child(3) { transition-delay: 140ms; }
-.js-motion [data-reveal="group"][data-reveal-in] > :nth-child(4) { transition-delay: 210ms; }
+   il jouerait aussi au repos.
+
+   L'échelle va jusqu'à DOUZE parce que la grille des marques de la page J&M en
+   compte douze : avant, elle s'arrêtait à quatre et les huit dernières cases se
+   posaient toutes ensemble, ce qui se voyait tout de suite. La traîne fait
+   770 ms sur un mur d'images, et c'est le bon prix — sur les groupes de trois ou
+   quatre de la page Beepz, rien n'a changé. */
+.js-motion [data-reveal~="group"][data-reveal-in] > :nth-child(2)  { transition-delay:  70ms; }
+.js-motion [data-reveal~="group"][data-reveal-in] > :nth-child(3)  { transition-delay: 140ms; }
+.js-motion [data-reveal~="group"][data-reveal-in] > :nth-child(4)  { transition-delay: 210ms; }
+.js-motion [data-reveal~="group"][data-reveal-in] > :nth-child(5)  { transition-delay: 280ms; }
+.js-motion [data-reveal~="group"][data-reveal-in] > :nth-child(6)  { transition-delay: 350ms; }
+.js-motion [data-reveal~="group"][data-reveal-in] > :nth-child(7)  { transition-delay: 420ms; }
+.js-motion [data-reveal~="group"][data-reveal-in] > :nth-child(8)  { transition-delay: 490ms; }
+.js-motion [data-reveal~="group"][data-reveal-in] > :nth-child(9)  { transition-delay: 560ms; }
+.js-motion [data-reveal~="group"][data-reveal-in] > :nth-child(10) { transition-delay: 630ms; }
+.js-motion [data-reveal~="group"][data-reveal-in] > :nth-child(11) { transition-delay: 700ms; }
+.js-motion [data-reveal~="group"][data-reveal-in] > :nth-child(12) { transition-delay: 770ms; }
+
+/* Un `scatter` respire plus longtemps que la cascade ordinaire : ses pièces
+   viennent de plus loin — 30 à 60 px — et une durée de bloc de texte les ferait
+   claquer au lieu de les poser. Même geste que `pile-land` sur l'accueil. */
+.js-motion [data-reveal~="scatter"] > * {
+  transition-duration: .42s, .78s, .78s, .78s;
+}
+
+/* --- Un titre qui monte ligne à ligne, de derrière un cache ---
+   `data-reveal="lines"`. C'est LE mouvement des grands titres de ce site, et il
+   ne se fond pas : chaque ligne est enfermée dans une boîte qui la rogne, et
+   elle remonte de sa propre hauteur. Rien n'apparaît de nulle part, tout entre
+   par le bas — c'est ce qui donne à du display sa masse.
+
+   IL FAUT DEUX ÉLÉMENTS PAR LIGNE, et ils sont écrits à la main dans le HTML :
+   `.proj-line` est le cache, le `<span>` dedans est ce qui bouge. Un seul ne
+   suffirait pas — un élément ne peut pas se rogner lui-même ET glisser.
+
+   Les lignes sont découpées À LA MAIN plutôt que par le JS. Un découpeur de
+   lignes doit remesurer à chaque changement de largeur, et se trompe dès qu'une
+   police arrive en retard ; ici les titres font une ou deux lignes, on sait
+   lesquelles, et sans JS le titre s'affiche simplement d'un bloc.
+
+   `padding-bottom` puis `margin-bottom` négatif : sans eux le cache couperait
+   les jambages des p et des g au ras de la ligne de base. La marge annule le
+   padding, donc l'interligne ne bouge pas d'un pixel. */
+.js-motion [data-reveal="lines"] {
+  opacity: 1;
+  translate: none;
+}
+
+.proj-line {
+  display: block;
+  overflow: clip;
+  padding-bottom: .18em;
+  margin-bottom: -.18em;
+}
+
+.js-motion [data-reveal="lines"] .proj-line > span {
+  display: block;
+  translate: 0 105%;
+  transition: translate .82s var(--ease-out);
+}
+
+.js-motion [data-reveal="lines"][data-reveal-in] .proj-line > span {
+  translate: none;
+}
+
+/* 90 ms d'écart : la seconde ligne part quand la première est au tiers de sa
+   course, donc elles se chevauchent au lieu de se suivre. Deux lignes suffisent
+   partout sur cette page, une troisième est prévue pour ne pas rester en rade. */
+.js-motion [data-reveal="lines"][data-reveal-in] .proj-line:nth-child(2) > span { transition-delay:  90ms; }
+.js-motion [data-reveal="lines"][data-reveal-in] .proj-line:nth-child(3) > span { transition-delay: 180ms; }
+
+/* --- Un texte qui se dépose, au lieu de se fondre ---
+   `data-reveal="soft"`, pour les chapôs et les énoncés. Trois choses à la fois :
+   il monte de plus loin (22 px contre 10), il vient d'un flou de 7 px, et il met
+   presque deux fois plus longtemps. Le flou est ce qui change tout — un texte
+   qui se fait net se lit comme une mise au point, là où une opacité qui monte ne
+   se lit que comme un fondu.
+
+   `filter` et pas `opacity` seule : c'est plus cher, mais ça ne porte que sur un
+   paragraphe de trois lignes, et seulement pendant sa demi-seconde d'arrivée. Ne
+   l'étends pas à un bloc d'images. */
+.js-motion [data-reveal="soft"] {
+  opacity: 0;
+  translate: 0 22px;
+  filter: blur(7px);
+  transition: opacity .5s var(--ease-out), translate .82s var(--ease-out),
+              filter .62s var(--ease-out);
+}
+
+.js-motion [data-reveal="soft"][data-reveal-in] {
+  opacity: 1;
+  translate: none;
+  filter: blur(0);
+}
+
+/* Le chapô suit son titre au lieu d'arriver avec lui : le titre monte ses lignes
+   pendant que le texte se fait net, et l'œil a le temps de faire les deux. */
+.js-motion .proj-intro .proj-lede { transition-delay: 130ms, 130ms, 130ms; }
+
+/* --- Une bande photographique qui se pose ---
+   Réservé aux deux images pleine largeur de la page J&M — la couverture et la
+   fresque. Elles n'ont pas de haut ni de bas à faire monter : elles occupent
+   toute la largeur, donc c'est l'échelle qui les fait arriver, en se refermant
+   sur le cadre. À poser sur l'IMAGE et jamais sur la bande, qui est l'élément
+   qui rogne : une boîte qui se met à l'échelle emporte son propre rognage. */
+.js-motion [data-reveal="zoom"] {
+  opacity: 0;
+  translate: none;
+  scale: 1.045;
+  transition: opacity .52s var(--ease-out), scale .95s var(--ease-out);
+}
+
+.js-motion [data-reveal="zoom"][data-reveal-in] {
+  opacity: 1;
+  scale: 1;
+}
 
 /* La pastille du volet, sur le fil pointillé : elle éclot au lieu de se fondre.
    C'est le seul endroit de la page qui change d'échelle, et c'est voulu — elle
@@ -2473,6 +3592,59 @@ a.project:hover {
 
 .js-motion .topo { animation-delay: 350ms; }
 
+/* La couverture de la page J&M : le panneau s'installe d'abord, puis ses quatre
+   lignes montent dedans. Nommées une par une, pour la même raison que ci-dessus.
+   Le panneau ne monte PAS — il se referme légèrement sur lui-même : c'est une
+   surface, pas une ligne de texte, et la faire glisser la ferait lire comme un
+   bloc de plus au lieu du support de tout le reste. */
+@keyframes proj-panel-in {
+  from { opacity: 0; scale: .985; }
+  to   { opacity: 1; scale: 1; }
+}
+
+.js-motion .proj-hero { animation: proj-panel-in .8s var(--ease-out) backwards; }
+
+.js-motion .proj-hero__text,
+.js-motion .proj-hero__skills {
+  animation: case-hero-in .56s var(--ease-out) backwards;
+}
+
+.js-motion .proj-hero__text    { animation-delay: 200ms; }
+.js-motion .proj-hero__skills  { animation-delay: 270ms; }
+
+/* L'œil ARRIVE PAR LA GAUCHE, dans le sens de la lecture, au lieu de monter
+   comme le reste : c'est la première chose qu'on lit, elle mérite son geste. */
+@keyframes proj-eyebrow-in {
+  from { opacity: 0; translate: -22px 0; }
+  to   { opacity: 1; translate: none; }
+}
+
+.js-motion .proj-hero__eyebrow {
+  animation: proj-eyebrow-in .62s var(--ease-out) 130ms backwards;
+}
+
+/* Le titre de couverture monte de derrière son cache, comme les titres révélés
+   au scroll — une animation ici et non une transition, parce qu'il est visible
+   au chargement. C'est le même geste, joué par l'autre moyen. */
+@keyframes proj-line-in {
+  from { translate: 0 105%; }
+  to   { translate: none; }
+}
+
+.js-motion .proj-hero__title .proj-line > span {
+  animation: proj-line-in .86s var(--ease-out) 190ms backwards;
+}
+
+/* Les trois compétences se posent l'une après l'autre : une liste qui arrive
+   d'un bloc ne se lit pas comme une liste. */
+.js-motion .proj-hero__skills-list li {
+  animation: case-hero-in .5s var(--ease-out) backwards;
+}
+
+.js-motion .proj-hero__skills-list li:nth-child(1) { animation-delay: 340ms; }
+.js-motion .proj-hero__skills-list li:nth-child(2) { animation-delay: 410ms; }
+.js-motion .proj-hero__skills-list li:nth-child(3) { animation-delay: 480ms; }
+
 /* Le décor arrive en fondu seul et plus lentement : il ne court pas après le
    titre, il s'installe derrière lui. */
 .js-motion .case-hero__sky {
@@ -2498,32 +3670,73 @@ a.project:hover {
    resté invisible serait la pire panne possible ici. */
 @media (prefers-reduced-motion: reduce) {
   .js-motion [data-reveal],
-  .js-motion [data-reveal="group"] > *,
+  .js-motion [data-reveal~="group"] > *,
   .js-motion .case-back,
   .js-motion .case-hero__text,
   .js-motion .plate,
-  .js-motion .topo {
+  .js-motion .topo,
+  .js-motion .proj-hero,
+  .js-motion .proj-hero__eyebrow,
+  .js-motion .proj-hero__text,
+  .js-motion .proj-hero__skills,
+  .js-motion .proj-hero__skills-list li,
+  .js-motion .proj-hero__title .proj-line > span {
     opacity: 1;
     translate: none;
+    rotate: none;
+    scale: none;
     animation: none;
     transition: none;
   }
 
   .js-motion [data-reveal="pin"]::before { opacity: 1; scale: 1; }
+
+  /* Les deux familles de texte : le cache laisse passer sa ligne, et le flou
+     tombe. Sans ça un titre resterait invisible derrière son propre rognage —
+     la pire panne possible ici. */
+  .js-motion [data-reveal="lines"] .proj-line > span { translate: none; }
+  .js-motion [data-reveal="soft"] { filter: none; }
   .js-motion .case-hero__sky { animation: none; }
 }
 
 /* ---------- Responsive de la page projet ---------- */
 @media (max-width: 900px) {
-  .case-toc,
-  .versant__notes,
-  .outcomes { grid-template-columns: minmax(0, 1fr); }
+  .versant__notes { grid-template-columns: minmax(0, 1fr); }
+
+  /* Deux par deux plutôt qu'en pile : quatre balises empilées poussent les volets
+     beaucoup trop bas. */
+  .case-toc { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  /* Les pièces secondaires restent en grille, deux par deux : empilées en
+     colonne elles cesseraient de se lire comme une série. Même raison que les
+     pastilles de palette juste en dessous. */
+  .versant__strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  /* SAUF quand ce sont des scènes : à deux colonnes elles tombent à 150 px, où
+     l'écran mis en scène n'est plus qu'une vignette illisible. Deux captures de
+     site ne forment pas une série de toute façon — on les empile. */
+  .versant__strip--pair { grid-template-columns: minmax(0, 1fr); }
+
+  /* Le duo s'empile : à 375 px, deux colonnes à l'échelle réelle donneraient un
+     téléphone de 90 px de large. La capture mobile reprend alors une largeur de
+     téléphone plausible au lieu de s'étaler sur toute la colonne. */
+  .shots-pair { grid-template-columns: minmax(0, 1fr); }
+  .shots-pair__mobile { max-width: 240px; }
+
+  /* La liste des sites repasse en une colonne : deux colonnes de cinq noms sur
+     375 px casseraient les noms de domaine en plein milieu. */
+  .worklist { grid-template-columns: minmax(0, 1fr); }
+
+  /* Le mur de visuels reste sur DEUX colonnes, comme la bande de pièces
+     secondaires et pour la même raison : en une seule, douze visuels dont
+     quatre stories font près de quatre écrans de défilement, et la série
+     cesse de se lire comme une série. Le minimum de colonne descend donc à
+     140 px — c'est ce nombre, et non le `columns: 4`, qui décide ici. */
+  .gallery { columns: 2 140px; }
 
   /* Les pastilles restent en grille : quatre carrés de couleur empilés en colonne
      ne se lisent plus comme une palette. Deux par deux, si. */
   .swatches { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-
-  .versant__figure--pair { grid-template-columns: minmax(0, 1fr); }
 
   .versants { --thread-pad: 22px; }
 
@@ -2541,6 +3754,1224 @@ a.project:hover {
 }
 
 @media (max-width: 560px) {
+  .case-toc { grid-template-columns: minmax(0, 1fr); }
+
   .topo__cell,
   .topo__cell--wide { flex: 1 1 100%; }
+}
+
+
+/* ===========================================================================
+   LE GABARIT DES PAGES MAQUETTÉES  (`.proj-*`)
+   ===========================================================================
+   Il sert DEUX pages — `projet-jm.html` et `projet-jimizz.html` — parce que les
+   deux maquettes de Vincent sont la même : même panneau de couverture, même
+   cadre, même colonne de texte, même grille d'introduction, mêmes corps. Ce
+   n'est pas une déduction, c'est mesuré au pixel sur les deux PNG (padding du
+   panneau 62/142/82, titre 50 px, corps 20 px sur 1,25, liste des compétences à
+   25 + 12 px, intro en 536fr / 680fr avec 72 px de gouttière).
+
+   D'OÙ LE PRÉFIXE NEUTRE. Ces classes ont porté `jm-` tant qu'il n'y avait
+   qu'une page à ce dessin ; la seconde arrivée, le choix était de recopier les
+   valeurs sous un second préfixe ou de les partager. Elles sont partagées, pour
+   la même raison que `--about-col` et `--proj-col` existent : deux nombres en dur
+   finissent toujours par diverger, et c'est toujours le second qui ment.
+
+   LE PARTAGE S'ARRÊTE AUX PRIMITIVES. Ce qui est propre à une page garde son
+   préfixe — `.jm-*` pour Jacquie & Michel (la bande photographique, les sites,
+   les marques, JacquIA, le collage, la fresque), `.jmz-*` pour Jimizz (la bande
+   de marque, la vitrine, la paire, la composition de l'app, les plateformes).
+   Ne fais pas glisser un bloc de page vers `.proj-*` : il n'y serait plus lu que
+   par une seule page, et le nom mentirait. Et surtout ne les ramène pas vers
+   `.case-*`, qui sert Beepz — cette page-là raconte un projet en trois volets,
+   ce n'est pas le même dessin du tout.
+
+   DEUX CADRES, ET RIEN D'AUTRE :
+
+     - le CADRE, 1472 px — la largeur de tout ce qui est image. C'est le même
+       nombre que le hero de l'accueil, et c'est ce qui donne à la page son
+       aplomb. `.proj-wrap` le tient : 1512 px de conteneur moins 20 px de marge de
+       chaque côté ;
+     - la COLONNE, 1288 px — la largeur de tout ce qui est texte, soit le cadre
+       moins 92 px de chaque côté. Le texte ne va donc jamais aussi loin que
+       l'image, et c'est ce décalage qui fait la respiration de la page.
+
+   Des bandes échappent aux deux et sont PLEINE LARGEUR : chez J&M la couverture
+   et la fresque des vingt ans, chez Jimizz la bande de marque, la vitrine et la
+   composition de l'app. C'est délibéré — les border d'encre les ferait lire
+   comme des vignettes. Le mécanisme est partagé (`.proj-band`), les rapports
+   sont propres à chaque bande.
+
+   LE RYTHME VERTICAL EST NORMALISÉ, et c'est un écart assumé avec les maquettes.
+   Elles séparent leurs blocs de 25 à 230 px sans règle apparente ; tout est
+   ramené sur `--proj-gap`, déclaré PAR PAGE parce que les deux maquettes ne
+   respirent pas au même pas (183 px chez J&M, 93 px chez Jimizz), et c'est le
+   seul nombre à toucher pour resserrer ou aérer une page.
+
+   Il y avait en plus un vide de 601 px entre les marques et JacquIA sur la
+   maquette J&M. CE N'EN ÉTAIT PAS UN : la tête « Les campagnes marketing » y
+   était, masquée à l'export du PNG. Si un autre trou de cette taille apparaît,
+   cherche le calque avant de le combler.
+
+   LES TROIS PLAFONDS DU SITE TIENNENT : titres à 50 px (`.proj-title`, atteint
+   pile), œils et sous-titres à 30 px, textes à 20 px. Les paragraphes centrés
+   montent à 24 px, ce qui les met dans le tiroir des sous-titres et non dans
+   celui du texte courant — ce sont des énoncés de trois lignes, pas du corps.
+
+   UNE SEULE CHOSE SORT DE LA CHARTE : les deux maquettes composent TOUTE leur
+   page en Clash Display, corps de texte compris, là où le reste du site réserve
+   Clash aux titres et donne Inter au texte courant. C'est repris tel quel — ce
+   sont les dessins de Vincent — mais Beepz ne fait pas comme elles, et c'est à
+   trancher pour de bon. */
+
+.proj-wrap {
+  max-width: 1512px;
+  margin-inline: auto;
+  padding-inline: clamp(14px, 1.32vw, 20px);
+}
+
+/* La colonne de texte : le cadre moins 92 px de chaque côté. Un token et pas un
+   nombre écrit trois fois — c'est la même précaution que `--about-col` sur
+   l'accueil, et pour la même raison.
+
+   `--proj-gap` N'EST PAS ICI mais sur chaque page : les deux maquettes ne
+   respirent pas au même pas, et c'est la seule chose que le gabarit ne peut pas
+   décider pour elles. */
+.proj {
+  --proj-col: min(1288px, 100%);
+  /* Le volume du parallaxe, pour toute la page. Voir le bloc « Le parallaxe »
+     plus bas : c'est ce nombre-là qu'on touche, pas les amplitudes une à une. */
+  --par-gain: 1;
+}
+
+/* Le rythme vertical de la page, en un seul endroit. */
+.proj > * + * { margin-top: var(--proj-gap); }
+
+/* ---------- Les bandes pleine largeur, le mécanisme ----------
+   Une bande est une boîte au rapport donné qui rogne une image plus grande
+   qu'elle. Le rapport appartient à la bande (`.jm-cover`, `.jm-frise`,
+   `.jmz-marque`, `.jmz-vitrine`), le mécanisme est ici.
+
+   L'IMAGE SE DÉBORDE ELLE-MÊME DE `--par-over` EN HAUT ET EN BAS, et c'est ce
+   qui permet de la bouger en parallaxe sans jamais découvrir un bord : `--par`
+   étant borné à ±1 et `--par-amp` valant exactement ce débord, le déplacement ne
+   peut pas excéder la réserve. Si tu montes l'amplitude, monte le débord du même
+   geste — les deux sont le même nombre pour cette raison.
+
+   À POSER SUR L'IMAGE ET JAMAIS SUR LA BANDE, qui est l'élément qui rogne : une
+   boîte qui se met à l'échelle emporte son propre rognage. */
+.proj-band {
+  position: relative;
+  overflow: clip;
+  background: var(--ink);
+}
+
+.proj-band__img {
+  --par-over: clamp(30px, 4.4vw, 66px);
+  --par-amp: calc(-1 * var(--par-over));
+  position: absolute;
+  left: 0;
+  width: 100%;
+  top: calc(-1 * var(--par-over));
+  height: calc(100% + 2 * var(--par-over));
+  object-fit: cover;
+}
+
+
+/* ---------- Le parallaxe, le mécanisme ----------
+   Le JS (neuvième IIFE) ne pose qu'un nombre, `--par`, entre -1 (la pièce est en
+   haut de la fenêtre) et +1 (elle est en bas). Tout le reste se décide dans la
+   règle de chaque pièce, une amplitude à la fois :
+
+     `--par-amp` POSITIVE  la pièce passe plus vite que la page — elle vient devant ;
+     `--par-amp` NÉGATIVE  elle est retenue — elle passe derrière.
+
+   On écrit dans `transform` et la révélation dans `translate` : deux propriétés
+   distinctes, qui se composent d'elles-mêmes. Une pièce peut donc être révélée
+   ET parallaxée sans que l'une écrase l'autre. Ne ramène pas les deux sur la
+   même propriété.
+
+   Sans JS, en mouvement réduit, ou si `main.js` ne charge pas, `--par` vaut 0 :
+   la déclaration ci-dessous est alors l'identité et rien ne bouge. Comme partout
+   ailleurs ici, la motion est un supplément, jamais une condition.
+
+   `--par-gain` EST LE SEUL BOUTON DE VOLUME D'UNE PAGE : il multiplie chaque
+   amplitude d'un coup. Monte-le pour un parallaxe plus franc, baisse-le pour le
+   calmer — c'est lui qu'il faut toucher, pas les amplitudes une à une. Il est
+   déjà rabattu en mobile, où le même déplacement en pixels pèse trois fois plus
+   lourd sur un écran trois fois plus étroit.
+
+   DEUX PIÈCES QUI SE CHEVAUCHENT NE PEUVENT PAS AVOIR N'IMPORTE QUEL ÉCART.
+   `--par` allant de -1 à +1, la dérive relative de deux pièces vaut deux fois la
+   différence de leurs amplitudes : au-delà de leur recouvrement, elles se
+   décollent en cours de route et le collage se défait. C'est la contrainte qui
+   tient les amplitudes des deux compositions de Jimizz. */
+[data-parallax] {
+  transform: translate3d(0, calc(var(--par, 0) * var(--par-amp, 0px) * var(--par-gain, 1)), 0);
+}
+
+/* ===========================================================================
+   LA PAGE JACQUIE & MICHEL
+   ===========================================================================
+   Ce qui n'appartient qu'à elle : la bande photographique, les quatre sites, les
+   douze marques, JacquIA, le collage des campagnes et la fresque des vingt ans.
+   Le reste — panneau, cadre, colonne, titres — vient du gabarit ci-dessus. */
+.jm { --proj-gap: clamp(64px, 12.1vw, 183px); }
+
+/* Sauf la couverture : elle est SOUS le panneau, pas après lui. Les deux se
+   lisent comme un seul bloc, et 29 px les séparent dans la maquette. */
+.jm > .jm-cover { margin-top: clamp(16px, 1.92vw, 29px); }
+
+/* ---------- Les titres et les textes, une fois pour toutes ---------- */
+/* Le titre du site plafonne à 50 px, et la maquette l'atteint pile : le `h1` de
+   la couverture et le `h2` de l'introduction ont exactement le même corps. Ne
+   leur en redonne pas un chacun — c'est comme ça que le site s'était retrouvé
+   avec trois têtes de section différentes. */
+.proj-title {
+  font-family: var(--font-display);
+  margin: 0;
+  font-size: clamp(32px, 3.31vw, 50px);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -.01em;
+  color: var(--cream);
+}
+
+/* L'œil, en Garamond italique comme les quatre sections de l'accueil — mais
+   sans la pastille verte de `.case__eyebrow` : la maquette n'en veut pas ici, le
+   rose suffit à le détacher. */
+.proj-eyebrow {
+  font-family: var(--font-serif);
+  font-style: italic;
+  margin: 0 0 6px;
+  font-size: clamp(17px, 1.59vw, 24px);
+  line-height: 1.2;
+  color: var(--pink);
+}
+
+/* Le corps courant de la page. La maquette le serre à 1,25 d'interlignage, ce
+   qui est tenu par la grande hauteur d'x de Clash : plus lâche, le bloc perd sa
+   densité et ne fait plus masse à côté du titre. */
+.proj-text {
+  margin: 0;
+  font-size: clamp(16px, 1.32vw, 20px);
+  line-height: 1.25;
+  color: var(--cream);
+}
+
+/* ---------- La couverture : un panneau posé sous l'en-tête ---------- */
+.proj-hero {
+  position: relative;
+  overflow: clip;
+  border-radius: clamp(10px, 1.06vw, 16px);
+  background: var(--navy);
+  padding: clamp(52px, 9.4vw, 142px) clamp(22px, 4.1vw, 62px) clamp(40px, 5.43vw, 82px);
+}
+
+/* Le motif du hero de l'accueil, et pas la tuile de relief du parcours : la
+   maquette porte ici les grandes courbes lisses de `topo.svg`, pas les crêtes
+   empilées de `relief.svg`. Un seul calque — ne le redécoupe pas, voir la note
+   du parcours sur le compositeur.
+
+   L'opacité n'est pas au jugé : dans la maquette, un trait dépasse son fond de
+   12 niveaux de luminosité. Le trait de `topo.svg` est `#22345f`, soit 17,6
+   au-dessus de `--navy` — d'où 12/17,6 ≈ 0,66. Si tu changes le fond du
+   panneau, refais ce calcul plutôt que de tâtonner. */
+.proj-hero__relief {
+  position: absolute;
+  inset: 0;
+  opacity: .66;
+  pointer-events: none;
+  background: url("../assets/home/hero/topo.svg") 50% 50% / cover no-repeat;
+}
+
+/* DEUX COLONNES ET DEUX RANGÉES, et la seconde n'est pas un caprice : dans la
+   maquette le mot « Skills » est calé sur le TITRE, pas sur l'œil qui le
+   surplombe. Une grille à deux rangées le fait toute seule, sans un `margin-top`
+   à recalculer chaque fois que l'œil change de corps. */
+.proj-hero__grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: clamp(24px, 4vw, 72px);
+}
+
+.proj-hero__eyebrow { grid-column: 1; grid-row: 1; }
+.proj-hero__text { grid-column: 1; grid-row: 2; max-width: 600px; }
+
+.proj-hero__intro { margin-top: clamp(12px, 1.2vw, 18px); }
+
+.proj-hero__skills {
+  grid-column: 2;
+  grid-row: 2;
+  text-align: right;
+}
+
+.proj-hero__skills-title {
+  font-family: var(--font-display);
+  margin: 0 0 clamp(14px, 1.46vw, 22px);
+  font-size: clamp(17px, 1.59vw, 24px);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--pink);
+}
+
+.proj-hero__skills-list {
+  list-style: none;
+  display: grid;
+  gap: clamp(8px, .79vw, 12px);
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-display);
+  font-size: clamp(15px, 1.32vw, 20px);
+  font-weight: 500;
+  line-height: 1.25;
+  color: var(--cream);
+}
+
+/* ---------- La bande photographique ----------
+   Pleine largeur, et le fichier servi est TRANSPARENT DANS SES NOIRS : c'est ce
+   qui laisse le motif topographique passer dessous, exactement comme dans la
+   maquette. Voir l'en-tête de `tools/build_jm.py`, qui explique comment la photo
+   est ramenée à l'encre sans emporter le tampon avec elle. */
+.jm-cover { aspect-ratio: 1512 / 637; }
+
+/* LE MOTIF NE COUVRE PAS LA BANDE, il en occupe le coin bas-gauche et rien
+   d'autre — mesuré sur la maquette en lui soustrayant la photo traitée : il y
+   tient dans 400 × 320 px sur une bande de 1512 × 637, et ailleurs le résidu
+   tombe à zéro. Étalé sur toute la bande il cesserait d'être un décor et
+   deviendrait une texture, ce qui écrase la photo.
+
+   Même barème d'opacité que le panneau : le trait dépasse l'encre de 26 niveaux
+   dans la maquette, `#22345f` en vaut 44,6 de plus qu'elle, d'où 0,58.
+
+   La maquette pique en plus des croix de repérage tous les 70 px — elles
+   viennent d'un autre relevé, qui n'est pas dans le dépôt (`gen_map.py` le
+   régénère, mais dans un `src/` non servi). Les courbes seules font le travail. */
+.jm-cover__relief {
+  position: absolute;
+  inset: 0;
+  opacity: .58;
+  background: url("../assets/home/hero/topo.svg") 0 100% / 65% auto no-repeat;
+  -webkit-mask-image: radial-gradient(34% 74% at 0% 100%, rgb(0 0 0 / 1) 26%, rgb(0 0 0 / 0) 88%);
+          mask-image: radial-gradient(34% 74% at 0% 100%, rgb(0 0 0 / 1) 26%, rgb(0 0 0 / 0) 88%);
+}
+
+
+
+/* ---------- L'introduction : le titre à gauche, l'énoncé à droite ---------- */
+/* L'INTERLIGNAGE DU TITRE N'EST PAS CELUI DE LA COUVERTURE, et les deux
+   maquettes disent la même chose : 62 px pour 50 px de corps ici (1,24), contre
+   56 px (1,12) sur le `h1` du panneau. Mesuré aux tops d'encre, ligne à ligne —
+   « Douze ans / dans la maison » chez J&M, « Le projet / Crypto de / Jacquie &
+   Michel » chez Jimizz — et recoupé sur la hauteur du panneau, qui ne tombe
+   juste qu'à 1,12.
+
+   Ce n'est pas une incohérence de Vincent : un titre d'une seule ligne ne montre
+   pas son interlignage, donc rien n'obligeait les deux calques à s'accorder. La
+   page J&M a longtemps porté 1,12 partout, ce qui serrait ses titres de six
+   pixels par ligne — personne ne l'avait vu, mais la maquette ne disait pas ça.
+   La règle est ici et non dans `.proj-title` pour cette raison : elle ne vaut
+   que là où il y a plusieurs lignes. */
+.proj-intro .proj-title { line-height: 1.24; }
+
+.proj-intro {
+  display: grid;
+  grid-template-columns: minmax(0, 536fr) minmax(0, 680fr);
+  gap: clamp(24px, 4.76vw, 72px);
+  max-width: var(--proj-col);
+  margin-inline: auto;
+}
+
+/* Le chapô : 24 px, donc dans le tiroir des sous-titres. Il est en crème pleine
+   et non retenu — c'est la seule phrase de la section, elle n'a personne
+   derrière qui elle s'efface. */
+.proj-lede {
+  font-family: var(--font-display);
+  margin: 0;
+  font-size: clamp(18px, 1.59vw, 24px);
+  font-weight: 400;
+  line-height: 1.31;
+  color: var(--cream);
+}
+
+/* ---------- L'énoncé centré ----------
+   Deux fois dans la page, et à chaque fois pour la même chose : une phrase qui
+   pose ce que les images d'après vont montrer. Centré, en 24 px, dans une boîte
+   plus étroite que la colonne. */
+.jm-statement {
+  max-width: 910px;
+  margin-inline: auto;
+  text-align: center;
+}
+
+/* ---------- Le bloc de texte, et son carré topo ----------
+   TOUTES LES SECTIONS DE CE DESSIN PORTENT LE CARRÉ TOPOGRAPHIQUE À GAUCHE, et
+   c'est une consigne de Vincent. Elles sont quatre : « Douze ans dans la
+   maison » et « Les campagnes marketing » chez J&M, « Le projet Crypto de
+   Jacquie & Michel » et « Un univers 3.0 complet » chez Jimizz. Ses deux
+   maquettes ne le montraient pas partout — il l'a dit lui-même, c'était une
+   coquille de leur côté — donc ne te fie pas aux PNG sur ce point.
+
+   LE CARRÉ A BESOIN D'UN HÔTE, et c'est toute la raison d'être de `.proj-block`.
+   Il déborde à GAUCHE de la colonne de texte, jusqu'au bord du cadre : posé dans
+   `.proj-intro`, qui est la colonne de 1288 px centrée, il ne pourrait pas en
+   sortir sans un décalage négatif à recalculer à chaque largeur d'écran. L'hôte
+   occupe le cadre, la grille la colonne, et il n'y a aucun nombre à tenir. */
+.proj-block { position: relative; }
+
+/* Ancré au bord du cadre et centré verticalement SANS `translate` : la moitié
+   des transitions de ces pages passent par cette propriété, et une valeur de
+   centrage posée là serait effacée à la première révélation. `top`/`bottom` à
+   zéro plus `margin-block: auto` centrent sans y toucher.
+
+   `z-index: -1` N'EST PAS DÉCORATIF : le carré est `position: absolute`, donc
+   sans lui il peindrait PAR-DESSUS le texte — un élément positionné passe devant
+   le contenu en flux, quel que soit l'ordre du DOM. */
+.proj-block__topo {
+  position: absolute;
+  z-index: -1;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  margin-block: auto;
+  /* La hauteur vient du rapport de l'image (266 × 266) et pas d'un second
+     pourcentage : un `height: %` se résoudrait sur la HAUTEUR de la section, qui
+     dépend du texte, et le carré cesserait d'en être un dès qu'on édite le
+     paragraphe.
+
+     Il est donc plus HAUT que son bloc — 341 px contre 186 pour un titre de
+     trois lignes — et dépasse d'environ 78 px au-dessus et en dessous. C'est
+     voulu : c'est un décor de fond, pas un cadre, et il est derrière tout. */
+  width: clamp(190px, 23.17%, 341px);
+  height: auto;
+  pointer-events: none;
+}
+
+/* Le décor dérive à contretemps du texte qu'il accompagne. */
+.proj-block__topo { --par-amp: -80px; }
+
+/* ---------- Les quatre mises en scène ----------
+   Deux par deux, carrées. Les appareils, le décor et l'ombre sont dans la photo :
+   il n'y a aucun cadre dessiné en CSS ici, contrairement aux `.stage` de la
+   version précédente de cette page. */
+.jm-sites {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(10px, 1.9vw, 28px);
+  margin: 0;
+  padding: 0;
+}
+
+.jm-sites img,
+.jm-brands img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* ---------- Les douze marques ----------
+   Les vignettes portent leur fond ET leur logotype dans l'image, comme les
+   icônes de carte de l'accueil : `.jm-brands` n'est qu'une grille, aucune
+   couleur de marque n'est redite en CSS et rien ne vient s'ajouter à la palette
+   du site. Si tu réexportes une vignette, garde son fond dans l'image.
+
+   Les écarts ne sont pas les mêmes dans les deux sens (32 px entre les colonnes,
+   25 px entre les rangées) : c'est ce que dit la maquette, et ça compense le
+   format très allongé des vignettes. */
+.jm-brands {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: clamp(10px, 2.17vw, 32px);
+  row-gap: clamp(8px, 1.7vw, 25px);
+  margin: 0;
+  padding: 0;
+}
+
+/* ---------- JacquIA : la bannière et ses trois écrans ----------
+   Une composition posée en POURCENTAGE d'un cadre de référence, comme le tas de
+   photos de l'accueil et les groupements de la section projets : le bloc entier
+   se met à l'échelle d'un seul tenant, et il n'y a pas une largeur d'écran à
+   traiter à part.
+
+   Le cadre vaut 1472 × 1819. Les trois écrans y sont posés à intervalle
+   constant — 30,15 % en largeur, 13,15 % en hauteur — c'est cette régularité qui
+   fait lire l'escalier ; ne la casse pas pour rattraper un chevauchement. */
+.jm-jacquia {
+  position: relative;
+  aspect-ratio: 1472 / 1819;
+}
+
+/* LA BANNIÈRE EST UN LIEN VERS LE SITE, ET LE LIBELLÉ N'APPARAÎT QU'AU SURVOL.
+   C'est pour ça que ce bloc n'a pas de `data-viewer` : le site de la campagne est
+   encore en ligne, donc l'ouvrir en visionneuse serait proposer la photocopie à
+   côté de l'original. C'est le seul bloc de la page dans ce cas.
+
+   `overflow: clip` porte l'arrondi jusqu'au voile — l'image a le sien cuit dans
+   son alpha, mais pas le calque posé par-dessus. */
+.jm-jacquia__site {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  width: 100%;
+  overflow: clip;
+  border-radius: clamp(8px, 1.36vw, 20px);
+}
+
+.jm-jacquia__site:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 4px;
+}
+
+.jm-jacquia__banner {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Un voile d'encre et pas un flou : la bannière est magenta vif, donc
+   l'assombrir suffit à détacher la pastille. Le `backdrop-filter` de la
+   visionneuse n'est là que parce qu'elle, elle se pose sur du sombre. */
+.jm-jacquia__veil {
+  position: absolute;
+  inset: 0;
+  background: rgb(var(--ink-rgb) / .52);
+}
+
+.jm-jacquia__hover {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+/* La pastille reprend `.case-btn`, partagé avec les liens sortants de la page
+   Beepz — ne lui en fais pas un second dessin. Sa marge haute n'a pas de sens
+   ici, elle est remise à zéro. */
+.jm-jacquia__hover .case-btn {
+  margin-top: 0;
+  background: rgb(var(--ink-rgb) / .72);
+}
+
+/* Les deux calques sont masqués AU REPOS, et c'est la règle inverse du reste du
+   site : ici ce n'est pas du contenu, c'est une affordance. Le lien, lui, est
+   toujours là — son `aria-label` porte tout le sens. */
+.jm-jacquia__veil,
+.jm-jacquia__hover .case-btn {
+  opacity: 0;
+  transition: opacity .28s var(--ease-out);
+}
+
+.jm-jacquia__hover .case-btn {
+  scale: .96;
+  transition: opacity .28s var(--ease-out), scale .42s var(--ease-out),
+              background-color .2s ease, border-color .2s ease;
+}
+
+.jm-jacquia__site:hover .jm-jacquia__veil,
+.jm-jacquia__site:focus-visible .jm-jacquia__veil,
+.jm-jacquia__site:hover .case-btn,
+.jm-jacquia__site:focus-visible .case-btn {
+  opacity: 1;
+  scale: 1;
+}
+
+.jm-jacquia__site:hover .case-btn {
+  border-color: var(--cream);
+  background: rgb(var(--ink-rgb) / .86);
+}
+
+/* SANS SURVOL, PAS D'AFFORDANCE : sur un écran tactile le lien serait invisible.
+   Le voile y est plus discret, il n'a plus à détacher une pastille qui apparaît
+   mais une qui est déjà là. */
+@media (hover: none) {
+  .jm-jacquia__veil { opacity: 1; background: rgb(var(--ink-rgb) / .34); }
+  .jm-jacquia__hover .case-btn { opacity: 1; scale: 1; }
+}
+
+.jm-jacquia__phone {
+  position: absolute;
+  width: 30.163%;
+  height: auto;
+}
+
+/* Le premier écran MORD sur la bannière, et c'est le point de la composition :
+   il la fait basculer du plan de fond au plan de l'objet. */
+.jm-jacquia__phone--1 { left:  2.13%; top: 30.38%; }
+.jm-jacquia__phone--2 { left: 32.29%; top: 43.53%; }
+.jm-jacquia__phone--3 { left: 62.45%; top: 56.69%; }
+
+/* Le décalage d'entrée de chaque pièce (`data-reveal="group scatter"` sur la
+   section). La bannière ne glisse pas, elle se referme sur son cadre comme les
+   deux bandes pleine largeur ; les écrans, eux, montent d'en dessous — le geste
+   de trois cartes qu'on abat, et la cascade les donne dans l'ordre du DOM. */
+.jm-jacquia__site   { --out-y: 0; --out-s: 1.03; }
+.jm-jacquia__phone  { --out-y: 56px; }
+
+/* ---------- Le collage des campagnes ----------
+   Même principe que JacquIA : trois pièces en pourcentage d'un cadre de
+   1472 × 1037. Elles se CHEVAUCHENT — le Bitomètre passe sur l'affiche des
+   Swame Awards — et c'est ce recouvrement qui fait tenir le groupe. Une première
+   lecture les avait posées côte à côte, sans contact : ça se lisait comme trois
+   visuels perdus au milieu du cadre. L'ordre du DOM donne l'ordre de peinture
+   (tous en `z-index: auto`) : l'affiche, le fantôme, puis le Bitomètre. */
+.jm-social {
+  position: relative;
+  aspect-ratio: 1472 / 1037;
+}
+
+.jm-social__piece {
+  position: absolute;
+  height: auto;
+  border-radius: clamp(8px, 1.36vw, 20px);
+}
+
+.jm-social__piece--awards    { left:  8.20%; top: 10.10%; width: 37.228%; }
+.jm-social__piece--halloween { left: 49.10%; top:      0; width: 37.024%; }
+.jm-social__piece--bitometre { left: 36.26%; top: 58.91%; width: 42.867%; }
+
+/* L'ÉTALEMENT — le même geste que le groupement Jacquie & Michel de la section
+   projets de l'accueil : les pièces partent ramassées vers le centre et
+   s'écartent, celle de devant en dernier. La légère rotation de départ ne
+   survit pas à l'arrivée (l'état révélé remet `rotate: none`), donc AUCUNE de
+   ces variables ne change en cours de transition — c'est la déclaration qui
+   change, pas la variable. Voir la note du `scatter` dans le bloc motion. */
+.jm-social__piece--awards    { --out-x: -38px; --out-y: 24px; --out-r: -2.5deg; }
+.jm-social__piece--halloween { --out-x:  34px; --out-y: 20px; --out-r:  2.5deg; }
+.jm-social__piece--bitometre { --out-x:   0px; --out-y: 60px; --out-r: -1.5deg; }
+
+/* ---------- La fresque des vingt ans ----------
+   Pleine largeur, et l'inclinaison des trois panneaux est CUITE dans l'image —
+   ne la refais pas en CSS, elle emporte des ombres et des découpes qu'aucune
+   rotation ne reproduirait. */
+.jm-frise { aspect-ratio: 3022 / 1909; }
+
+
+
+
+/* ---------- Le parallaxe de la page J&M, amplitude par amplitude ----------
+   Le mécanisme est dans le bloc du gabarit, plus haut. */
+/* La composition de JacquIA se lit sur DEUX PLANS, et le parallaxe est là pour
+   les séparer : la bannière est retenue, les écrans avancent. C'est exactement
+   ce que dit la composition — le premier écran mord sur la bannière, ce qui la
+   fait basculer du plan de fond au plan de l'objet.
+
+   LES TROIS ÉCRANS ONT LA MÊME AMPLITUDE, et il faut que ça le reste : leur
+   escalier est à intervalle constant, c'est cette régularité qui le fait lire.
+   Trois amplitudes différentes le tordraient aux extrémités. */
+.jm-jacquia__site      { --par-amp:  -40px; }
+.jm-jacquia__phone--1  { --par-amp:   24px; }
+.jm-jacquia__phone--2  { --par-amp:   92px; }
+.jm-jacquia__phone--3  { --par-amp:  160px; }
+
+/* Le collage n'a aucun rythme à préserver, lui : ses trois pièces sont d'autant
+   plus rapides qu'elles sont devant, dans l'ordre de peinture. Les écarts sont
+   petits exprès — le Bitomètre doit rester en contact avec l'affiche, c'est ce
+   recouvrement qui fait tenir le groupe. */
+.jm-social__piece--awards    { --par-amp:  30px; }
+.jm-social__piece--halloween { --par-amp:  80px; }
+.jm-social__piece--bitometre { --par-amp: 130px; }
+
+/* LES DEUX GRILLES N'ONT PLUS DE PARALLAXE, et c'est une consigne de Vincent :
+   les quatre mises en scène et les douze marques n'ont qu'une révélation au
+   scroll. Ne les recâble pas.
+
+   Ce qui a été essayé et retiré : un cisaillement PAR COLONNE — 26/92 px sur les
+   sites, 18/54/90 px sur les marques — l'idée étant qu'un plan glisse derrière
+   un autre et que l'alignement des rangées se défasse puis se refasse. Sur des
+   pièces alignées en grille, ça se lit comme un défaut d'alignement plutôt que
+   comme de la profondeur : la grille est justement ce qui promet que les rangées
+   sont droites. Les compositions LIBRES de la page — JacquIA, le collage — le
+   gardent, elles, parce qu'elles ne promettent aucun alignement.
+
+   Si tu voulais le remettre, ce serait par colonne et jamais par vignette : une
+   amplitude par case, ce ne serait plus de la profondeur mais du bruit. */
+
+/* ---------- Le responsive de la page ---------- */
+@media (max-width: 900px) {
+  /* Le panneau de couverture perd son escalier : les compétences passent sous le
+     texte, alignées à gauche comme lui. À deux colonnes sur 375 px, « Intégration »
+     se couperait en deux. */
+  .proj-hero__grid { grid-template-columns: minmax(0, 1fr); }
+  .proj-hero__eyebrow,
+  .proj-hero__text,
+  .proj-hero__skills { grid-column: 1; grid-row: auto; }
+
+  .proj-hero__skills {
+    text-align: left;
+    margin-top: clamp(28px, 5vw, 44px);
+  }
+
+  .proj-hero__skills-list { grid-auto-flow: column; justify-content: start; gap: clamp(14px, 4vw, 28px); }
+
+  /* Le titre passe au-dessus de son énoncé. Deux colonnes tiendraient encore,
+     mais le titre y tomberait sur quatre lignes de trois mots. */
+  .proj-intro { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 620px) {
+  /* Les quatre scènes s'empilent : à deux colonnes elles tombent sous 170 px, où
+     l'écran mis en scène n'est plus qu'une tache. Les marques restent en revanche
+     à DEUX colonnes — leur format allongé le supporte, et douze vignettes en
+     colonne feraient trois écrans de défilement pour une série qui doit se lire
+     d'un coup d'œil. */
+  .jm-sites { grid-template-columns: minmax(0, 1fr); }
+  .jm-brands { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  .proj-hero__skills-list { grid-auto-flow: row; gap: 10px; }
+
+  /* Le parallaxe rabattu de moitié : 160 px de dérive sur un écran de 375 px,
+     c'est un quart de sa largeur, et les pièces se décrochent au lieu de
+     glisser. Un seul nombre, parce qu'il n'y en a qu'un à tenir. */
+  .jm { --par-gain: .52; }
+
+  /* La bande photographique se REDRESSE au lieu de rétrécir : à 375 px, le
+     rapport de la maquette lui laisserait 158 px de haut, où une image aussi
+     sombre ne se lit plus du tout. `object-fit: cover` rogne les côtés, et le
+     tampon étant centré, c'est lui qui reste. */
+  .jm-cover { aspect-ratio: 4 / 3; }
+}
+
+
+/* ===========================================================================
+   LA PAGE JIMIZZ
+   ===========================================================================
+   Intégration de la maquette de Vincent (`assets/jimizz/src/maquette.png`,
+   1512 px de large, hors dépôt). Elle est BÂTIE SUR LE MÊME GABARIT que la page
+   J&M — panneau, cadre, colonne, titres, intro à deux colonnes viennent tous de
+   `.proj-*`, mesurés identiques au pixel sur les deux PNG. Ce qui suit n'est que
+   ce qui appartient à Jimizz.
+
+   LA PAGE SE LIT EN CINQ TEMPS, et l'alternance est toute la structure : un
+   texte, puis ce dont il parle.
+
+     panneau > bande de marque > « Le projet Crypto de Jacquie & Michel »
+     > le site (collage + deux mises en scène) > la composition de l'app
+     > « Un univers 3.0 complet » > les quatre plateformes
+
+   Il n'y a donc que TROIS titres dans toute la page — le `h1` et les deux `h2` —
+   et les trois blocs d'images sont des `<section>` nommées par `aria-label`.
+   Même parti que la page J&M : les images se passent d'intertitres.
+
+   TROIS LARGEURS, ET C'EST LA MAQUETTE QUI LES DIT :
+
+     - PLEINE LARGEUR — la bande de marque, le collage du site et la composition
+       de l'app. Les deux premières sont des bandes (`.proj-band`), la troisième
+       est bornée à 1512 px : c'est une composition d'objets, pas une photo, et
+       laissée libre elle grossirait d'un tiers sur un écran de 2560 ;
+     - LA BANDE, 1350 px (`--jmz-band`) — les deux mises en scène et le collage
+       des plateformes. Plus étroite que le cadre de 1472 px du panneau, et c'est
+       délibéré : ces deux blocs-là sont posés à 80 px des bords dans la maquette,
+       contre 20 px pour le panneau ;
+     - LA COLONNE, 1288 px (`--proj-col`) — les deux textes, comme chez J&M.
+
+   TOUS LES .webp SONT PRODUITS PAR `tools/build_jimizz.py`, jamais à la main :
+   il lit les `width: %` ci-dessous, en déduit la cible en densité 2 et n'agrandit
+   jamais. Si tu déplaces une pièce ou changes sa largeur, relance-le — il dira
+   aussitôt si la source suit encore.
+
+   LES SOURCES SONT TOUTES EN @2x, à une exception près : la bande de marque, qui
+   est en 1512 px pour 1512 px d'affichage. C'est la seule pièce molle de la page
+   sur un écran retina, et `build_jimizz.py` le redit à chaque passe. */
+
+/* Le pas de la maquette Jimizz vaut 93 px là où celui de J&M vaut 183 : c'est
+   une page plus dense, aux blocs plus rapprochés. Un seul nombre à toucher. */
+.jmz {
+  --proj-gap: clamp(56px, 6.15vw, 93px);
+  /* La bande, 1350 px : la largeur utile moins 80 px de chaque côté dans la
+     maquette. Le second terme est le `padding-inline` de `.proj-wrap`, pour que
+     ces blocs respirent comme le reste sur un petit écran. */
+  --jmz-band: min(1350px, 100% - 2 * clamp(14px, 1.32vw, 20px));
+  --par-gain: 1;
+}
+
+/* LE RYTHME, TRANSITION PAR TRANSITION. La base (93 px) sert deux fois ; les
+   cinq autres écarts s'en déduisent par un coefficient, et ils vont tous dans le
+   même sens : ce qui BORDE UN TEXTE respire plus, ce qui PROLONGE UNE IMAGE
+   respire moins. Les coefficients sont les rapports relevés sur le PNG, pas des
+   valeurs choisies — d'où les décimales. Baisse `--proj-gap` et toute la page se
+   resserre en gardant ses proportions. */
+.jmz > .jmz-site        { margin-top: calc(var(--proj-gap) * 1.50); }  /* 140 px — on sort d'un texte */
+.jmz > .jmz-shots       { margin-top: calc(var(--proj-gap) * .27); }   /*  25 px — les mises en scène prolongent le collage */
+.jmz > .jmz-app         { margin-top: calc(var(--proj-gap) * .86); }   /*  80 px */
+.jmz > .jmz-lead--univers { margin-top: calc(var(--proj-gap) * .48); } /*  45 px — la compo réserve déjà 134 px d'ombre sous elle */
+.jmz > .jmz-plateformes { margin-top: calc(var(--proj-gap) * 2.15); }  /* 200 px — le plus grand vide de la page */
+
+/* ---------- La bande de marque ----------
+   1512 × 504 dans la maquette, pleine largeur, opaque.
+
+   ELLE A PORTÉ UN LISERÉ TOPO SOUS ELLE, retiré : le PNG laissait dépasser 65 px
+   de courbes dans le coin bas gauche, et j'en avais fait un calque à part. C'était
+   la coquille dont parle Vincent — ce fragment était le haut du CARRÉ TOPO de la
+   section suivante, mal placé dans la maquette. Le carré est maintenant à sa
+   place, derrière le bloc de texte (`.proj-block__topo`), et il n'y a plus rien à
+   accrocher à la bande. */
+.jmz-marque { aspect-ratio: 1512 / 504; }
+
+/* ---------- Le site : le collage puis les deux mises en scène ----------
+   Le collage est une bande pleine largeur au rapport de son export (3022 ×
+   1909) ; les deux mises en scène sont carrées-ish, côte à côte dans la bande de
+   1350 px avec 26 px entre elles — (1350 - 26) / 2 = 662, la maquette au pixel.
+
+   Les 25 px qui séparent les deux blocs sont ce qui les fait lire comme un seul :
+   le site vu de loin, puis deux plans rapprochés. Ne les écarte pas. */
+.jmz-site { aspect-ratio: 3022 / 1909; }
+
+.jmz-shots {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(10px, 1.72vw, 26px);
+  width: var(--jmz-band);
+  margin: 0 auto;
+  padding: 0;
+}
+
+.jmz-shots img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* ---------- La composition de l'app ----------
+   Trois écrans, une fusée et cinq pièces, posés en POURCENTAGE d'un cadre de
+   référence de 1512 × 2475 — même convention que le tas de photos de l'accueil,
+   JacquIA et le collage des campagnes : le bloc entier se met à l'échelle d'un
+   seul tenant, et il n'y a pas une largeur à traiter à part.
+
+   LE CADRE EST PLEINE LARGEUR (1512) ET NON LE CADRE DE 1472, parce que les
+   pièces vont jusqu'à 6 px du bord gauche et 89 px du bord droit : ramenées dans
+   1472, deux d'entre elles porteraient un `left` négatif pour rien.
+
+   L'ORDRE DU DOM EST L'ORDRE DE PEINTURE (tout est en `z-index: auto`), et il
+   est RELEVÉ SUR LA MAQUETTE, pas choisi : les quatre premières pièces passent
+   DERRIÈRE l'écran qu'elles touchent, la cinquième devant. Vérifié une par une
+   en zoomant sur les recouvrements du PNG. Si tu réordonnes, une pièce changera
+   de plan sans prévenir.
+
+   Les hauteurs de la composition ne sont bornées par personne : les trois écrans
+   portent leur ombre douce dans leur alpha, et c'est elle qui remplit les 134 px
+   sous le dernier. C'est aussi pour ça que le texte qui suit n'est qu'à 43 px. */
+.jmz-app {
+  position: relative;
+  width: min(1512px, 100%);
+  margin-inline: auto;
+  /* 1512 × 1716. Le cadre est la boîte englobante des pièces : il a RÉTRÉCI deux
+     fois (2475 dans la maquette, 2048 après le resserrement, 1716 depuis que
+     l'écran de staking est remonté), donc si tu retouches une position,
+     recalcule-le — un cadre trop haut laisserait un vide au bas de la section. */
+  aspect-ratio: 3024 / 3432;
+}
+
+.jmz-app__screen,
+.jmz-app__rocket,
+.jmz-app__coin {
+  position: absolute;
+  height: auto;
+}
+
+/* LES POSITIONS SONT CELLES DE LA MAQUETTE, RESSERRÉES — Vincent trouvait le
+   groupe trop écarté, et il l'était : les trois écrans et la fusée se lisaient
+   comme quatre visuels posés côte à côte plutôt que comme une masse. C'est le
+   même reproche qu'avait valu sa première version au groupement Jimizz de la
+   section projets de l'accueil, et la même correction.
+
+   LE RESSERREMENT EST UNE CONTRACTION VERS LE BARYCENTRE DES TROIS ÉCRANS,
+   ×0,84 en largeur et ×0,72 en hauteur, et rien d'autre : les tailles ne
+   changent pas, et les CINQ PIÈCES D'OR ONT SUIVI LE DÉPLACEMENT DE LEUR ÉCRAN
+   au lieu d'être contractées elles aussi. C'est ce qui garde chacune derrière le
+   coin qu'elle touche — contractée pour son propre compte, une pièce aurait
+   glissé le long du téléphone. Leur position relative est donc INCHANGÉE depuis
+   la maquette, au pixel.
+
+   Le barycentre est conservé, donc le léger décentrage du groupe vers la gauche
+   (40 px) est celui de la maquette et pas un effet de bord du calcul.
+
+   L'ÉCRAN DE STAKING A ENSUITE ÉTÉ REMONTÉ DE 332 px, à la demande de Vincent :
+   il restait 372 px de vide entre le bas du portefeuille et son haut, et
+   l'escalier s'y cassait. Il en reste 40, et le cadre est passé de 2048 à
+   1716 px de haut. La pièce d'or qui le suit a remonté avec lui.
+
+   Les trois écrans ne se recouvrent toujours pas — ils sont séparés sur au moins
+   un axe : 13 px en largeur entre le menu et le portefeuille, 40 px en hauteur
+   entre le portefeuille et le staking. Mais ces 40 px sont désormais SERRÉS, et
+   ça a une conséquence sur le parallaxe : voir la note des amplitudes. */
+.jmz-app__coin--1 { left:  5.020%; top: 22.102%; width: 22.421%; }
+.jmz-app__coin--2 { left: 34.300%; top: 44.756%; width:  6.746%; }
+.jmz-app__coin--3 { left: 61.077%; top: 43.996%; width:  7.937%; }
+.jmz-app__coin--4 { left: 36.468%; top: 71.549%; width:  3.968%; }
+
+.jmz-app__screen--wallet  { left: 32.944%; top:  2.302%; width: 33.929%; }
+.jmz-app__screen--menu    { left:  7.235%; top: 32.213%; width: 35.847%; }
+.jmz-app__screen--staking { left: 55.720%; top: 46.910%; width: 33.929%; }
+
+.jmz-app__rocket { left: 40.354%; top: 58.873%; width: 19.015%; }
+
+.jmz-app__coin--5 { left: 54.836%; top:      0; width: 13.161%; }
+
+/* Le carré topo d'À propos, réemployé comme sur la page J&M : il déborde à
+   GAUCHE du cadre, dont on ne voit donc que sa moitié droite. Sa hauteur vient
+   du rapport de l'image (266 × 266) et pas d'un second pourcentage, qui se
+   résoudrait sur la hauteur du cadre et le déformerait. */
+.jmz-app__topo {
+  position: absolute;
+  /* Il reste au BORD DU CADRE et n'a pas suivi le resserrement en largeur : ce
+     décor déborde du côté gauche, il ne suit pas l'écran du menu. Seule sa
+     hauteur a suivi, pour rester à la même place le long de lui. */
+  left: 1.786%;
+  top: 65.489%;
+  width: 18.519%;
+  height: auto;
+  pointer-events: none;
+  /* Pas de `z-index: -1` : il est PREMIER dans le DOM et tous ses frères sont en
+     `z-index: auto`, donc l'ordre de peinture le met déjà derrière eux. Et comme
+     la section porte un `data-reveal="group"`, ce décor est un enfant de plus
+     dans la cascade — d'où le décalage d'entrée remis à zéro : il se fond sur
+     place au lieu de monter, il ne court pas après les écrans. */
+  --out-y: 0;
+  --out-s: 1;
+}
+
+/* ---------- Les quatre plateformes ----------
+   Même principe que la composition de l'app : un cadre de référence, ici
+   1350 × 1749, et quatre pièces en pourcentage. Elles se CHEVAUCHENT — le
+   dashboard mord sur la marketplace, le centre d'aide sur le quizz — et ce sont
+   ces deux contacts qui font tenir le collage. Posées côte à côte, elles se
+   liraient comme quatre captures perdues au milieu du cadre.
+
+   Leur arrondi est CUIT dans l'alpha des exports : aucun `border-radius` ici, et
+   si tu réexportes une capture, garde-le dans l'image. */
+.jmz-plateformes {
+  position: relative;
+  width: var(--jmz-band);
+  margin-inline: auto;
+  aspect-ratio: 1350 / 1749;
+}
+
+.jmz-plateformes__piece {
+  position: absolute;
+  height: auto;
+}
+
+.jmz-plateformes__piece--marketplace { left:      0; top:      0; width: 100%; }
+.jmz-plateformes__piece--dashboard   { left: 50.074%; top: 44.540%; width: 45.037%; }
+.jmz-plateformes__piece--quizz       { left:      0; top: 62.379%; width: 45.037%; }
+.jmz-plateformes__piece--aide        { left: 35.778%; top: 78.673%; width: 45.037%; }
+
+/* ---------- Les décalages d'entrée ----------
+   `data-reveal="group scatter"` sur les deux compositions : chaque pièce part de
+   SON décalage, déclaré ici et jamais dans le HTML. LES DEUX ÉTATS SONT ÉCRITS
+   EN DUR (voir le bloc motion) : aucune de ces variables ne CHANGE d'un état à
+   l'autre, c'est la déclaration qui change. Une variable qui change en cours de
+   transition ne s'interpole pas, elle saute.
+
+   LE GESTE DE L'APP EST LE DÉCOLLAGE, le même que le groupement Jimizz de la
+   section projets de l'accueil : la fusée monte du bas, les écrans suivent de
+   moins loin, et les pièces flottent en se posant. */
+.jmz-app__rocket          { --out-y: 70px; }
+.jmz-app__screen          { --out-y: 44px; --out-s: .97; }
+.jmz-app__coin            { --out-y: 26px; --out-s: .88; }
+
+/* Les plateformes s'OUVRENT : la marketplace se referme sur son cadre comme une
+   bande pleine largeur — elle est le fond de la composition, la faire glisser la
+   ferait lire comme une pièce de plus — et les trois cartes montent par-dessus. */
+.jmz-plateformes__piece--marketplace { --out-y: 0; --out-s: 1.03; }
+.jmz-plateformes__piece--dashboard   { --out-x:  26px; --out-y: 56px; --out-r:  1deg; }
+.jmz-plateformes__piece--quizz       { --out-x: -26px; --out-y: 56px; --out-r: -1deg; }
+.jmz-plateformes__piece--aide        { --out-x:      0; --out-y: 64px; --out-r:  1deg; }
+
+/* ---------- Le parallaxe de la page ----------
+   Le mécanisme est dans le bloc du gabarit ; ici, une amplitude par pièce.
+
+   LES DEUX COMPOSITIONS SONT LE SEUL ENDROIT DÉLICAT, et la contrainte est
+   arithmétique : deux pièces qui se chevauchent dérivent l'une par rapport à
+   l'autre de DEUX FOIS l'écart de leurs amplitudes, `--par` allant de -1 à +1.
+   Au-delà de leur recouvrement, elles se décollent.
+
+   D'où le partage : la profondeur est portée par les pièces qui ne touchent
+   personne — les trois écrans et la fusée, de 60 à 150 px — et chaque pièce
+   collée à un écran reste à 6 px de lui, soit 12 px de dérive au pire. Elles
+   flottent avec leur écran au lieu de s'en détacher. Si tu creuses ces écarts,
+   remesure les recouvrements.
+
+   UNE SEULE EXCEPTION, ET ELLE EST MESURÉE : depuis que l'écran de staking est
+   remonté, il n'est plus qu'à 40 px sous le portefeuille, pour 70 px d'écart
+   d'amplitude — donc jusqu'à 140 px de dérive relative, et les deux se croisent
+   en cours de route. Ce que ça donne à voir tient dans leur recouvrement
+   HORIZONTAL, qui vaut 6,6 px : le coin arrondi de l'un passe derrière celui de
+   l'autre sur six pixels de large. Baisser l'amplitude du staking à 80 px
+   supprimerait le croisement, et supprimerait avec lui l'essentiel de la
+   profondeur de la composition — c'est le mauvais échange. */
+.jmz-app__screen--wallet  { --par-amp:  60px; }
+.jmz-app__coin--2         { --par-amp:  54px; }  /* derrière l'écran portefeuille, 13 px de recouvrement */
+.jmz-app__coin--5         { --par-amp:  66px; }  /* devant lui, 66 px de recouvrement */
+.jmz-app__screen--menu    { --par-amp:  92px; }
+.jmz-app__coin--1         { --par-amp:  86px; }  /* derrière l'écran menu, 38 px de recouvrement */
+.jmz-app__coin--4         { --par-amp:  86px; }
+.jmz-app__screen--staking { --par-amp: 130px; }
+.jmz-app__coin--3         { --par-amp: 124px; }  /* derrière l'écran staking */
+.jmz-app__rocket          { --par-amp: 150px; }  /* elle ne touche rien : c'est elle qui va le plus vite */
+
+/* Le décor dérive à contretemps, comme le carré topo de la page J&M. */
+.jmz-app__topo { --par-amp: -80px; }
+
+/* Le collage des plateformes, d'autant plus rapide qu'on est devant. Les écarts
+   sont petits sur les deux paires qui se touchent (18 px, donc 36 px de dérive
+   pour 50 et 88 px de recouvrement) et libres entre les deux paires, qui ne se
+   touchent pas. */
+.jmz-plateformes__piece--marketplace { --par-amp:  26px; }
+.jmz-plateformes__piece--dashboard   { --par-amp:  44px; }
+.jmz-plateformes__piece--quizz       { --par-amp:  92px; }
+.jmz-plateformes__piece--aide        { --par-amp: 110px; }
+
+/* Les deux mises en scène cisaillent, comme les grilles de la page J&M : un plan
+   qui glisse derrière un autre, et l'alignement qui se défait puis se refait. */
+.jmz-shots li:nth-child(odd)  { --par-amp: 26px; }
+.jmz-shots li:nth-child(even) { --par-amp: 92px; }
+
+/* ---------- Le responsive de la page ---------- */
+@media (max-width: 620px) {
+  /* Les deux mises en scène s'empilent : à deux colonnes elles tombent sous
+     170 px, où l'écran mis en scène n'est plus qu'une tache. Même seuil et même
+     raison que les quatre scènes de la page J&M. */
+  .jmz-shots { grid-template-columns: minmax(0, 1fr); }
+
+  /* Le parallaxe rabattu de moitié : 150 px de dérive sur un écran de 375 px,
+     c'est plus d'un tiers de sa largeur, et les pièces se décrochent au lieu de
+     glisser. Un seul nombre, parce qu'il n'y en a qu'un à tenir. */
+  .jmz { --par-gain: .52; }
+}
+
+/* ===========================================================================
+   LA VISIONNEUSE
+   ===========================================================================
+   Cliquer une image d'une page projet l'ouvre en grand. Trois principes, les
+   mêmes que pour le reste du site :
+
+   - LE HTML DÉCIDE. Un conteneur porte `data-viewer="<nom du groupe>"`, et
+     toutes les images qu'il contient forment UNE galerie qu'on parcourt aux
+     flèches. Le groupe est donc l'unité éditoriale — les dix écrans du rail,
+     les quatre emails, les vingt visuels réseaux — et non une liste à plat de
+     soixante images sans rapport les unes avec les autres ;
+   - LE JS NE POSE QU'UN ÉTAT. Il ouvre, ferme, change d'index. Toute la mise
+     en scène est ici ;
+   - LE MARQUAGE EST CONSTRUIT PAR LE JS, et c'est délibéré : sans JS il n'y a
+     pas de visionneuse du tout, donc pas de bouton mort ni de `<dialog>` inerte
+     dans la page. Les images restent des images. C'est l'inverse exact de la
+     règle du reveal — là-bas le contenu ne doit JAMAIS dépendre du JS, ici la
+     visionneuse n'est que du chrome.
+
+   C'est un `<dialog>` natif ouvert par `showModal()`, et ce choix vaut son
+   pesant de code non écrit : couche supérieure, fond `::backdrop`, piège à
+   focus, fermeture par Échap, arrière-plan rendu inerte et focus rendu à
+   l'élément déclencheur — tout ça est offert par le navigateur. */
+
+/* L'affordance est posée par le JS (`is-zoomable`), donc elle n'apparaît que si
+   la visionneuse existe vraiment. Le liseré de focus est le vert du site, comme
+   sur `.rail-wrap`. */
+.is-zoomable { cursor: zoom-in; }
+
+.is-zoomable:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 4px;
+}
+
+/* Un `<dialog>` arrive avec une bordure, un fond blanc et des marges
+   automatiques : on remet tout à zéro et on lui donne le viewport entier. */
+.viewer {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  overflow: hidden;
+}
+
+/* Le flou fait ici le travail que l'opacité ne peut pas faire : le site est déjà
+   sombre de bout en bout, donc un voile d'encre sur de l'encre ne détache rien —
+   à .93 le titre de la page restait parfaitement lisible derrière l'image. Le
+   flou, lui, dissout la page quelle que soit sa valeur. Même procédé que la
+   porte NSFW de projet-jm.html, en plus léger. */
+.viewer::backdrop {
+  background: rgb(var(--ink-rgb) / .82);
+  backdrop-filter: blur(10px) saturate(.7);
+}
+
+/* La scène occupe tout, et c'est elle qui centre. Cliquer à côté de l'image
+   ferme — le JS regarde si la cible est la scène elle-même. */
+.viewer__stage {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  padding: clamp(48px, 6vw, 88px) clamp(16px, 7vw, 104px);
+  cursor: zoom-out;
+}
+
+/* `height: auto` du reset global s'applique aussi ici : l'image garde son
+   rapport, et les deux bornes la contiennent dans la fenêtre sans la déformer.
+   Le fond crème est celui de `.versant__shot` — une capture d'email ou de site
+   posée sur du vide sombre paraît flotter. */
+.viewer__img {
+  /* `min-width/height: 0` n'est pas cosmétique : un élément de grille a une
+     taille minimale AUTOMATIQUE égale à sa taille intrinsèque, et pour une image
+     ça l'emporte sur `max-height`. Sans ces deux lignes, une capture d'email de
+     881 px de haut sort de la fenêtre par le bas et vient buter dans la légende
+     — mesuré à 146 px de recouvrement en 1280 x 860. */
+  min-width: 0;
+  min-height: 0;
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 10px;
+  background: #fffaf0;
+  box-shadow: 0 30px 90px rgb(var(--ink-rgb) / .6);
+  cursor: default;
+}
+
+/* La légende EST le texte alternatif de l'image. Il est déjà écrit, descriptif
+   et en français partout dans les pages projet : le redoubler d'un attribut
+   `data-caption` aurait fait deux textes à tenir à jour. */
+.viewer__caption {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(14px, 2.4vh, 26px);
+  translate: -50% 0;
+  max-width: min(760px, 88vw);
+  margin: 0;
+  font-size: clamp(12px, 1.05vw, 14px);
+  line-height: 1.5;
+  text-align: center;
+  text-wrap: balance;
+  color: rgb(var(--cream-rgb) / .68);
+}
+
+/* La pastille n'est pas décorative : en mode « version entière » le compteur se
+   retrouve posé sur un email BLANC qui défile dessous, et du crème sur du blanc
+   ne se lit pas. Le même fond d'encre que les boutons règle les deux cas d'un
+   coup. */
+.viewer__count {
+  position: absolute;
+  top: clamp(14px, 2.4vh, 24px);
+  left: 50%;
+  translate: -50% 0;
+  margin: 0;
+  padding: 4px 13px;
+  border: 1px solid rgb(var(--cream-rgb) / .18);
+  border-radius: 999px;
+  background: rgb(var(--ink-rgb) / .78);
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 15px;
+  color: rgb(var(--cream-rgb) / .72);
+}
+
+/* Les trois boutons partagent la même pastille : encre, filet crème, comme le
+   HUD du parcours. */
+.viewer__close,
+.viewer__nav {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid rgb(var(--cream-rgb) / .22);
+  border-radius: 50%;
+  background: rgb(var(--ink-rgb) / .72);
+  color: var(--cream);
+  cursor: pointer;
+  transition: background .18s ease, border-color .18s ease, scale .18s ease;
+}
+
+.viewer__close:hover,
+.viewer__nav:hover {
+  background: rgb(var(--ink-rgb) / .92);
+  border-color: rgb(var(--cream-rgb) / .5);
+  scale: 1.06;
+}
+
+.viewer__close:focus-visible,
+.viewer__nav:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 3px;
+}
+
+.viewer__close { top: clamp(12px, 2vh, 22px); right: clamp(12px, 2vw, 22px); }
+.viewer__nav--prev { left: clamp(8px, 1.6vw, 20px); }
+.viewer__nav--next { right: clamp(8px, 1.6vw, 20px); }
+
+.viewer__nav {
+  top: 50%;
+  translate: 0 -50%;
+}
+
+/* --- Le mode « version entière » --- */
+/* Déclenché par `data-full` sur la vignette. L'image reprend sa largeur
+   naturelle et c'est la scène qui défile : une capture d'email de 3 068 px de
+   haut ramenée à la hauteur de la fenêtre donnerait 3 px de corps de texte, donc
+   « en grand » veut ici dire « à taille réelle, et on fait défiler ».
+
+   `overscroll-behavior: contain` empêche le défilement de se propager à la page
+   une fois arrivé en bas de l'email. */
+.viewer.is-full .viewer__stage {
+  place-items: start center;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--cream-rgb) / .3) transparent;
+}
+
+.viewer.is-full .viewer__img {
+  max-height: none;
+  border-radius: 6px;
+}
+
+/* Les flèches et le bouton de fermeture restent collés à la fenêtre pendant que
+   l'email défile dessous — ils sont posés sur le dialogue, pas sur la scène,
+   donc c'est déjà le cas. La légende, elle, deviendrait un obstacle au-dessus
+   d'un contenu qu'on lit : elle s'efface. */
+.viewer.is-full .viewer__caption { display: none; }
+
+/* Un groupe d'une seule image n'a ni flèches ni compteur — c'est le JS qui pose
+   la classe, il n'y a rien à masquer à la main dans le HTML. */
+.viewer.is-solo .viewer__nav,
+.viewer.is-solo .viewer__count { display: none; }
+
+/* L'entrée : le fond se pose, l'image monte de très peu. Même courbe que les
+   révélations au scroll — `--ease-out` est le seul token de motion du site. */
+@keyframes viewer-in  { from { opacity: 0; scale: .97; } }
+@keyframes viewer-fade { from { opacity: 0; } }
+
+.viewer[open] { animation: viewer-fade .18s linear; }
+.viewer[open]::backdrop { animation: viewer-fade .22s linear; }
+.viewer[open] .viewer__img { animation: viewer-in .34s var(--ease-out); }
+
+/* Le changement d'image rejoue la même animation : le JS retire puis remet la
+   classe, ce qui suffit à relancer le keyframe. */
+.viewer__img.is-swapping { animation: viewer-in .26s var(--ease-out); }
+
+/* La page ne défile plus derrière la visionneuse. `overflow-y` seulement :
+   `html` porte `overflow-x: clip` (le débord du tas de photos), qu'il ne faut
+   pas écraser. */
+html:has(.viewer[open]) { overflow-y: hidden; }
+
+@media (max-width: 640px) {
+  .viewer__stage { padding: 64px 12px 76px; }
+  .viewer__nav { top: auto; bottom: clamp(12px, 2vh, 20px); translate: none; }
+  .viewer__caption { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .viewer[open],
+  .viewer[open]::backdrop,
+  .viewer[open] .viewer__img,
+  .viewer__img.is-swapping { animation: none; }
+  .viewer__close, .viewer__nav { transition: none; }
+  .viewer__close:hover, .viewer__nav:hover { scale: 1; }
 }

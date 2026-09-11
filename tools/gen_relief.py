@@ -12,11 +12,11 @@ l'écran. Comme ROT_DAMP borne cette rotation à ±25°, le relief penche un peu
 fil de la marche — c'est le compromis assumé.
 
 Le script produit deux choses :
-  - assets/trail-relief.svg, la tuile ;
+  - assets/home/trail/relief.svg, la tuile ;
   - le `d` des deux <path> du parcours dans index.html, décalé en altitude pour
     que le chemin colle au relief.
 
-Le tracé plat de référence est conservé dans assets/route-flat.path : c'est lui
+Le tracé plat de référence est conservé dans assets/home/trail/route-flat.path : c'est lui
 qui est relu à chaque exécution, donc relancer le script ne cumule pas les
 décalages. Si tu régénères le tracé avec gen_route.py, supprime ce fichier pour
 qu'il soit recapturé, puis relance ce script.
@@ -134,7 +134,7 @@ tile = (
     f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {TILE} {TILE}"'
     f' width="{TILE}" height="{TILE}">' + "".join(groups) + "</svg>"
 )
-out = REPO / "assets" / "trail-relief.svg"
+out = REPO / "assets" / "home" / "trail" / "relief.svg"
 open(out, "w").write(tile)
 
 
@@ -158,7 +158,7 @@ def height_at(x, y):
 
 html_path = REPO / "index.html"
 html = open(html_path).read()
-flat_path = REPO / "assets" / "route-flat.path"
+flat_path = REPO / "assets" / "home" / "trail" / "route-flat.path"
 
 if flat_path.exists():
     flat_d = open(flat_path).read().strip()

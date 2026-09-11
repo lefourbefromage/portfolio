@@ -5,6 +5,86 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vincent Waldmann — Webdesigner & Intégrateur</title>
 <link rel="stylesheet" href="css/style.css">
+
+<!-- L'ARRIVÉE SUR L'ACCUEIL, et elle se règle AVANT le premier rendu — d'où ce
+     script en tête de page et non dans `main.js`, qui charge en bas. Même parti
+     que l'amorce de motion des trois pages projet.
+
+     Deux choses, et la seconde est la vraie.
+
+     1. ON NE DÉFILE PAS SOUS LES YEUX DU VISITEUR. `scroll-behavior: smooth`
+        s'applique aussi au saut vers l'ancre d'une NAVIGATION : arriver sur
+        `index.html#projets` animait la descente, et cette descente-là traverse
+        les 717 vh du parcours. `is-arriving` repasse en `auto` le temps du
+        chargement (voir la feuille de style) et s'en va au `load` : les ancres
+        du header, elles, gardent leur défilement lissé.
+
+     2. REVENIR D'UNE PAGE PROJET REPOSE LA PAGE OÙ ON L'AVAIT LAISSÉE. On
+        mémorise la position en partant, on la restaure en revenant — plutôt que
+        de se poser en haut de la section, ce qui ferait perdre et la carte
+        qu'on regardait, et l'état du parcours.
+
+        LE SIGNAL EST L'ANCRE `#projets`, et rien d'autre : c'est celle des
+        liens « Tous les projets » des trois pages projet. Les autres liens du
+        header — à propos, parcours, contact — se posent normalement sur la
+        leur, et quelqu'un qui arrive de l'extérieur sur `#projets` n'a rien en
+        mémoire, donc il a le saut vers l'ancre. Le repli EST le comportement
+        d'avant : il n'y a rien de plus à prévoir.
+
+        ON RETIRE L'ANCRE DE L'URL au passage, et c'est ce qui évite le
+        clignotement : sans ça le navigateur pose d'abord la page sur la
+        section, et on la déplace ensuite. Il n'y a plus qu'un positionnement,
+        et l'URL dit la vérité — on n'est pas « à la section projets », on est
+        là où on était.
+
+     Le tout dans un try/catch : `sessionStorage` lève en navigation privée sur
+     certains navigateurs, et une page d'accueil n'a pas à dépendre d'un espace
+     de stockage. -->
+<script>
+  (function () {
+    var html = document.documentElement;
+    var KEY = 'home-scroll';
+
+    html.classList.add('is-arriving');
+    addEventListener('load', function () { html.classList.remove('is-arriving'); });
+
+    try {
+      // On enregistre en partant, quelle que soit la destination : c'est le
+      // retour qui décidera si ça sert. `pagehide` et non `beforeunload` — il
+      // couvre aussi la mise en cache arrière/avant, et ne l'empêche pas.
+      addEventListener('pagehide', function () {
+        sessionStorage.setItem(KEY, String(Math.round(scrollY)));
+      });
+
+      if (location.hash !== '#projets') return;
+
+      var y = parseFloat(sessionStorage.getItem(KEY));
+      if (!(y > 0)) return;
+
+      history.replaceState(history.state, '', location.pathname + location.search);
+
+      // Le visiteur est prioritaire : au premier geste de sa part, on lâche.
+      var free = false;
+      ['wheel', 'touchstart', 'keydown'].forEach(function (type) {
+        addEventListener(type, function () { free = true; }, { passive: true, once: true });
+      });
+
+      // Trois rendez-vous, et pas un seul : la hauteur du document n'est
+      // complète qu'une fois les images posées, et une cible plus basse que le
+      // document se fait écrêter en silence. `pagereveal` est celui qui compte
+      // quand la transition de page joue — il tombe avant que le navigateur ne
+      // prenne l'instantané de la page entrante, donc la transition part de la
+      // bonne position au lieu de la rattraper.
+      var put = function () {
+        if (free || Math.abs(scrollY - y) < 1) return;
+        scrollTo({ top: y, behavior: 'instant' });
+      };
+      document.addEventListener('DOMContentLoaded', put);
+      addEventListener('pagereveal', put);
+      addEventListener('load', put);
+    } catch (e) { /* stockage indisponible : on garde le saut vers l'ancre */ }
+  })();
+</script>
 </head>
 <body>
 
@@ -39,8 +119,8 @@
   <section class="hero">
     <div class="hero__panel">
 
-      <img class="hero__bg" src="assets/hero-bg.png" alt="" aria-hidden="true">
-      <img class="hero__topo" src="assets/hero-topo.svg" alt="" aria-hidden="true">
+      <img class="hero__bg" src="assets/home/hero/bg.png" alt="" aria-hidden="true">
+      <img class="hero__topo" src="assets/home/hero/topo.svg" alt="" aria-hidden="true">
 
       <div class="hero__content">
         <div class="hero__intro">
@@ -50,7 +130,7 @@
 
         <h1 class="hero__title">
           <span class="hero__title-line hero__title-line--fill">Webdesigner</span>
-          <img src="assets/ghost-title.svg" alt="&amp; Integrateur" class="hero__title-line hero__title-line--ghost">
+          <img src="assets/home/hero/ghost-title.svg" alt="&amp; Integrateur" class="hero__title-line hero__title-line--ghost">
         </h1>
 
         <div class="hero__badges">
@@ -60,17 +140,17 @@
       </div>
 
       <div class="hero__decor" aria-hidden="true">
-        <img src="assets/title-underline.svg" alt="" class="decor decor--underline">
-        <img src="assets/path-3.svg" alt="" class="decor decor--path-left">
-        <img src="assets/path-4.svg" alt="" class="decor decor--path-right">
+        <img src="assets/home/hero/title-underline.svg" alt="" class="decor decor--underline">
+        <img src="assets/home/pile/path-3.svg" alt="" class="decor decor--path-left">
+        <img src="assets/home/pile/path-4.svg" alt="" class="decor decor--path-right">
 
-        <img src="assets/sticker-figma.webp" alt="" class="decor decor--sticker sticker-1">
-        <img src="assets/sticker-html.webp" alt="" class="decor decor--sticker sticker-2">
-        <img src="assets/sticker-sassless.webp" alt="" class="decor decor--sticker sticker-3">
-        <img src="assets/sticker-adobe.webp" alt="" class="decor decor--sticker sticker-4">
-        <img src="assets/sticker-github.webp" alt="" class="decor decor--sticker sticker-5">
-        <img src="assets/sticker-affinity.webp" alt="" class="decor decor--sticker sticker-6">
-        <img src="assets/sticker-uiux.webp" alt="" class="decor decor--sticker sticker-7">
+        <img src="assets/home/hero/sticker-figma.webp" alt="" class="decor decor--sticker sticker-1">
+        <img src="assets/home/hero/sticker-html.webp" alt="" class="decor decor--sticker sticker-2">
+        <img src="assets/home/hero/sticker-sassless.webp" alt="" class="decor decor--sticker sticker-3">
+        <img src="assets/home/hero/sticker-adobe.webp" alt="" class="decor decor--sticker sticker-4">
+        <img src="assets/home/hero/sticker-github.webp" alt="" class="decor decor--sticker sticker-5">
+        <img src="assets/home/hero/sticker-affinity.webp" alt="" class="decor decor--sticker sticker-6">
+        <img src="assets/home/hero/sticker-uiux.webp" alt="" class="decor decor--sticker sticker-7">
       </div>
 
     </div>
@@ -88,13 +168,13 @@
         <path d="M 732 46 C 752 160, 714 350, 734 510"/>
       </svg>
 
-      <img class="pile__photo pile__photo--1" src="assets/photo1.png" alt="" decoding="async">
-      <img class="pile__photo pile__photo--7" src="assets/photo7.png" alt="" decoding="async">
-      <img class="pile__photo pile__photo--4" src="assets/photo4.png" alt="" decoding="async">
-      <img class="pile__photo pile__photo--3" src="assets/photo3.png" alt="" decoding="async">
-      <img class="pile__photo pile__photo--6" src="assets/photo6.png" alt="" decoding="async">
-      <img class="pile__photo pile__photo--2" src="assets/photo2.png" alt="" decoding="async">
-      <img class="pile__photo pile__photo--5" src="assets/photo5.png" alt="" decoding="async">
+      <img class="pile__photo pile__photo--1" src="assets/home/pile/photo1.png" alt="" decoding="async">
+      <img class="pile__photo pile__photo--7" src="assets/home/pile/photo7.png" alt="" decoding="async">
+      <img class="pile__photo pile__photo--4" src="assets/home/pile/photo4.png" alt="" decoding="async">
+      <img class="pile__photo pile__photo--3" src="assets/home/pile/photo3.png" alt="" decoding="async">
+      <img class="pile__photo pile__photo--6" src="assets/home/pile/photo6.png" alt="" decoding="async">
+      <img class="pile__photo pile__photo--2" src="assets/home/pile/photo2.png" alt="" decoding="async">
+      <img class="pile__photo pile__photo--5" src="assets/home/pile/photo5.png" alt="" decoding="async">
 
       <p class="pile__hint">Scroll to explore</p>
 
@@ -108,8 +188,8 @@
   <section class="section about" id="a-propos">
 
     <div class="about__topo" aria-hidden="true">
-      <img class="about__topo-tile about__topo-tile--left" src="assets/topo-square-left.svg" alt="" decoding="async">
-      <img class="about__topo-tile about__topo-tile--right" src="assets/topo-square-right.svg" alt="" decoding="async">
+      <img class="about__topo-tile about__topo-tile--left" src="assets/home/about/topo-square-left.svg" alt="" decoding="async">
+      <img class="about__topo-tile about__topo-tile--right" src="assets/home/about/topo-square-right.svg" alt="" decoding="async">
     </div>
 
     <div class="about__head">
@@ -143,7 +223,7 @@
 
       <!-- Bouton volontairement en <span> : le PDF n'existe pas encore, et on ne laisse
            pas d'ancre morte sur le site. À repasser en
-           <a href="assets/cv-vincent-waldmann.pdf" download> le jour où il est là. -->
+           <a href="assets/home/cv-vincent-waldmann.pdf" download> le jour où il est là. -->
       <span class="about__cv">
         Télécharger mon CV
         <svg class="about__cv-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true" focusable="false">
@@ -158,7 +238,7 @@
   <section class="trail" id="parcours">
 
     <!-- Le fil pointillé qui descend du bouton « CV » d'À propos et vient se poser
-         sur le carton. C'est le tracé de `separator.svg`, renormalisé pour que son
+         sur le carton. C'est le tracé de `src/home/separator.svg`, renormalisé pour que son
          DÉPART tombe en (0,0) et son ARRIVÉE en (486,415) : la boîte du SVG est donc
          exactement le trajet à couvrir, et il n'y a plus rien à calculer pour placer
          ses deux bouts. Les points de contrôle sortent de la boîte, c'est normal et
@@ -313,57 +393,78 @@
   <section class="section" id="projets">
     <div class="section__head">
       <p class="section__eyebrow">
-        <span class="section__eyebrow-num">03.</span> Quelques sommets
+        <span class="section__eyebrow-num">03.</span> Sur les sentiers
       </p>
       <h2 class="section__title">Cartographie des projets</h2>
-      <p class="section__lede">
-        <span class="todo">À compléter</span>
-        Une phrase de cadrage&nbsp;: le type de projets que tu montres ici, et pourquoi
-        ceux-là plutôt que d’autres.
-      </p>
     </div>
 
-    <div class="projects">
-      <!-- La seule carte qui mène quelque part pour l'instant : la page projet vit à
-           la RACINE (projet-beepz.html) et non dans un sous-dossier, pour que tous les
-           chemins assets/ et css/ y restent identiques à ceux d'ici. -->
-      <a class="project project--todo project--link" href="projet-beepz.html">
-        <div class="project__frame"><span>Visuel à venir</span></div>
-        <p class="project__index">01</p>
-        <h3 class="project__title">Beepz</h3>
-        <p class="project__meta">2025<span class="project__dot">·</span>Beepz<span class="project__dot">·</span>UI/UX Designer</p>
-        <p class="project__desc">Place de marché automobile californienne. Un design système, appliqué et éprouvé sur la landing page et les emails.</p>
-        <p class="project__more">Lire l’étude de cas
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true" focusable="false">
-            <path d="M1 9L9 1M9 1H2M9 1V8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </p>
-      </a>
+    <!-- Trois projets, trois cartes à gauche, et à droite UN SEUL emplacement où
+         les trois groupements se superposent : survoler une carte fait entrer le
+         sien. L'`is-active` est posée dans le HTML sur le premier — sans JS c'est
+         donc lui qui s'affiche, et le JS ne fait que déplacer la classe.
 
-      <article class="project project--todo">
-        <div class="project__frame"><span>Visuel à venir</span></div>
-        <p class="project__index">02</p>
-        <h3 class="project__title">Nom du projet</h3>
-        <p class="project__meta">Année<span class="project__dot">·</span>Client<span class="project__dot">·</span>Rôle</p>
-        <p class="project__desc">Le problème posé, ce que tu as fait, ce que ça a changé. Deux ou trois lignes.</p>
-      </article>
+         Le groupement vit DANS le `<li>` de sa carte, pas dans un conteneur à
+         part : en desktop la grille les ramène tous dans la même cellule, en
+         mobile chacun retombe naturellement sous sa carte. Une seule structure
+         pour les deux mises en page. -->
+    <ul class="projects" data-projects>
 
-      <article class="project project--todo">
-        <div class="project__frame"><span>Visuel à venir</span></div>
-        <p class="project__index">03</p>
-        <h3 class="project__title">Nom du projet</h3>
-        <p class="project__meta">Année<span class="project__dot">·</span>Client<span class="project__dot">·</span>Rôle</p>
-        <p class="project__desc">Le problème posé, ce que tu as fait, ce que ça a changé. Deux ou trois lignes.</p>
-      </article>
+      <li class="projects__item is-active">
+        <a class="pcard" href="projet-jm.html">
+          <!-- L'icône porte son fond de marque ET ses coins arrondis dans le PNG :
+               `.pcard__icon` n'est plus qu'une boîte de dimension. -->
+          <img class="pcard__icon" src="assets/home/projects/logo-jm-left.webp" alt="" loading="lazy" decoding="async" width="220" height="220">
+          <span class="pcard__text">
+            <span class="pcard__name">Jacquie &amp; Michel</span>
+            <span class="pcard__tag">On dit merci qui&nbsp;?</span>
+          </span>
+        </a>
 
-      <article class="project project--todo">
-        <div class="project__frame"><span>Visuel à venir</span></div>
-        <p class="project__index">04</p>
-        <h3 class="project__title">Nom du projet</h3>
-        <p class="project__meta">Année<span class="project__dot">·</span>Client<span class="project__dot">·</span>Rôle</p>
-        <p class="project__desc">Le problème posé, ce que tu as fait, ce que ça a changé. Deux ou trois lignes.</p>
-      </article>
-    </div>
+        <div class="pcluster pcluster--jm" aria-hidden="true">
+          <img class="pcluster__item pcluster__item--jm-ipad"   src="assets/home/projects/jm-ipad.webp"   alt="" loading="lazy" decoding="async" width="701" height="580">
+          <img class="pcluster__item pcluster__item--jm-tshirt" src="assets/home/projects/jm-tshirt.webp" alt="" loading="lazy" decoding="async" width="490" height="766">
+          <img class="pcluster__item pcluster__item--jm-logo"   src="assets/home/projects/jm-logo.webp"   alt="" loading="lazy" decoding="async" width="490" height="518">
+          <img class="pcluster__item pcluster__item--jm-toy"    src="assets/home/projects/jm-sextoy.webp" alt="" loading="lazy" decoding="async" width="490" height="535">
+        </div>
+      </li>
+
+      <li class="projects__item">
+        <a class="pcard" href="projet-beepz.html">
+          <img class="pcard__icon" src="assets/home/projects/logo-beepz-left.webp" alt="" loading="lazy" decoding="async" width="220" height="220">
+          <span class="pcard__text">
+            <span class="pcard__name">Beepz</span>
+            <span class="pcard__tag">Marketplace de voiture</span>
+          </span>
+        </a>
+
+        <div class="pcluster pcluster--beepz" aria-hidden="true">
+          <img class="pcluster__item pcluster__item--bz-phone" src="assets/home/projects/beepz-iphone.webp"  alt="" loading="lazy" decoding="async" width="363" height="736">
+          <img class="pcluster__item pcluster__item--bz-photo" src="assets/home/projects/beepz-picture.webp" alt="" loading="lazy" decoding="async" width="647" height="799">
+          <img class="pcluster__item pcluster__item--bz-car"   src="assets/home/projects/beepz-car.webp"     alt="" loading="lazy" decoding="async" width="773" height="531">
+        </div>
+      </li>
+
+      <li class="projects__item">
+        <a class="pcard" href="projet-jimizz.html">
+          <img class="pcard__icon" src="assets/home/projects/logo-jimizz-left.webp" alt="" loading="lazy" decoding="async" width="220" height="220">
+          <span class="pcard__text">
+            <span class="pcard__name">Jimizz</span>
+            <span class="pcard__tag">Jacquie et Michel Crypto</span>
+          </span>
+        </a>
+
+        <div class="pcluster pcluster--jimizz" aria-hidden="true">
+          <img class="pcluster__item pcluster__item--jz-coin1"  src="assets/home/projects/jmz-coin1.webp"  alt="" loading="lazy" decoding="async" width="278" height="287">
+          <img class="pcluster__item pcluster__item--jz-coin2"  src="assets/home/projects/jmz-coin2.webp"  alt="" loading="lazy" decoding="async" width="455" height="432">
+          <img class="pcluster__item pcluster__item--jz-rocket" src="assets/home/projects/jmz-rocket.webp" alt="" loading="lazy" decoding="async" width="395" height="858">
+          <img class="pcluster__item pcluster__item--jz-wallet" src="assets/home/projects/jmz-wallet.webp" alt="" loading="lazy" decoding="async" width="676" height="565">
+          <img class="pcluster__item pcluster__item--jz-stats"  src="assets/home/projects/jmz-stats.webp"  alt="" loading="lazy" decoding="async" width="703" height="589">
+          <img class="pcluster__item pcluster__item--jz-coin3"  src="assets/home/projects/jmz-coin3.webp"  alt="" loading="lazy" decoding="async" width="559" height="521">
+          <img class="pcluster__item pcluster__item--jz-coin4"  src="assets/home/projects/jmz-coin4.webp"  alt="" loading="lazy" decoding="async" width="668" height="633">
+        </div>
+      </li>
+
+    </ul>
   </section>
 
   <section class="section contact" id="contact">

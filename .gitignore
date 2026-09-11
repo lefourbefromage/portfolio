@@ -2,9 +2,6 @@
 .DS_Store
 **/.DS_Store
 
-# Sorties intermédiaires des générateurs
-assets/hero-topo-raw.svg
-
 # Éditeurs
 .vscode/
 .idea/
@@ -16,17 +13,33 @@ assets/hero-topo-raw.svg
 .agents/
 .claude/skills/
 
-# Source haute définition du schéma Beepz : 6,5 Mo, non référencée par le site
-# (projet-beepz.html charge le .webp de 139 Ko qui en est tiré).
-assets/beepz-system.png
+# ---------------------------------------------------------------------------
+# Les sources ne sont PAS versionnées, les fichiers servis le sont.
+#
+# Le dépôt est public et GitHub Pages le sert tel quel : le dépôt EST le site.
+# Tout ce qui y entre est lisible de tous, historique compris, et pèse sur chaque
+# clone. D'où un dossier par projet, et dans chacun un `src/` :
+#
+#   assets/home/   assets/beepz/   assets/jm/      les images que les pages chargent
+#   assets/<projet>/src/                           les originaux dont elles sont tirées
+#
+# Exports Figma, captures avant traitement, PNG haute définition : jusqu'à
+# 9,9 Mo la pièce, contre 30 à 140 Ko pour le .webp qui en sort. Si tu ajoutes un
+# visuel, dépose la source dans le `src/` du projet et ne verse à côté que le
+# fichier réellement servi. Une seule règle tient ce partage.
+assets/*/src/
 
-# Sources des sept stickers du hero (sans le filtre « abîmé ») : non
-# référencées par le site, qui ne charge que les .webp détourés qui en sont
-# tirés. Même partage que assets/beepz-system.png.
-assets/adobe.png
-assets/affinity.png
-assets/figma.png
-assets/github.png
-assets/html.png
-assets/sass less.png
-assets/ui ux.png
+# assets/jm/ garde en plus un dossier de sources HORS `src/` : social-network/,
+# 79 Mo d'exports d'origine que tools/build_social.py lit là où ils sont tombés.
+# On ignore donc tout le dossier, et on ré-autorise un par un ceux que la page
+# sert vraiment. Le jour où build_social.py ira chercher ses sources dans
+# assets/jm/src/, ces lignes se réduisent à la règle `assets/*/src/` du dessus.
+assets/jm/*
+!assets/jm/hero/
+!assets/jm/sites/
+!assets/jm/marques/
+!assets/jm/jacquia/
+!assets/jm/campagnes/
+!assets/jm/frise/
+!assets/jm/shots/
+!assets/jm/social/

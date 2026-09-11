@@ -452,7 +452,7 @@
      problème de RASTÉRISATION, pas de code : le fil principal tient ses 8,3 ms
      médians de bout en bout.
 
-     `assets/trail-relief.svg` est une tuile de 192 tracés translucides. Tant
+     `assets/home/trail/relief.svg` est une tuile de 192 tracés translucides. Tant
      que l'échelle ne bouge pas, le compositeur réutilise sa texture — mais
      `scale()` change à chaque approche d'étape (0,70 → 1,14), et Chrome doit
      alors redessiner ces 192 tracés pour CHAQUE tuile visible. Mesuré à 58 ms
@@ -509,15 +509,29 @@
   // l'intérêt de la section est de voir le cheminement se faire, pas d'être
   // téléporté d'une carte à l'autre. Baisse GLIDE_PACE pour accélérer.
   const GLIDE_PACE = 3.4;    // ms de marche par px de scroll à couvrir
-  const GLIDE_MIN = 2600;    // ms — la marche la plus courte
-  const GLIDE_MAX = 6500;    // ms — et la plus longue. Assez haut pour qu'aucune
-                             // marche ne soit écrêtée sur un écran courant : une
-                             // marche tronquée irait plus vite que les autres.
+  // Les deux bornes ne sont là que contre les cas dégénérés, et il faut qu'elles
+  // NE MORDENT JAMAIS sur une vraie marche : la vitesse au scroll doit être la
+  // même partout, sans quoi l'écart s'entend aussitôt. C'est vrai des deux côtés.
+  //
+  // Le plancher valait 2600 ms, et c'est lui qui produisait le « ralentissement
+  // à 2012 ». La première marche est la seule courte du lot — 385 px, contre 850
+  // à 1382 pour les autres — parce qu'elle ne part pas d'une carte mais de la fin
+  // de la révélation. Elle demandait 1310 ms, le plancher lui en imposait 2600 :
+  // 148 px/s contre 294 partout ailleurs, soit la moitié de la vitesse, sur la
+  // toute première marche que le visiteur voit.
+  const GLIDE_MIN = 250;     // ms — jamais atteint par une marche réelle
+  const GLIDE_MAX = 6500;    // ms — idem : assez haut pour qu'aucune marche ne
+                             // soit écrêtée sur un écran courant.
   const INERTIA_LOCK = 1100; // ms — le temps qu'un flick de trackpad retombe
   const WHEEL_TRIGGER = 24;  // px de molette cumulés avant de déclencher
   const SWIPE_TRIGGER = 34;  // px de doigt
   const REARM = 260;         // ms de battement après une marche, contre l'inertie
   const MARK_EPS = 0.004;
+
+  // La destination du geste qui suit la DERNIÈRE carte : non plus « rien », mais
+  // la section d'après. Ce n'est pas une marque de plus — il n'y a pas d'étape
+  // là-bas — donc un jeton à part, que `nextMark` ne peut pas produire.
+  const EXIT = 'exit';
 
   const toggle = trail.querySelector('.trail__auto');
   let auto = true;
@@ -542,16 +556,28 @@
     return null; // plus rien devant : la page reprend son défilement normal
   }
 
-  function glideTo(frac) {
+  // Où mène la sortie : le haut de la section qui suit la piste. On la lit dans
+  // le DOM plutôt que par son id — c'est « la suivante » qui est vraie ici, pas
+  // « projets », et la piste garde sa sortie si l'ordre de la page change.
+  function exitY() {
+    const next = trail.nextElementSibling;
+    if (!next) return trailTop() + walkPx();
+    return next.getBoundingClientRect().top + window.scrollY;
+  }
+
+  const glideTo = (frac) => glideToY(pageYFor(frac), frac);
+
+  // `key` identifie la destination : une fraction de scroll, ou EXIT. C'est elle
+  // que `step` relit pour savoir si une autre marche l'a supplantée.
+  function glideToY(to, key) {
     const from = window.scrollY;
-    const to = pageYFor(frac);
     const dur = Math.min(GLIDE_MAX, Math.max(GLIDE_MIN, Math.abs(to - from) * GLIDE_PACE));
     const t0 = performance.now();
-    glide = { to: frac };
+    glide = { to: key };
     lockUntil = t0 + Math.min(dur, INERTIA_LOCK) + REARM;
 
     const step = (now) => {
-      if (!glide || glide.to !== frac) return;
+      if (!glide || glide.to !== key) return;
       const t = clamp01((now - t0) / dur);
       // 'instant' est indispensable : html porte scroll-behavior: smooth, qui
       // sinon animerait chaque pas de l'animation et la ferait ramer sur place.
@@ -567,7 +593,15 @@
 
   // La marque visée par un geste, ou null si la section doit rendre la main.
   function targetFor(dir) {
-    if (!auto || still.matches || !pinned()) return null;
+    if (!auto || still.matches) return null;
+
+    // Une sortie en cours absorbe les gestes, et ce test passe AVANT `pinned()` :
+    // la sortie traverse la traîne, donc la scène se décolle en cours de route.
+    // Sans ça la page se remettrait à défiler par-dessus l'animation, et les deux
+    // se tireraient dessus. Vers le haut, on repart sur la dernière carte.
+    if (glide && glide.to === EXIT) return dir > 0 ? EXIT : LAST_MARK;
+
+    if (!pinned()) return null;
     // Pendant la révélation la scène est déjà épinglée : sans ce garde, le
     // premier cran de molette filerait droit sur la première carte et on ne
     // verrait jamais la fenêtre s'ouvrir.
@@ -575,7 +609,13 @@
     // Passé la dernière carte, on est dans la traîne : le mode auto ne s'en mêle
     // plus, dans aucun des deux sens, et le scroll redevient manuel.
     if (fraction() > LAST_MARK + MARK_EPS) return null;
-    return nextMark(glide ? glide.to : fraction(), dir);
+
+    const mark = nextMark(glide ? glide.to : fraction(), dir);
+    // Plus de carte devant : depuis la dernière, un geste vers le bas emmène à la
+    // section suivante d'un seul mouvement, au lieu de rendre la main au milieu
+    // de la traîne. Vers le haut, `nextMark` a le dernier mot comme avant.
+    if (mark === null && dir > 0) return EXIT;
+    return mark;
   }
 
   // true = le geste est consommé par la section, false = laisse passer la page.
@@ -583,7 +623,11 @@
     const target = targetFor(dir);
     if (target === null) return false;
     if (performance.now() < lockUntil) return true; // avalé, mais sans avancer
-    glideTo(target);
+    // Déjà en route vers là : on avale sans relancer l'animation depuis la
+    // position courante, ce qui la ferait repartir plus lentement à chaque cran.
+    if (glide && glide.to === target) return true;
+    if (target === EXIT) glideToY(exitY(), EXIT);
+    else glideTo(target);
     return true;
   }
 
@@ -651,6 +695,43 @@
   still.addEventListener('change', () => window.location.reload());
 
   refresh();
+})();
+
+/* ---------- Projets : le groupement qui suit la carte survolée ---------- */
+// Le JS ne pose qu'UN état : la classe `is-active`, déplacée d'un `<li>` à
+// l'autre. Tout le reste — le fondu, les décalages d'entrée, l'échelle de la
+// carte — vit dans le CSS, comme `--open` du parcours ou `--out` du tas de
+// photos.
+//
+// La classe part du HTML, sur le premier projet : sans JS, en mouvement réduit
+// ou si ce fichier ne charge pas, c'est lui qui reste affiché. Rien de visible
+// ne dépend d'ici.
+(function () {
+  const list = document.querySelector('[data-projects]');
+  if (!list) return;
+
+  const items = [...list.querySelectorAll('.projects__item')];
+  if (items.length < 2) return;
+
+  const activate = (item) => {
+    if (item.classList.contains('is-active')) return;   // déjà là : pas de rejeu
+    items.forEach((el) => el.classList.toggle('is-active', el === item));
+  };
+
+  items.forEach((item) => {
+    // On écoute la CARTE et non le `<li>` : celui-ci est en `display: contents`,
+    // donc sans boîte, et ne peut pas être la cible d'un événement de pointeur.
+    const card = item.querySelector('.pcard');
+    if (!card) return;
+
+    // `pointerenter` et pas `mouseenter` : le premier couvre aussi le stylet.
+    // Le doigt, lui, le déclenche au toucher — sur un lien la navigation suit
+    // de toute façon, et en mobile le CSS montre déjà les trois groupements.
+    card.addEventListener('pointerenter', () => activate(item));
+    // Le clavier fait le même travail que la souris : tabuler d'une carte à
+    // l'autre change le groupement affiché.
+    card.addEventListener('focus', () => activate(item));
+  });
 })();
 
 /* ---------- Pages projet : les blocs qui se révèlent ---------- */
@@ -721,4 +802,331 @@
   // Au chargement : la page peut déjà être positionnée plus bas (ancre `#socle`,
   // position restaurée), et ce qui est au-dessus de la ligne se révèle d'emblée.
   sweep();
+})();
+
+/* ---------- Le comparateur avant / après (page projet) ----------
+   Le curseur natif fait tout le travail : glissement à la souris et au doigt,
+   clavier, bornes, annonce aux lecteurs d'écran. Le JS n'écrit qu'un nombre,
+   `--pos`, et le CSS compose le reste — même partage que les stickers du hero,
+   le tas de photos et la révélation du parcours. */
+(function () {
+  const wipes = document.querySelectorAll('.wipe');
+  if (!wipes.length) return;
+
+  wipes.forEach((wipe) => {
+    const range = wipe.querySelector('.wipe__range');
+    if (!range) return;
+
+    const apply = () => wipe.style.setProperty('--pos', range.value + '%');
+
+    // `input` et non `change` : la découpe doit suivre le doigt, pas attendre
+    // qu'on relâche.
+    range.addEventListener('input', apply);
+
+    // Au chargement, on se cale sur la valeur que le navigateur a RÉELLEMENT
+    // posée : il restaure volontiers celle d'avant un rechargement, et le CSS
+    // partirait sinon sur les 50 % écrits en dur dans la feuille de style.
+    apply();
+  });
+})();
+
+/* ---------- Le carrousel des écrans (page projet) ----------
+   On attrape le rail et on le tire. Trois choses à savoir avant d'y toucher :
+
+   1. LE TACTILE N'EST PAS REPRIS. `pointerType === 'touch'` sort tout de suite : le
+      défilement natif du navigateur a une inertie et un rebond qu'aucune ligne écrite
+      ici n'égalera, et le doigt doit aussi pouvoir faire défiler la PAGE depuis le
+      rail. Seuls la souris et le stylet passent par le glissement scripté.
+   2. `setPointerCapture` est enveloppé dans un try/catch — même raison que le
+      décollage des stickers du hero : les drags synthétiques lèvent `NotFoundError`.
+   3. Le JS ne pose qu'une classe, `is-dragging`. Le curseur et le débrayage de
+      l'aimant vivent dans le CSS — même partage que partout ailleurs ici. */
+(function () {
+  const rails = document.querySelectorAll('.rail-wrap');
+  if (!rails.length) return;
+
+  rails.forEach((rail) => {
+    let originX = 0;
+    let originScroll = 0;
+    let dragging = false;
+
+    rail.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'touch') return;
+      dragging = true;
+      originX = e.clientX;
+      originScroll = rail.scrollLeft;
+      rail.classList.add('is-dragging');
+      try { rail.setPointerCapture(e.pointerId); } catch (err) { /* drag synthétique */ }
+    });
+
+    rail.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      // Sans ça, le navigateur lance sa propre sélection de texte en travers du geste.
+      e.preventDefault();
+      rail.scrollLeft = originScroll - (e.clientX - originX);
+    });
+
+    const relacher = (e) => {
+      if (!dragging) return;
+      dragging = false;
+      rail.classList.remove('is-dragging');
+      try { rail.releasePointerCapture(e.pointerId); } catch (err) { /* déjà relâché */ }
+    };
+
+    rail.addEventListener('pointerup', relacher);
+    rail.addEventListener('pointercancel', relacher);
+
+    // Ceinture et bretelles avec `-webkit-user-drag` du CSS : sans les deux, tirer
+    // sur une capture décolle son fantôme au lieu de faire glisser le rail.
+    rail.addEventListener('dragstart', (e) => e.preventDefault());
+  });
+})();
+
+
+/* ---------------------------------------------------------------------------
+   LA VISIONNEUSE — cliquer une image d'une page projet l'ouvre en grand.
+
+   Les groupes sont déclarés dans le HTML : `data-viewer="<nom>"` sur un
+   conteneur, et TOUTES les images qu'il contient forment une galerie qu'on
+   parcourt aux flèches. Le groupe est l'unité éditoriale — les dix écrans du
+   rail, les quatre emails, les vingt visuels réseaux — pas une liste à plat.
+
+   Le `<dialog>` est FABRIQUÉ ICI et non écrit dans les pages : sans JS il n'y a
+   pas de visionneuse, donc pas de bouton mort ni de balise inerte. C'est
+   l'inverse de la règle du reveal, et c'est voulu — là-bas on masque du
+   contenu, ici on n'ajoute que du chrome.
+
+   `showModal()` fait tout le travail ingrat : couche supérieure, `::backdrop`,
+   piège à focus, Échap, arrière-plan inerte, focus rendu au déclencheur. */
+(() => {
+  // Le décor n'est PAS de la matière : le ciel d'une scène, un carré topo, un
+  // filet — tout ce qui porte `alt=""` ou `aria-hidden` est là pour l'ambiance
+  // et n'a rien à montrer en grand. Le critère est celui de l'accessibilité, pas
+  // une liste de classes à tenir à jour : une image sans texte alternatif est
+  // décorative par définition. Et comme la légende de la visionneuse EST ce
+  // texte, une image sans alt s'y ouvrirait de toute façon sans légende.
+  const utile = (img) => img.alt.trim() !== '' && !img.closest('[aria-hidden="true"]');
+
+  const groups = [...document.querySelectorAll('[data-viewer]')]
+    .map((el) => ({ el, imgs: [...el.querySelectorAll('img')].filter(utile) }))
+    .filter((g) => g.imgs.length);
+
+  if (!groups.length || typeof HTMLDialogElement === 'undefined') return;
+
+  const dlg = document.createElement('dialog');
+  dlg.className = 'viewer';
+  dlg.innerHTML =
+    '<div class="viewer__stage"><img class="viewer__img" alt=""></div>' +
+    '<p class="viewer__count" aria-live="polite"></p>' +
+    '<p class="viewer__caption"></p>' +
+    '<button class="viewer__nav viewer__nav--prev" type="button" aria-label="Image précédente">' +
+      '<svg width="11" height="11" viewBox="0 0 10 10" fill="none" aria-hidden="true">' +
+      '<path d="M6.5 1L2 5l4.5 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>' +
+    '<button class="viewer__nav viewer__nav--next" type="button" aria-label="Image suivante">' +
+      '<svg width="11" height="11" viewBox="0 0 10 10" fill="none" aria-hidden="true">' +
+      '<path d="M3.5 1L8 5l-4.5 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>' +
+    '<button class="viewer__close" type="button" aria-label="Fermer la visionneuse">' +
+      '<svg width="12" height="12" viewBox="0 0 10 10" fill="none" aria-hidden="true">' +
+      '<path d="M1 1l8 8M9 1l-8 8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button>';
+  document.body.appendChild(dlg);
+
+  const stage   = dlg.querySelector('.viewer__stage');
+  const big     = dlg.querySelector('.viewer__img');
+  const caption = dlg.querySelector('.viewer__caption');
+  const count   = dlg.querySelector('.viewer__count');
+
+  let group = null;
+  let index = 0;
+
+  function paint(anim) {
+    const img = group.imgs[index];
+
+    // `data-full` : la vignette de la page peut être un rognage, et la
+    // visionneuse ouvre alors la version entière. Elle n'est référencée QUE par
+    // cet attribut, donc le navigateur ne la télécharge qu'au clic — les quatre
+    // emails longs de Beepz ne pèsent rien sur le chargement de la page.
+    const entier = img.dataset.full;
+    big.src = entier || img.currentSrc || img.src;
+
+    // Une version entière se LIT, donc elle défile à sa largeur naturelle au
+    // lieu d'être ramenée à la hauteur de la fenêtre : un email de 3 068 px
+    // rentré de force dans 700 px ferait 3 px de corps de texte.
+    dlg.classList.toggle('is-full', !!entier);
+    stage.scrollTop = 0;
+    // Le texte alternatif EST la légende : il est déjà écrit et descriptif dans
+    // toutes les pages projet. En dupliquer une seconde version serait deux
+    // textes à tenir à jour, et l'un des deux finirait par mentir.
+    big.alt = img.alt;
+    caption.textContent = img.alt;
+    count.textContent = `${index + 1} / ${group.imgs.length}`;
+    dlg.classList.toggle('is-solo', group.imgs.length < 2);
+
+    if (anim) {                    // relance le keyframe sur un changement d'image
+      big.classList.remove('is-swapping');
+      void big.offsetWidth;
+      big.classList.add('is-swapping');
+    }
+  }
+
+  function open(g, i) {
+    group = g;
+    index = i;
+    dlg.setAttribute('aria-label', g.el.dataset.viewer || 'Visionneuse');
+    paint(false);
+    if (!dlg.open) dlg.showModal();
+  }
+
+  function step(delta) {
+    if (group.imgs.length < 2) return;
+    index = (index + delta + group.imgs.length) % group.imgs.length;
+    paint(true);
+  }
+
+  dlg.querySelector('.viewer__nav--prev').addEventListener('click', () => step(-1));
+  dlg.querySelector('.viewer__nav--next').addEventListener('click', () => step(1));
+  dlg.querySelector('.viewer__close').addEventListener('click', () => dlg.close());
+
+  // Cliquer À CÔTÉ de l'image ferme. On teste la cible plutôt que la position :
+  // la scène remplit le dialogue, donc tout ce qui n'est ni l'image ni un
+  // bouton, c'est le vide autour.
+  stage.addEventListener('click', (e) => { if (e.target === stage) dlg.close(); });
+
+  dlg.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight') { e.preventDefault(); step(1); }
+    if (e.key === 'ArrowLeft')  { e.preventDefault(); step(-1); }
+  });
+
+  // Le rail des écrans se prend au doigt : sans ce garde, un glissement qui
+  // finit sur une vignette déclenche aussi son `click` et ouvre la visionneuse
+  // en pleine course. On mesure le déplacement du pointeur entre l'appui et le
+  // clic — au-delà de 6 px, c'était un geste, pas un clic.
+  let downX = 0, downY = 0;
+  document.addEventListener('pointerdown', (e) => { downX = e.clientX; downY = e.clientY; }, true);
+  const wasDrag = (e) => Math.hypot(e.clientX - downX, e.clientY - downY) > 6;
+
+  groups.forEach((g) => {
+    g.imgs.forEach((img, i) => {
+      img.classList.add('is-zoomable');
+      img.setAttribute('role', 'button');
+      img.setAttribute('aria-haspopup', 'dialog');
+      img.tabIndex = 0;
+
+      img.addEventListener('click', (e) => { if (!wasDrag(e)) open(g, i); });
+      img.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(g, i); }
+      });
+    });
+  });
+
+  // La porte NSFW de projet-jm.html coupe `pointer-events`, ce qui arrête la
+  // souris mais PAS le clavier : sans ça on pouvait tabuler jusqu'à une image
+  // floutée et l'ouvrir en grand d'un Entrée, par-dessus le voile. La
+  // focusabilité suit donc la case à cocher.
+  document.querySelectorAll('.nsfw__toggle').forEach((toggle) => {
+    const zone = toggle.parentElement.querySelector('.nsfw__content');
+    if (!zone) return;
+    const sync = () => zone.querySelectorAll('.is-zoomable')
+      .forEach((img) => { img.tabIndex = toggle.checked ? 0 : -1; });
+    toggle.addEventListener('change', sync);
+    sync();
+  });
+})();
+
+
+/* ---------------------------------------------------------------------------
+   LE PARALLAXE DES PAGES PROJET
+
+   Ce qui donne son glissé à une page longue, ce n'est pas la vitesse du scroll,
+   c'est l'ÉCART entre ce qui avance vite et ce qui avance lentement. Même
+   principe que la sortie du tas de photos de l'accueil, à un détail près qui
+   fait toute la différence de sensation — voir « L'amortissement » plus bas.
+
+   Trois règles, les mêmes que partout ailleurs sur ce site :
+
+   - LE HTML DÉCIDE. Un élément porte `data-parallax`, et c'est tout : ni
+     amplitude, ni direction, ni sens dans l'attribut. On sait en lisant la page
+     ce qui bouge, sans avoir à ouvrir le JS.
+   - LE JS NE POSE QU'UN NOMBRE, `--par`, entre -1 et 1 : la position de
+     l'élément dans la fenêtre, -1 tout en haut, +1 tout en bas. Comme `--out`
+     du tas de photos et `--open` du parcours.
+   - LE CSS COMPOSE. C'est lui qui décide de combien et dans quel sens, via
+     `--par-amp` dans la règle de chaque pièce. Une amplitude POSITIVE fait
+     l'élément passer plus vite que la page — il vient devant ; une NÉGATIVE le
+     retient — il passe derrière.
+
+   ON ÉCRIT DANS `transform`, ET LA RÉVÉLATION DANS `translate`. Ce n'est pas un
+   hasard : ce sont deux propriétés distinctes, qui se composent d'elles-mêmes.
+   Une pièce peut donc être révélée et parallaxée en même temps sans que l'une
+   écrase l'autre — même raison que `pile-land` sur l'accueil, qui anime
+   `translate` par-dessus la transformation composée des photos.
+
+   L'AMORTISSEMENT, et c'est lui qu'on ressent. La valeur courante ne saute pas
+   sur sa cible, elle court après (`SUIVI`). Le scroll de la page reste
+   parfaitement natif — inertie du trackpad, barre de défilement, clavier, tout
+   est intact — mais les images traînent d'un cheveu derrière lui puis se
+   reposent, et c'est ça qui se lit comme de la fluidité. Le scroll lui-même
+   n'est PAS détourné, et ne devrait pas l'être : intercepter la molette coûte
+   l'inertie native, la restauration de position et la moitié du clavier, pour
+   un gain que la traîne donne déjà.
+
+   La boucle S'ARRÊTE quand tout est posé, et le prochain scroll la relance. Une
+   page immobile ne doit pas tourner à 60 images par seconde.
+   --------------------------------------------------------------------------- */
+(function () {
+  // Rien du tout en mouvement réduit : `--par` reste à 0, donc la déclaration
+  // `transform` du CSS vaut l'identité et les pièces ne bougent pas d'un pixel.
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  const cibles = document.querySelectorAll('[data-parallax]');
+  if (!cibles.length) return;
+
+  // Part du chemin restant rattrapée à chaque image. Plus bas = plus de traîne ;
+  // au-delà de ~.2 l'amortissement cesse de se voir, en dessous de ~.06 les
+  // pièces ont l'air de flotter et le scroll paraît mou.
+  const SUIVI = 0.11;
+
+  // En dessous, on colle à la cible : sans ce seuil la boucle tournerait
+  // indéfiniment sur des décimales invisibles.
+  const EPS = 0.0004;
+
+  const pieces = [...cibles].map((el) => ({ el, valeur: 0, but: 0 }));
+  let frame = 0;
+
+  const image = () => {
+    frame = 0;
+    const vh = window.innerHeight;
+    let bouge = false;
+
+    for (const p of pieces) {
+      const r = p.el.getBoundingClientRect();
+
+      // 0 quand le centre de la pièce est au centre de la fenêtre, ±1 quand il
+      // en touche un bord. La course tient compte de la hauteur de la pièce :
+      // sans ça une bande de 900 px et une vignette de 200 px ne parcourraient
+      // pas la même amplitude sur le même trajet de scroll.
+      const ecart = r.top + r.height / 2 - vh / 2;
+      const course = (vh + r.height) / 2;
+      p.but = Math.max(-1, Math.min(1, ecart / course));
+
+      const reste = p.but - p.valeur;
+      if (Math.abs(reste) < EPS) {
+        p.valeur = p.but;
+      } else {
+        p.valeur += reste * SUIVI;
+        bouge = true;
+      }
+      p.el.style.setProperty('--par', p.valeur.toFixed(4));
+    }
+
+    if (bouge) frame = requestAnimationFrame(image);
+  };
+
+  const relancer = () => { if (!frame) frame = requestAnimationFrame(image); };
+
+  window.addEventListener('scroll', relancer, { passive: true });
+  window.addEventListener('resize', relancer);
+
+  // Au chargement : la page peut déjà être positionnée plus bas (ancre, position
+  // restaurée), et les pièces doivent partir de leur vraie place.
+  image();
 })();

@@ -86,6 +86,6 @@ svg = [
     "</svg>",
 ]
 
-out = REPO / "assets" / "trail-map.svg"
+out = REPO / "assets" / "home" / "src" / "trail-map.svg"
 open(out, "w").write("".join(svg))
 print(f"minor={len(minor_paths)} index={len(index_paths)} lakes={len(lakes)} KB={round(os.path.getsize(out)/1024)}")

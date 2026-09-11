@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jimizz — Vincent Waldmann</title>
+<meta name="description" content="Jimizz, la crypto-monnaie de Jacquie &amp; Michel : le site, le dashboard d’investissement, la marketplace de NFT et le site de quiz.">
+<link rel="stylesheet" href="css/style.css">
+
+<!-- Même amorce de motion que `projet-jm.html` et `projet-beepz.html`, et pour
+     les mêmes raisons : la classe est posée AVANT le premier rendu, elle n'est
+     pas posée du tout en mouvement réduit, et un garde-fou de 2,5 s la retire si
+     `main.js` ne s'est jamais annoncé. Si tu touches à l'une des trois pages,
+     touche aux autres. -->
+<script>
+  (function () {
+    var html = document.documentElement;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    html.classList.add('js-motion');
+    setTimeout(function () {
+      if (html.dataset.motion !== 'ready') html.classList.remove('js-motion');
+    }, 2500);
+  })();
+</script>
+</head>
+<body>
+
+<header class="site-header">
+  <a class="logo" href="index.html">
+    <span>Waldmann</span>
+    <span>Vincent</span>
+  </a>
+  <nav class="main-nav">
+    <a href="index.html#a-propos">à propos</a>
+    <a href="index.html#parcours">Parcours</a>
+    <a href="index.html#projets">Projets</a>
+  </nav>
+  <a href="index.html#contact" class="btn-contact">
+    Discutons
+    <svg class="btn-contact__arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M1 9L9 1M9 1H2M9 1V8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </a>
+</header>
+
+<!-- ==========================================================================
+     LA PAGE JIMIZZ
+
+     Intégration de la maquette de Vincent (`assets/jimizz/src/maquette.png`,
+     hors dépôt). ELLE EST BÂTIE SUR LE MÊME GABARIT QUE `projet-jm.html` : le
+     panneau de couverture, le cadre, la colonne de texte, les titres et l'intro
+     à deux colonnes viennent tous de `.proj-*`, et ce n'est pas une déduction —
+     les deux PNG donnent les mêmes nombres au pixel. Seuls les cinq blocs de
+     cette page-ci portent le préfixe `.jmz-`.
+
+     CINQ TEMPS, ET L'ALTERNANCE EST TOUTE LA STRUCTURE : un texte, puis ce dont
+     il parle. Il n'y a donc que trois titres visibles dans la page — le `h1` et
+     les deux `h2` — et les trois blocs d'images sont des `<section>` nommées par
+     `aria-label`. Même parti que la page J&M.
+
+     TOUS LES .webp SONT PRODUITS PAR `tools/build_jimizz.py`, jamais à la main :
+     c'est lui qui tient les tailles (lues dans le CSS), les alternatives
+     textuelles et la compression. Les originaux restent dans
+     `assets/jimizz/src/`, hors dépôt. Si tu changes une largeur dans le CSS,
+     relance-le — il dira aussitôt si la source suit encore.
+
+     LES `data-reveal` SONT LA SOURCE DE VÉRITÉ DE LA MOTION, comme les `data-at`
+     des étapes du parcours. Le JS ne fait que les déclencher, le CSS que les
+     dessiner. Cinq valeurs sont en usage ici :
+
+       `data-reveal`                 le bloc monte de 10 px et se fond ;
+       `data-reveal="lines"`         un titre monte ligne à ligne, de derrière un cache ;
+       `data-reveal="soft"`          un chapô se dépose, d'un flou de 7 px ;
+       `data-reveal="group"`         les enfants se posent l'un après l'autre ;
+       `data-reveal="group scatter"` idem, mais chaque pièce part de SON décalage,
+                                     déclaré dans sa règle CSS ;
+       `data-reveal="zoom"`          une bande pleine largeur se referme sur son cadre.
+
+     `data-parallax` MARCHE PAREIL, et c'est un mécanisme SÉPARÉ : le JS y pose
+     un seul nombre, `--par` entre -1 et 1 selon la place de la pièce dans la
+     fenêtre, et c'est le CSS qui décide de combien elle dérive (`--par-amp`,
+     dans la règle de chaque pièce). L'attribut est nu, sans valeur : on doit
+     pouvoir lire ici CE QUI bouge sans avoir à ouvrir le JS.
+
+     Les deux cohabitent parce qu'ils n'écrivent pas dans la même propriété — la
+     révélation dans `translate`, le parallaxe dans `transform`, qui se composent
+     d'elles-mêmes. Ne les ramène pas sur la même.
+     ========================================================================== -->
+<main class="proj jmz">
+
+  <!-- ---------------- LA COUVERTURE ---------------- -->
+  <!-- Pas de `data-reveal` ici : la couverture est visible au chargement, donc
+       elle joue une ANIMATION et non une transition au scroll — voir
+       `@keyframes proj-panel-in`. -->
+  <div class="proj-wrap">
+    <section class="proj-hero">
+      <span class="proj-hero__relief" aria-hidden="true"></span>
+
+      <div class="proj-hero__grid">
+        <!-- « To the moon » est en anglais, comme le « Scroll to explore » de
+             l'accueil : c'est la maquette qui l'est, et c'est le vocabulaire du
+             sujet. Seule entorse au français de la page. -->
+        <p class="proj-eyebrow proj-hero__eyebrow">To the moon</p>
+
+        <div class="proj-hero__text">
+          <!-- `.proj-line` est le CACHE, le span dedans est ce qui monte : un élément ne
+               peut pas se rogner lui-même et glisser en même temps. Les lignes sont
+               découpées à la main — sans JS, le titre s'affiche simplement d'un bloc. -->
+          <h1 class="proj-title proj-hero__title"><span class="proj-line"><span>Jimizz</span></span></h1>
+          <!-- À VALIDER PAR VINCENT. La maquette portait ici, mot pour mot, le
+               paragraphe de couverture de `projet-jm.html` — « J&M est une marque
+               française de contenu pour adultes fondée en 1999… » — reste du
+               gabarit dont elle est tirée. Celui-ci le remplace et parle du
+               projet : ce que Jimizz est, et ce qu'il a fallu dessiner autour. -->
+          <p class="proj-text proj-hero__intro">
+            Le jeton de Jacquie &amp; Michel, et les quatre surfaces qu’il a fallu
+            dessiner autour pour en faire un produit&nbsp;: un site vitrine, un
+            dashboard d’investissement, une marketplace de NFT et un site de quiz.
+            Une identité neuve à tenir d’un écran à l’autre, sur un sujet où
+            presque tout restait à inventer.
+          </p>
+        </div>
+
+        <div class="proj-hero__skills">
+          <h2 class="proj-hero__skills-title">Skills</h2>
+          <ul class="proj-hero__skills-list">
+            <li>UI/UX</li>
+            <li>Intégration</li>
+            <li>Graphisme</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ---------------- LA BANDE DE MARQUE ----------------
+       Décorative : `alt=""`, donc la visionneuse ne l'ouvrira pas (son filtre est
+       l'alternative textuelle, pas une liste de classes). Le mot « Jimizz » y est
+       dessiné, mais le `h1` juste au-dessus le dit déjà.
+
+       ELLE A PORTÉ UN LISERÉ TOPO SOUS ELLE, retiré : le PNG laissait dépasser
+       65 px de courbes dans le coin bas gauche, et j'en avais fait un calque à
+       part. C'était la coquille dont parle Vincent — ce fragment était le haut du
+       CARRÉ TOPO de la section suivante, mal placé dans la maquette. Le carré est
+       maintenant à sa place, derrière le bloc de texte.
+
+       Un `<div>` et non une `<section>` : sans nom accessible, une `<section>`
+       expose un repère « region » anonyme, du bruit de plus pour qui navigue de
+       repère en repère. Ici il n'y a qu'une image décorative à porter. -->
+  <div class="proj-band jmz-marque">
+    <img class="proj-band__img" src="assets/jimizz/marque/bande.webp" width="1512" height="504"
+         decoding="async" alt="" data-reveal="zoom" data-parallax>
+  </div>
+
+  <!-- ---------------- 01 · LE PROJET ---------------- -->
+  <div class="proj-wrap jmz-lead">
+    <section class="proj-block" aria-labelledby="jmz-projet">
+      <img class="proj-block__topo" src="assets/home/about/topo-square-left.svg"
+           width="266" height="266" loading="lazy" decoding="async" alt="" aria-hidden="true"
+           data-parallax>
+
+      <div class="proj-intro">
+        <!-- Les sauts de ligne sont ceux de la maquette et ils ne se produiraient
+             pas tout seuls à cette largeur de colonne : « Le projet Crypto de
+             Jacquie & » tiendrait sur une ligne et laisserait « Michel » seul. -->
+        <h2 class="proj-title" id="jmz-projet" data-reveal="lines">
+          <span class="proj-line"><span>Le projet</span></span>
+          <span class="proj-line"><span>Crypto de</span></span>
+          <span class="proj-line"><span>Jacquie &amp; Michel</span></span>
+        </h2>
+        <p class="proj-lede" data-reveal="soft">
+          Jimizz est la crypto-monnaie pensée par Jacquie et Michel, le leader du X
+          en France, pour révolutionner le secteur du X grâce à des fonctionnalités
+          inédites qui profiteront aux consommateurs, aux créateurs et aux
+          investisseurs.
+        </p>
+      </div>
+    </section>
+  </div>
+
+  <!-- ---------------- LE SITE, VU DE LOIN ----------------
+       Pleine largeur. La perspective, les ombres et les pièces d'or sont CUITES
+       dans l'export : ne les refais pas en CSS. -->
+  <section class="proj-band jmz-site" data-viewer="Le site Jimizz"
+           aria-label="Le site Jimizz, vu en perspective">
+    <img class="proj-band__img" src="assets/jimizz/site/collage.webp" width="3022" height="1909"
+         loading="lazy" decoding="async" data-reveal="zoom" data-parallax
+         alt="Les pages du site Jimizz présentées en perspective sur un fond magenta semé de pièces d’or : l’accueil « Grab the bull by the balls », la carte de présentation du jeton, l’écosystème J&amp;M et la marketplace de NFT.">
+  </section>
+
+  <!-- ---------------- LE SITE, DE PRÈS ----------------
+       25 px seulement séparent ce bloc du précédent, et c'est ce qui les fait
+       lire comme un seul : le site de loin, puis deux plans rapprochés. Le décor
+       et les pièces sont dans la photo. -->
+  <ul class="jmz-shots" data-reveal="group"
+      data-viewer="Le site Jimizz, en situation" aria-label="Deux mises en scène du site">
+    <li data-parallax><img src="assets/jimizz/site/tablette.webp" width="1324" height="960" loading="lazy" decoding="async"
+             alt="L’accueil de Jimizz sur une tablette posée devant un décor magenta, entourée de pièces d’or en suspension."></li>
+    <li data-parallax><img src="assets/jimizz/site/portable.webp" width="1324" height="960" loading="lazy" decoding="async"
+             alt="La marketplace de NFT de Jimizz sur un ordinateur portable et sur un téléphone, devant un décor magenta et deux pièces d’or."></li>
+  </ul>
+
+  <!-- ---------------- LA COMPOSITION DE L'APP ----------------
+       Trois écrans, une fusée et cinq pièces, posés en POURCENTAGE d'un cadre de
+       1512 × 2475 — même convention que le tas de photos de l'accueil et que
+       JacquIA sur la page J&M : le bloc se met à l'échelle d'un seul tenant.
+
+       L'ORDRE DU DOM EST L'ORDRE DE PEINTURE (tout est en `z-index: auto`), et il
+       est RELEVÉ SUR LA MAQUETTE, pas choisi : les quatre premières pièces
+       passent DERRIÈRE l'écran qu'elles touchent, la cinquième devant. Vérifié
+       une par une en zoomant sur les recouvrements du PNG. Si tu réordonnes, une
+       pièce changera de plan sans prévenir.
+
+       C'est aussi l'ordre de la cascade d'entrée, et il tombe bien : le décor
+       d'abord, les pièces du fond, les trois écrans, la fusée, puis la seule
+       pièce nette. Le décollage.
+
+       Seuls les trois écrans ont une alternative textuelle, donc seuls eux
+       s'ouvrent en grand — la fusée et les pièces sont du décor, et le filtre de
+       la visionneuse est l'`alt`, pas une liste de classes. -->
+  <section class="jmz-app" data-reveal="group scatter"
+           data-viewer="Le dashboard Jimizz" aria-label="Le dashboard Jimizz sur téléphone">
+    <!-- Le carré topo d'À propos, réemployé comme sur la page J&M. Il est
+         largement recouvert par l'écran du menu, et c'est voulu : on n'en voit
+         que la bande qui dépasse à gauche. -->
+    <img class="jmz-app__topo" src="assets/home/about/topo-square-left.svg"
+         width="266" height="266" loading="lazy" decoding="async" alt="" aria-hidden="true"
+         data-parallax>
+
+    <img class="jmz-app__coin jmz-app__coin--1" data-parallax src="assets/jimizz/app/coin-1.webp" width="678" height="632" loading="lazy" decoding="async" alt="">
+    <img class="jmz-app__coin jmz-app__coin--2" data-parallax src="assets/jimizz/app/coin-2.webp" width="204" height="211" loading="lazy" decoding="async" alt="">
+    <img class="jmz-app__coin jmz-app__coin--3" data-parallax src="assets/jimizz/app/coin-3.webp" width="240" height="228" loading="lazy" decoding="async" alt="">
+    <img class="jmz-app__coin jmz-app__coin--4" data-parallax src="assets/jimizz/app/coin-4.webp" width="120" height="114" loading="lazy" decoding="async" alt="">
+
+    <img class="jmz-app__screen jmz-app__screen--wallet" data-parallax src="assets/jimizz/app/wallet.webp" width="1026" height="1820" loading="lazy" decoding="async"
+         alt="L’écran « Mon portefeuille » du dashboard Jimizz sur téléphone : l’adresse du portefeuille, 99 999 999 JMZ disponibles et la courbe du jeton en euros.">
+    <img class="jmz-app__screen jmz-app__screen--menu" data-parallax src="assets/jimizz/app/menu.webp" width="1084" height="1924" loading="lazy" decoding="async"
+         alt="Le menu du dashboard Jimizz sur téléphone : Dashboard, Staking, Livret X, Holder Assembly, Mon compte et Centre d’aide.">
+    <img class="jmz-app__screen jmz-app__screen--staking" data-parallax src="assets/jimizz/app/staking.webp" width="1026" height="1822" loading="lazy" decoding="async"
+         alt="L’écran de staking du dashboard Jimizz sur téléphone : une campagne de quatre mois à 50 % d’intérêt, puis la liste des blocages en cours.">
+
+    <img class="jmz-app__rocket" data-parallax src="assets/jimizz/app/rocket.webp" width="575" height="1166" loading="lazy" decoding="async" alt="">
+
+    <img class="jmz-app__coin jmz-app__coin--5" data-parallax src="assets/jimizz/app/coin-5.webp" width="398" height="372" loading="lazy" decoding="async" alt="">
+  </section>
+
+  <!-- ---------------- 02 · L'ÉCOSYSTÈME ---------------- -->
+  <div class="proj-wrap jmz-lead jmz-lead--univers">
+    <section class="proj-block" aria-labelledby="jmz-univers">
+      <img class="proj-block__topo" src="assets/home/about/topo-square-left.svg"
+           width="266" height="266" loading="lazy" decoding="async" alt="" aria-hidden="true"
+           data-parallax>
+
+      <div class="proj-intro">
+        <h2 class="proj-title" id="jmz-univers" data-reveal="lines">
+          <span class="proj-line"><span>Un univers</span></span>
+          <span class="proj-line"><span>3.0 complet</span></span>
+        </h2>
+        <!-- Quatre coquilles de la maquette corrigées ici, à la demande de Vincent :
+             « a développer plusieurs plateforme » → « a développé plusieurs
+             plateformes », « ecosysteme » → « écosystème », « NFT exclusif » →
+             « NFT exclusifs ». « quizz » est gardé : c'est le nom du site. -->
+        <p class="proj-lede" data-reveal="soft">
+          En plus de proposer une monnaie, le projet Jimizz a développé plusieurs
+          plateformes pour construire un écosystème complet. Un dashboard pour la
+          gestion de son investissement, une marketplace pour acheter des NFT
+          exclusifs et même un site de quizz pour animer sa communauté&nbsp;!
+        </p>
+      </div>
+    </section>
+  </div>
+
+  <!-- ---------------- LES QUATRE PLATEFORMES ----------------
+       Quatre captures posées en pourcentage d'un cadre de 1350 × 1749, et elles
+       se CHEVAUCHENT — le dashboard mord sur la marketplace, le centre d'aide sur
+       le quizz. Garde les recouvrements : posées côte à côte, elles se liraient
+       comme quatre captures perdues au milieu du cadre.
+
+       L'ordre du DOM donne l'ordre de peinture (tout est en `z-index: auto`) ET
+       celui de la cascade. Leur arrondi est cuit dans l'alpha des exports. -->
+  <section class="jmz-plateformes" data-reveal="group scatter"
+           data-viewer="Les plateformes Jimizz" aria-label="Les quatre plateformes de l’écosystème">
+    <img class="jmz-plateformes__piece jmz-plateformes__piece--marketplace" data-parallax src="assets/jimizz/plateformes/marketplace.webp" width="2700" height="1658" loading="lazy" decoding="async"
+         alt="La marketplace de NFT Jimizz : le NFT « Hot D’Or 1992 #WIP001 » mis en avant, puis les enchères en cours.">
+    <img class="jmz-plateformes__piece jmz-plateformes__piece--dashboard" data-parallax src="assets/jimizz/plateformes/dashboard.webp" width="1216" height="746" loading="lazy" decoding="async"
+         alt="Le dashboard Jimizz sur ordinateur : le portefeuille, la courbe du jeton, les investissements en cours et le vote du Holder Assembly.">
+    <img class="jmz-plateformes__piece jmz-plateformes__piece--quizz" data-parallax src="assets/jimizz/plateformes/quizz.webp" width="1216" height="746" loading="lazy" decoding="async"
+         alt="Le site de quiz Jimizz Party : le tableau des scores à gauche, la question en cours au centre et le décompte du temps restant.">
+    <img class="jmz-plateformes__piece jmz-plateformes__piece--aide" data-parallax src="assets/jimizz/plateformes/aide.webp" width="1216" height="746" loading="lazy" decoding="async"
+         alt="Le centre d’aide Jimizz : « What can we do for you ? », six rubriques et la liste des articles les plus consultés.">
+  </section>
+
+  <nav class="case-foot" data-reveal aria-label="Navigation entre projets">
+    <a class="case-foot__back" href="index.html#projets">
+      <svg class="case-back__arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true" focusable="false">
+        <path d="M9 5H1M5 1L1 5L5 9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Tous les projets
+    </a>
+
+    <a class="case-foot__next" href="projet-jm.html">Projet suivant — Jacquie &amp; Michel</a>
+  </nav>
+
+</main>
+
+<footer class="site-footer">
+  <div class="site-footer__inner">
+    <a class="logo" href="index.html">
+      <span>Waldmann</span>
+      <span>Vincent</span>
+    </a>
+
+    <nav class="site-footer__nav">
+      <a href="index.html#a-propos">À propos</a>
+      <a href="index.html#parcours">Parcours</a>
+      <a href="index.html#projets">Projets</a>
+      <a href="index.html#contact">Contact</a>
+    </nav>
+
+    <p class="site-footer__note">© 2026 — écrit à la main, sans framework.</p>
+  </div>
+</footer>
+
+<script src="js/main.js"></script>
+
+</body>
+</html>

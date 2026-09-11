@@ -63,8 +63,8 @@
   <section class="case-hero">
     <div class="case-hero__sky" aria-hidden="true">
       <span class="case-hero__relief"></span>
-      <img class="case-hero__topo case-hero__topo--left" src="assets/topo-square-left.svg" alt="" decoding="async">
-      <img class="case-hero__topo case-hero__topo--right" src="assets/topo-square-right.svg" alt="" decoding="async">
+      <img class="case-hero__topo case-hero__topo--left" src="assets/home/about/topo-square-left.svg" alt="" decoding="async">
+      <img class="case-hero__topo case-hero__topo--right" src="assets/home/about/topo-square-right.svg" alt="" decoding="async">
     </div>
 
     <div class="case-hero__inner">
@@ -80,7 +80,7 @@
           <!-- « Fiche de course » et non « Étude de cas » : en montagne, la fiche de course
                décrit une voie — l'approche, les difficultés, le matériel. C'est exactement
                ce que fait la page, et ça garde l'œil dans le registre du site, comme
-               « L'approche » et « Au sommet » plus bas. -->
+               « L'approche » juste en dessous. -->
           <p class="case__eyebrow">Fiche de course</p>
           <!-- La marque s'écrit « Beepz » : les capitales sont un effet de titre, elles
                viennent du CSS (`text-transform`) et pas du contenu. -->
@@ -98,12 +98,12 @@
              de repos dans `--rot`, empilement décidé par des `z-index` explicites et
              non par l'ordre du DOM. C'est ce qui met une image au-dessus de la ligne
              de flottaison : la planche complète est à trois écrans de scroll. -->
-        <div class="case-hero__plates">
-          <img class="plate plate--car" src="assets/beepz-car.webp" width="665" height="590" decoding="async"
+        <div class="case-hero__plates" data-viewer="Beepz en trois vues">
+          <img class="plate plate--car" src="assets/beepz/car.webp" width="665" height="590" decoding="async"
                alt="Une voiture présentée sur fond bleu, accompagnée d’un badge de vérification.">
-          <img class="plate plate--life" src="assets/beepz-lifestyle.webp" width="522" height="410" decoding="async"
-               alt="Photographie de marque : une personne face à un lac, vue depuis l’intérieur d’une voiture.">
-          <img class="plate plate--app" src="assets/beepz-app.webp" width="640" height="700" decoding="async"
+          <img class="plate plate--weekly" src="assets/beepz/weekly.webp" width="1100" height="350" decoding="async"
+               alt="Bandeau de marque Beepz : « Pay weekly, Earn Fully », une voiture vue de dessus et la courbe jaune de la route.">
+          <img class="plate plate--app" src="assets/beepz/app.webp" width="640" height="700" decoding="async"
                alt="La fiche de l’application Beepz sur l’App Store : 98 000 notes, 4,9 sur 5, distinction Editors’ Choice.">
         </div>
       </div>
@@ -167,63 +167,16 @@
 
     </div>
 
-    <!-- L'illustration du dernier paragraphe, et rien d'autre : trois surfaces
-         dessinées chacune dans un langage différent — trait plein, tireté, pointillé —
-         avec un accent de couleur différent, et un fil qui tente de les relier sans y
-         arriver. C'est l'exact envers du « fil rouge » de la section suivante, où le
-         même trait devient continu. À remplacer sans hésiter par une capture de
-         l'ancienne landing page le jour où tu en retrouves une. -->
-    <figure class="case-aside" data-reveal>
-      <svg class="gap-diagram" viewBox="0 0 420 480" role="img"
-           aria-label="Trois surfaces — un site, une application, un email — dessinées chacune dans un style différent, qu’aucun fil ne relie.">
-
-        <!-- le site -->
-        <g transform="rotate(-3 115 95)">
-          <rect class="gap-frame gap-frame--solid" x="8" y="24" width="214" height="142" rx="8"/>
-          <path class="gap-frame gap-frame--solid" d="M8 52H222"/>
-          <circle class="gap-accent-green" cx="26" cy="38" r="3.5"/>
-          <circle class="gap-dot" cx="39" cy="38" r="3.5"/>
-          <circle class="gap-dot" cx="52" cy="38" r="3.5"/>
-          <rect class="gap-bar" x="26" y="72" width="124" height="8" rx="4"/>
-          <rect class="gap-bar" x="26" y="90" width="172" height="8" rx="4"/>
-          <rect class="gap-bar" x="26" y="108" width="88" height="8" rx="4"/>
-        </g>
-
-        <!-- l'application -->
-        <g transform="rotate(5 327 201)">
-          <rect class="gap-frame gap-frame--dashed" x="268" y="96" width="118" height="210" rx="24"/>
-          <rect class="gap-accent-pink" x="310" y="106" width="34" height="7" rx="3.5"/>
-          <rect class="gap-bar" x="282" y="132" width="90" height="54" rx="9"/>
-          <rect class="gap-bar" x="282" y="198" width="66" height="7" rx="3.5"/>
-          <rect class="gap-bar" x="282" y="213" width="90" height="7" rx="3.5"/>
-        </g>
-
-        <!-- l'email -->
-        <g transform="rotate(-6 146 366)">
-          <rect class="gap-frame gap-frame--dotted" x="48" y="300" width="196" height="132" rx="3"/>
-          <path class="gap-frame gap-frame--dotted" d="M48 300L146 372L244 300"/>
-          <rect class="gap-bar" x="66" y="392" width="112" height="7" rx="3.5"/>
-          <rect class="gap-bar" x="66" y="407" width="72" height="7" rx="3.5"/>
-        </g>
-
-        <!-- le fil qui n'arrive pas : deux moignons, et le vide entre les deux -->
-        <path class="gap-thread" d="M232 128C248 136 256 148 259 162"/>
-        <path class="gap-thread" d="M276 232C282 248 280 262 272 274"/>
-        <path class="gap-thread" d="M262 322C244 338 222 344 204 344"/>
-        <circle class="gap-break" cx="259" cy="162" r="2.6"/>
-        <circle class="gap-break" cx="276" cy="232" r="2.6"/>
-        <circle class="gap-break" cx="272" cy="274" r="2.6"/>
-        <circle class="gap-break" cx="262" cy="322" r="2.6"/>
-
-        <text class="gap-label" x="10" y="192">Le site</text>
-        <text class="gap-label" x="268" y="332">L’app</text>
-        <text class="gap-label" x="44" y="462">Les emails</text>
-      </svg>
-
-      <figcaption class="case-aside__caption">
-        Trois surfaces, trois langages&nbsp;— et rien qui les relie.
-      </figcaption>
-    </figure>
+    <!-- La photo de marque plutôt qu'un schéma : elle vient de la planche du système,
+         c'est la direction photographique de Beepz — une personne vue depuis l'habitacle.
+         Sa définition native est de 522 px, donc elle est juste à la bonne taille pour
+         cette colonne et pas davantage : si tu récupères le fichier d'origine, remplace-la. -->
+    <div class="case-aside" data-reveal>
+      <div class="case-aside__shot" data-viewer="La direction photographique">
+        <img src="assets/beepz/lifestyle.webp" width="522" height="410" loading="lazy" decoding="async"
+             alt="Photographie de marque Beepz : une personne face à un lac de montagne, vue depuis l’habitacle d’une voiture.">
+      </div>
+    </div>
     </div>
   </section>
 
@@ -253,8 +206,13 @@
         <span class="case-toc__label">La landing page</span>
         <span class="case-toc__role">La vitrine</span>
       </a>
-      <a class="case-toc__item" href="#emails">
+      <a class="case-toc__item" href="#onboarding">
         <span class="case-toc__num">03</span>
+        <span class="case-toc__label">L’onboarding</span>
+        <span class="case-toc__role">La montée</span>
+      </a>
+      <a class="case-toc__item" href="#emails">
+        <span class="case-toc__num">04</span>
         <span class="case-toc__label">Les emails</span>
         <span class="case-toc__role">La relance</span>
       </a>
@@ -266,8 +224,13 @@
 
        Même grammaire interne pour les trois — numéro, titre, enjeu, texte,
        visuel, notes de terrain — c'est cette répétition qui les fait lire comme
-       un seul projet. Les volets 02 et 03 portent en plus une bande « hérité du
-       socle » : c'est elle qui rend la dépendance visible plutôt qu'affirmée.
+       un seul projet.
+
+       Il y a eu ici une bande « Hérité du socle », qui listait en pastilles ce que
+       chaque terrain reprenait au design système. Retirée à la demande de Vincent.
+       Le lien entre les volets ne tient donc plus qu'au fil rouge et à cette
+       grammaire commune : si tu veux le rendre explicite, écris-le dans le texte
+       du volet plutôt que de remonter un bandeau.
        ====================================================================== -->
   <section class="case-versants" aria-label="Les trois volets du projet">
     <ol class="versants">
@@ -335,18 +298,31 @@
           </li>
         </ul>
 
-        <figure class="versant__figure" data-reveal>
+        <figure class="versant__figure" data-viewer="La planche du design système" data-reveal>
           <!-- `--dark` et non le carton crème : la planche a son propre fond bleu
                nuit, un passe-partout clair autour serait une collerette. -->
           <div class="versant__shot versant__shot--dark">
-            <img src="assets/beepz-system.webp" width="1800" height="1349" loading="lazy" decoding="async"
+            <img src="assets/beepz/system.webp" width="1800" height="1349" loading="lazy" decoding="async"
                  alt="Planche du design système Beepz : le logo, la palette Blue Sky, Seller Blue, Buyer Yellow et blanc pur, la typographie Albert Sans, et des exemples de photographie et de mise en page.">
           </div>
-          <figcaption class="versant__caption">
-            La planche du système&nbsp;: logo, palette nommée par usage, Albert Sans, et
-            la direction photographique.
-          </figcaption>
         </figure>
+
+        <!-- Le brand kit lui-même, c'est-à-dire le PDF dont parle le paragraphe du
+             dessus : celui que Beepz remet à ses partenaires. Copié à la racine des
+             assets sous un nom sans espace — « Branding Kit.pdf » aurait imposé un
+             %20 dans l'URL. La source reste dans assets/beepz/.
+
+             Nouvel onglet et `rel="noopener"`, comme le lien sortant du volet 02. Le
+             poids est annoncé dans le libellé ET dans l'aria-label : personne n'aime
+             déclencher 2,6 Mo sans le savoir. -->
+        <a class="case-btn" href="assets/beepz/branding-kit.pdf" target="_blank" rel="noopener"
+           aria-label="Voir le brand kit Beepz, PDF de 2,6 Mo (nouvel onglet)" data-reveal>
+          Voir le brand kit
+          <span class="case-btn__meta">PDF&nbsp;· 2,6&nbsp;Mo</span>
+          <svg class="case-btn__arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true" focusable="false">
+            <path d="M1 9L9 1M9 1H2M9 1V8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
 
         <ul class="versant__notes" data-reveal="group">
           <li class="note">
@@ -373,16 +349,9 @@
 
         <p class="versant__stake" data-reveal>
           <span class="versant__stake-label">L’enjeu</span>
-          Remplacer une page montée pour réserver le nom de domaine par une page qui
-          dise enfin ce que Beepz a de particulier.
-        </p>
-
-        <p class="versant__inherit" data-reveal>
-          <span class="versant__inherit-label">Hérité du socle</span>
-          <span class="chip">Grille</span>
-          <span class="chip">Échelle typo</span>
-          <span class="chip">Boutons</span>
-          <span class="chip">Couleurs</span>
+          Rassurer les deux versants de la place de marché <em>en même temps</em>&nbsp;:
+          convaincre l’acheteur que le catalogue est fourni, et le vendeur qu’il y a des
+          acheteurs qui l’attendent.
         </p>
 
         <div class="versant__body" data-reveal>
@@ -393,145 +362,328 @@
             faire au sens strict — il fallait écrire la page.
           </p>
           <p>
-            <span class="todo">À compléter</span>
-            Ce que tu as construit à la place&nbsp;: l’ordre des sections retenu, ce que
-            tu as choisi de montrer en premier, et pourquoi cet ordre-là.
-          </p>
-          <p>
-            <span class="todo">À compléter</span>
-            Le moment où le socle a servi&nbsp;— ou résisté&nbsp;: les composants qu’il a
-            fallu créer ou revoir pour que la page tienne.
+            Une place de marché se vend deux fois. Un vendeur ne dépose sa voiture que
+            s’il croit à la demande&nbsp;; un acheteur ne s’inscrit que s’il croit au
+            stock. <span class="case-hl">Déséquilibrer la page d’un côté, c’est perdre
+            l’autre</span>&nbsp;— et une marketplace qui paraît vide ne se remplit jamais.
           </p>
         </div>
 
-        <figure class="versant__figure versant__figure--pair" data-reveal>
-          <div class="versant__frame"><span>Visuel à venir — avant</span></div>
-          <div class="versant__frame"><span>Visuel à venir — après</span></div>
-          <figcaption class="versant__caption">
-            <span class="todo">À compléter</span>
-            Avant / après, et ce qu’il faut regarder.
-          </figcaption>
+        <!-- L'avant / après : une preview du seul hero, pas les pages entières.
+
+             Il y a eu ici les deux pages complètes défilant dans le cadre. C'était
+             juste et c'était trop : un grand cadre qui coûtait plusieurs milliers de
+             pixels de défilement pour un argument qui se joue en un coup d'œil. Le
+             hero suffit — c'est là que l'évolution du design se voit.
+
+             La page refaite est dessous, celle d'avant posée dessus et rognée à gauche
+             de la poignée. Les deux images sont cadrées sur EXACTEMENT la même région,
+             1440 x 928, sinon le balayage comparerait deux endroits différents.
+
+             Le curseur est un `<input type="range">` étendu sur tout le cadre et rendu
+             transparent : on glisse n'importe où, et le clavier fonctionne sans une
+             ligne de plus. Le trait et la pastille ne sont que des décors. -->
+        <figure class="versant__figure" data-reveal>
+          <div class="versant__shot versant__shot--dark">
+            <div class="wipe">
+              <img class="wipe__base" src="assets/beepz/hero-after.webp" width="1440" height="928" loading="lazy" decoding="async"
+                   alt="Le hero de la landing page après refonte : « Owning a car was never that simple », les mots clés surlignés en bleu et en jaune de la marque, une voiture détourée et les deux boutons de store.">
+
+              <div class="wipe__top">
+                <img src="assets/beepz/hero-before.webp" width="1440" height="928" loading="lazy" decoding="async"
+                     alt="Le hero de la landing page avant refonte : « Pay Weekly, Own Fully » en gros caractères noirs sur fond blanc, deux boutons de store, un emoji voiture et un bandeau « no credit checks » répété.">
+              </div>
+
+              <span class="wipe__label">Avant</span>
+              <span class="wipe__label wipe__label--after">Après</span>
+              <span class="wipe__handle" aria-hidden="true"></span>
+
+              <input class="wipe__range" type="range" min="0" max="100" value="50" step="0.1"
+                     aria-label="Comparer le hero de la landing page avant et après refonte : glissez vers la gauche pour découvrir la page refaite.">
+            </div>
+          </div>
         </figure>
 
-        <ul class="versant__notes" data-reveal="group">
-          <li class="note">
-            <h3 class="note__title">Structure</h3>
-            <p class="note__text"><span class="todo">À compléter</span> La décision, en une phrase.</p>
-          </li>
-          <li class="note">
-            <h3 class="note__title">Responsive</h3>
-            <p class="note__text"><span class="todo">À compléter</span> La décision, en une phrase.</p>
-          </li>
-          <li class="note">
-            <h3 class="note__title">Intégration</h3>
-            <p class="note__text"><span class="todo">À compléter</span> La décision, en une phrase.</p>
-          </li>
-        </ul>
+        <!-- Lien sortant : nouvel onglet, pour ne pas faire perdre la page projet. Le
+             `rel` est obligatoire avec `target="_blank"` — sans lui, la page ouverte
+             garde une référence sur celle-ci via `window.opener`. L'`aria-label`
+             reprend le texte ET annonce le nouvel onglet, qu'une flèche ne dit pas. -->
+        <a class="case-btn" href="https://getbeepz.com/" target="_blank" rel="noopener"
+           aria-label="Voir le site Beepz en ligne (nouvel onglet)" data-reveal>
+          Voir le site en ligne
+          <svg class="case-btn__arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true" focusable="false">
+            <path d="M1 9L9 1M9 1H2M9 1V8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+
       </li>
 
-      <li class="versant" id="emails" data-reveal="pin">
+      <!-- ONBOARDING — le plus gros chantier du projet, et le seul dont la matière
+           tient dans un diagramme avant de tenir dans des captures.
+
+           La carte est dessinée à la main en SVG plutôt que reprise en image de la
+           planche Figma : à l'échelle d'une page web, soixante-sept vignettes de
+           téléphone sont illisibles. Ce qu'il faut lire, c'est la STRUCTURE — le tronc,
+           la fourche, les trois branches et leurs poids. Les écrans viendront à côté,
+           dans un rail défilant, quand les exports seront là. -->
+      <li class="versant" id="onboarding" data-reveal="pin">
         <div class="versant__head" data-reveal>
           <p class="versant__num">03</p>
+          <h2 class="versant__title">L’onboarding</h2>
+          <p class="versant__role">La montée</p>
+        </div>
+
+        <p class="versant__stake" data-reveal>
+          <span class="versant__stake-label">L’enjeu</span>
+          Construire un parcours d’entrée là où il n’y en avait aucun — et le faire
+          mener chacun, acheteur ou vendeur, jusqu’à un profil complet.
+        </p>
+
+        <div class="versant__body" data-reveal>
+          <p>
+            <span class="case-hl">Il n’y avait pas d’onboarding.</span> Rien entre le
+            téléchargement de l’application et son écran d’accueil&nbsp;: ni guidage, ni
+            explication de ce que la plateforme permet de faire.
+          </p>
+          <!-- Les deux chiffres sont MA lecture des planches, à confirmer par Vincent :
+               ~38 écrans sur le chemin traversé, ~67 frames une fois les états comptés. -->
+          <p>
+            J’ai construit le parcours entier, du splash au profil renseigné. Il ne se
+            contente pas d’inscrire&nbsp;: il mène chacun jusqu’à un profil complet et
+            <em>utile pour ce qu’il vient faire</em> — un acheteur prêt à chercher, un
+            vendeur prêt à publier son annonce. Une quarantaine d’écrans traversés,
+            soixante-sept frames une fois les états comptés.
+          </p>
+          <p>
+            La décision qui tient tout le reste&nbsp;: la question
+            <em>« How will you use Beepz? »</em> est posée avant l’inscription, avant la
+            moindre saisie. Trois réponses — acheter, vendre, parrainer — et tout ce qui
+            suit en découle&nbsp;: un vendeur ne voit jamais les arguments de l’acheteur,
+            et la vérification d’entreprise ne s’adresse qu’aux professionnels.
+          </p>
+        </div>
+
+        <figure class="versant__figure" data-reveal>
+          <!-- Le conteneur qui défile : un diagramme de 1180 unités écrasé dans 350 px
+               ne se lit plus. Sous 900 px, la carte garde sa taille minimale et c'est
+               le doigt qui la parcourt — comme n'importe quel tableau large. -->
+          <div class="flow-wrap">
+          <svg class="flow" viewBox="0 0 1180 400" role="img"
+               aria-label="La structure du parcours : une entrée de 3 écrans, puis la question « How will you use Beepz ? », puis 4 écrans d’inscription communs, puis trois branches — acheteur 9 écrans, vendeur 10 écrans suivis de 8 écrans de mise en vente, et parrain 4 écrans.">
+
+            <!-- le tronc -->
+            <path class="flow-line" d="M140 200H190"/>
+            <path class="flow-line" d="M450 200H500"/>
+
+            <!-- l'éclatement en trois branches -->
+            <path class="flow-line" d="M650 200H700M700 76V324M700 76H740M700 200H740M700 324H740"/>
+
+            <!-- la queue vendeur -->
+            <path class="flow-line" d="M900 200H950"/>
+
+            <g class="flow-node">
+              <rect class="flow-box" x="0" y="164" width="140" height="72" rx="12"/>
+              <text class="flow-name" x="18" y="196">Entrée</text>
+              <text class="flow-count" x="18" y="218">3 écrans</text>
+            </g>
+
+            <!-- La fourche porte l'accent : c'est la décision du volet, pas une étape
+                 parmi d'autres. Elle est aussi la seule boîte à citer le produit. -->
+            <g class="flow-node">
+              <rect class="flow-box flow-box--fork" x="190" y="150" width="260" height="100" rx="14"/>
+              <text class="flow-name" x="212" y="188">How will you</text>
+              <text class="flow-name" x="212" y="210">use Beepz&nbsp;?</text>
+              <text class="flow-count" x="212" y="232">1 écran, 3 réponses</text>
+            </g>
+
+            <g class="flow-node">
+              <rect class="flow-box" x="500" y="164" width="150" height="72" rx="12"/>
+              <text class="flow-name" x="518" y="196">Inscription</text>
+              <text class="flow-count" x="518" y="218">4 écrans</text>
+            </g>
+
+            <g class="flow-node">
+              <rect class="flow-box" x="740" y="40" width="160" height="72" rx="12"/>
+              <text class="flow-name" x="758" y="72">Acheteur</text>
+              <text class="flow-count" x="758" y="94">9 écrans</text>
+            </g>
+
+            <g class="flow-node">
+              <rect class="flow-box" x="740" y="164" width="160" height="72" rx="12"/>
+              <text class="flow-name" x="758" y="196">Vendeur</text>
+              <text class="flow-count" x="758" y="218">10 écrans</text>
+            </g>
+
+            <g class="flow-node">
+              <rect class="flow-box" x="950" y="164" width="200" height="72" rx="12"/>
+              <text class="flow-name" x="968" y="196">Mise en vente</text>
+              <text class="flow-count" x="968" y="218">8 écrans</text>
+            </g>
+
+            <g class="flow-node">
+              <rect class="flow-box" x="740" y="288" width="160" height="72" rx="12"/>
+              <text class="flow-name" x="758" y="320">Parrain</text>
+              <text class="flow-count" x="758" y="342">4 écrans</text>
+            </g>
+          </svg>
+          </div>
+        </figure>
+
+        <!-- Le rail : dix écrans, pas quarante. Il montre un ORDRE, pas un volume —
+             le volume est le travail de la carte, juste au-dessus, qui le dit en
+             chiffres. Une file de quarante vignettes redeviendrait une planche-contact,
+             ce que la règle d'édition du projet écarte.
+
+             Chaque écran porte un argument : la fourche est le point du volet,
+             l'inscription montre ses états de validation dans une seule vue, et les
+             écrans 04 et 05 côte à côte prouvent que les deux publics ne lisent pas le
+             même discours. Le geste va dans le sens du parcours, et la page ne
+             s'allonge pas.
+
+             Pas de libellé sous les écrans : les noms de chapitre sont déjà sur la
+             carte au-dessus, et le titre de chaque vue n'apprend rien. Le sens est
+             porté par les `alt`, qui décrivent réellement ce qu'on voit. -->
+        <figure class="versant__figure" data-reveal>
+          <div class="rail-wrap" data-viewer="Les écrans de l’onboarding" tabindex="0" role="group"
+               aria-label="Les écrans de l’onboarding, du splash à la mise en vente : faites glisser pour les parcourir.">
+            <ol class="rail">
+          <li class="rail__step">
+            <div class="rail__phone">
+              <img src="assets/beepz/onboarding/01-splash.webp" width="402" height="874" loading="lazy" decoding="async"
+                   alt="Écran de lancement : le logo Beepz sur un fond de véhicules, et le bouton « Get Started ».">
+            </div>
+          </li>
+          <li class="rail__step">
+            <div class="rail__phone">
+              <img src="assets/beepz/onboarding/02-fourche.webp" width="402" height="874" loading="lazy" decoding="async"
+                   alt="La question posée avant l’inscription, avec trois réponses : « I’m buying a car », « I’m selling cars », « I’m bringing sellers ».">
+            </div>
+          </li>
+          <li class="rail__step">
+            <div class="rail__phone">
+              <img src="assets/beepz/onboarding/03-inscription.webp" width="402" height="874" loading="lazy" decoding="async"
+                   alt="Le formulaire de création de compte, montré dans ses états de validation : un champ coché en vert, un autre signalé en erreur.">
+            </div>
+          </li>
+          <li class="rail__step">
+            <div class="rail__phone">
+              <img src="assets/beepz/onboarding/04-acheteur.webp" width="402" height="883" loading="lazy" decoding="async"
+                   alt="Première slide de l’onboarding acheteur : « Skip the Barriers — no credit checks, no down payments ».">
+            </div>
+          </li>
+          <li class="rail__step">
+            <div class="rail__phone">
+              <img src="assets/beepz/onboarding/05-vendeur.webp" width="402" height="883" loading="lazy" decoding="async"
+                   alt="Slide de l’onboarding vendeur : « Weekly Cash Flow — des versements réguliers, chaque semaine ».">
+            </div>
+          </li>
+          <li class="rail__step">
+            <div class="rail__phone">
+              <img src="assets/beepz/onboarding/06-checklist.webp" width="402" height="883" loading="lazy" decoding="async"
+                   alt="Les critères que le véhicule doit remplir avant publication, cochés un à un.">
+            </div>
+          </li>
+          <li class="rail__step">
+            <div class="rail__phone">
+              <img src="assets/beepz/onboarding/07-formulaire.webp" width="402" height="883" loading="lazy" decoding="async"
+                   alt="Le formulaire du véhicule : numéro de série, marque, modèle, année, kilométrage, boîte de vitesses.">
+            </div>
+          </li>
+          <li class="rail__step">
+            <div class="rail__phone">
+              <img src="assets/beepz/onboarding/08-photos.webp" width="402" height="883" loading="lazy" decoding="async"
+                   alt="L’ajout des photos du véhicule, avec trois clichés déjà déposés et un emplacement libre.">
+            </div>
+          </li>
+          <li class="rail__step">
+            <div class="rail__phone">
+              <img src="assets/beepz/onboarding/09-prix.webp" width="402" height="883" loading="lazy" decoding="async"
+                   alt="Le prix de vente et son échéancier : versement hebdomadaire, nombre de semaines, gain total, réglés au curseur.">
+            </div>
+          </li>
+          <li class="rail__step">
+            <div class="rail__phone">
+              <img src="assets/beepz/onboarding/10-parrain.webp" width="402" height="883" loading="lazy" decoding="async"
+                   alt="L’écran du programme de parrainage : code d’invitation, gains par vendeur et par voiture, partage par lien ou QR code.">
+            </div>
+          </li>
+            </ol>
+          </div>
+        </figure>
+      </li>
+
+      <!-- LES EMAILS — la mise en regard fait le travail des légendes : les deux
+           accueils côte à côte montrent que c'est le même gabarit retourné, et la
+           rangée du dessous montre jusqu'où le système descend, du bandeau illustré
+           au message de service sans image. Ne réordonne pas les quatre. -->
+      <li class="versant" id="emails" data-reveal="pin">
+        <div class="versant__head" data-reveal>
+          <p class="versant__num">04</p>
           <h2 class="versant__title">Les emails</h2>
           <p class="versant__role">La relance</p>
         </div>
 
         <p class="versant__stake" data-reveal>
           <span class="versant__stake-label">L’enjeu</span>
-          <span class="todo">À compléter</span>
-          Une ligne&nbsp;: pourquoi les emails comptaient autant que le site.
-        </p>
-
-        <p class="versant__inherit" data-reveal>
-          <span class="versant__inherit-label">Hérité du socle</span>
-          <span class="chip">Échelle typo</span>
-          <span class="chip">Boutons</span>
-          <span class="chip">Couleurs</span>
-          <span class="chip">Ton</span>
+          Aligner les emails sur le système, pour que la marque soit la même dans la
+          boîte de réception et sur le site.
         </p>
 
         <div class="versant__body" data-reveal>
           <p>
-            <span class="todo">À compléter</span>
-            Le vrai sujet de l’email&nbsp;: faire tenir le système dans un support qui
-            n’en veut pas — tableaux, clients qui ignorent la moitié du CSS, largeur
-            contrainte. Raconte l’écart, c’est là que le savoir-faire se voit.
+            Les gabarits ont été repris un par un&nbsp;: bandeaux, hiérarchie, boutons et
+            pieds de page redessinés sur la palette et sur la typographie du socle.
           </p>
           <p>
-            <span class="todo">À compléter</span>
-            Ce que tu as livré&nbsp;: le nombre de gabarits, comment ils se composent,
-            et qui les envoie ensuite.
+            Chaque envoi emprunte désormais ses composants au reste du système — le
+            même appel à l’action, la même fiche véhicule que dans l’application. Le
+            système ne s’arrête pas au site.
           </p>
         </div>
 
-        <figure class="versant__figure" data-reveal>
-          <div class="versant__frame"><span>Visuel à venir — les gabarits d’email</span></div>
-          <figcaption class="versant__caption">
-            <span class="todo">À compléter</span>
-            Ce que le visuel montre, en une ligne.
-          </figcaption>
-        </figure>
+        <!-- `data-full` : la vignette est rognée sous l'appel à l'action, la
+             visionneuse ouvre l'email ENTIER. Le fichier complet n'est référencé
+             que par cet attribut, donc il n'est téléchargé qu'au clic — les
+             488 Ko des quatre versions longues ne coûtent rien au chargement de
+             la page. La visionneuse passe alors en mode défilant : un email de
+             3 068 px ramené à la hauteur de la fenêtre serait illisible.
 
-        <ul class="versant__notes" data-reveal="group">
-          <li class="note">
-            <h3 class="note__title">Contraintes</h3>
-            <p class="note__text"><span class="todo">À compléter</span> La décision, en une phrase.</p>
+             Les rangées SONT les paires : accueil vendeur / accueil acheteur en
+             haut, alerte / message de service en bas. Aucune légende ne le dit,
+             c’est la grille qui le montre. Ne réordonne pas ces quatre images. -->
+        <ul class="mails" data-viewer="Les quatre gabarits d’email" data-reveal="group" aria-label="Les quatre gabarits d’email">
+          <li>
+            <div class="versant__shot">
+              <img src="assets/beepz/mails/vendeur.webp" data-full="assets/beepz/mails/vendeur-entier.webp"
+                   width="801" height="881" loading="lazy" decoding="async"
+                   alt="Email de bienvenue côté vendeur : bandeau photo « Let’s start selling » sur un alignement de voitures, mot d’accueil et bouton « List a car now ».">
+            </div>
           </li>
-          <li class="note">
-            <h3 class="note__title">Gabarits</h3>
-            <p class="note__text"><span class="todo">À compléter</span> La décision, en une phrase.</p>
+          <li>
+            <div class="versant__shot">
+              <img src="assets/beepz/mails/acheteur.webp" data-full="assets/beepz/mails/acheteur-entier.webp"
+                   width="801" height="881" loading="lazy" decoding="async"
+                   alt="Email de bienvenue côté acheteur : bandeau « Your car, your way » avec deux voitures détourées sur fond bleu, mot d’accueil et bouton « Find a car ».">
+            </div>
           </li>
-          <li class="note">
-            <h3 class="note__title">Tests</h3>
-            <p class="note__text"><span class="todo">À compléter</span> La décision, en une phrase.</p>
+          <li>
+            <div class="versant__shot">
+              <img src="assets/beepz/mails/annonces.webp" data-full="assets/beepz/mails/annonces-entier.webp"
+                   width="801" height="881" loading="lazy" decoding="async"
+                   alt="Email d’alerte « New cars in your area » : bandeau photo, deux phrases, bouton « Explore now » et le début des fiches véhicule.">
+            </div>
+          </li>
+          <li>
+            <div class="versant__shot">
+              <img src="assets/beepz/mails/transac.webp" data-full="assets/beepz/mails/transac-entier.webp"
+                   width="601" height="661" loading="lazy" decoding="async"
+                   alt="Email de service « Golden Week-pass granted » : pas de bandeau, seulement le logo Beepz, un titre et du texte courant.">
+            </div>
           </li>
         </ul>
       </li>
 
     </ol>
-  </section>
-
-  <!-- ======================================================================
-       LE SOMMET — ce que ça a changé. Trois repères, puis le mot de la fin.
-       ====================================================================== -->
-  <section class="case-section case-summit" id="sommet">
-    <div class="case-head" data-reveal>
-      <p class="case__eyebrow">Au sommet</p>
-      <h2 class="case__title">Ce que ça a changé</h2>
-    </div>
-
-    <!-- Pas de grands nombres ici : la mission n'en a pas produit d'exploitables, et
-         un chiffre inventé se voit. Trois acquis qualitatifs à la place — même rythme
-         en trois colonnes que les notes de terrain, mais l'œil passe au vert. -->
-    <ul class="outcomes" data-reveal="group">
-      <li class="note">
-        <h3 class="note__title">Pour l’équipe</h3>
-        <p class="note__text"><span class="todo">À compléter</span> Ce qu’elle fait maintenant sans toi.</p>
-      </li>
-      <li class="note">
-        <h3 class="note__title">Pour la marque</h3>
-        <p class="note__text"><span class="todo">À compléter</span> Ce qui se tient enfin d’un support à l’autre.</p>
-      </li>
-      <li class="note">
-        <h3 class="note__title">Pour la suite</h3>
-        <p class="note__text"><span class="todo">À compléter</span> Ce que le socle a rendu possible ensuite.</p>
-      </li>
-    </ul>
-
-    <div class="case-body" data-reveal>
-      <p class="case-body__lede">
-        <span class="todo">À compléter</span>
-        Le mot de la fin&nbsp;: ce que la mission a laissé derrière elle, en deux ou
-        trois phrases.
-      </p>
-
-      <p>
-        <span class="todo">À compléter</span>
-        Et ce que tu ferais autrement. C’est la ligne que les recruteurs lisent en
-        entier&nbsp;— un regard critique sur son propre travail vaut mieux qu’un
-        chiffre flatteur.
-      </p>
-    </div>
   </section>
 
   <nav class="case-foot" data-reveal aria-label="Navigation entre projets">
@@ -542,11 +694,11 @@
       Tous les projets
     </a>
 
-    <!-- Volontairement un <span> tant que le projet suivant n'existe pas : pas
-         d'ancre morte sur le site, même règle que les liens réseaux du contact. -->
-    <span class="case-foot__next">
-      Projet suivant <span class="todo">à venir</span>
-    </span>
+    <!-- Ce fut un <span> tant qu'il n'y avait qu'une page projet — pas d'ancre
+         morte sur le site, même règle que les liens réseaux du contact. Depuis
+         que projet-jm.html existe, c'est un vrai lien, et les deux pages se
+         renvoient l'une à l'autre. -->
+    <a class="case-foot__next" href="projet-jimizz.html">Projet suivant — Jimizz</a>
   </nav>
 
 </main>
