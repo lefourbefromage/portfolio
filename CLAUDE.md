@@ -59,12 +59,11 @@ encore le Gmail ; il a été décidé de ne pas réécrire l'historique.
 
 ### L'adresse de contact
 
-**EN ATTENDANT, le site affiche une adresse Gmail pro de Vincent**, parce que la redirection
-OVH ne livre encore rien (le domaine date du 11 septembre 2026, et le quota des redirections
-affichait 0 / 1000 alors que la redirection figurait dans la liste). Même balisage, mêmes
-deux moitiés — seul le contenu des deux `<span>` a changé, un commentaire HTML le rappelle
-sur place. Le jour où un test envoyé depuis une autre boîte arrive bien, on remet `contact`
-et le domaine du site.
+Le site a affiché **une adresse Gmail pro** du 11 au 14 septembre 2026, le temps que la
+redirection OVH se mette à livrer (le domaine venait d'être pris, et le quota des
+redirections affichait 0 / 1000 alors que la redirection figurait dans la liste). Vincent a
+demandé le retour à l'adresse du domaine : seul le contenu des deux `<span>` avait changé,
+le balisage n'a jamais bougé. Si le dépannage devait resservir, c'est la même manœuvre.
 
 **C'est `contact`, sur le domaine du site, et elle n'est écrite en entier dans AUCUN fichier
 du dépôt** — ce fichier compris : il est public lui aussi, servi à la racine du domaine. Ni
@@ -327,6 +326,25 @@ appareil et chaque navigateur (`?stats=on` pour revenir). Ça pose le drapeau
 
 Le panneau masqué gèle l'`IntersectionObserver` : les « Section : » ne s'y déclenchent pas,
 le reste se vérifie en remplaçant `window.umami.track` par un journal.
+
+## Le portfolio PDF
+
+Pour les candidatures qui demandent un PDF : `python3 tools/build_pdf.py` produit
+`tools/pdf/out/Vincent-Waldmann-Portfolio.pdf`, 18 pages A4 paysage, ~7 Mo. **Ce n'est
+pas une impression du site** — le parcours épinglé, les révélations et le header collant
+la rendraient inutilisable — mais une page conçue pour ça, `tools/pdf/portfolio.html`,
+avec sa propre feuille (`portfolio.css`) et la palette, les polices et les compositions
+du site. Détails et pièges dans `tools/README.md`.
+
+- **ses textes sont ceux du site, recopiés** : quand un texte change sur une page, il
+  faut le reprendre là-bas aussi. Les seules phrases propres au PDF sont les libellés
+  (« La campagne JacquIA », « Au quotidien, sur les réseaux »…) ;
+- **le PDF ne doit jamais être commité** : il porte l'adresse de contact en clair.
+  `tools/pdf/out/` est ignoré, et la source relit l'adresse dans `index.html` à
+  l'impression, sans l'écrire ;
+- **la grille des réseaux n'y garde que dix visuels sur seize**, les plus sages : le PDF
+  s'ouvre souvent sur un poste de travail. Les écartés sont listés dans un commentaire ;
+- l'ordre suit celui du site, sites et produit avant graphisme.
 
 ## Système de design
 
@@ -806,10 +824,45 @@ garde-le dans la palette si tu réexportes.
 voir « Le fil qui vient d'À propos » plus bas. Il n'est plus dans `.about__body` parce qu'il
 doit se figer avec la scène du parcours, ce qu'un enfant d'À propos ne peut pas faire.
 
-**Le bouton CV est un `<span>`, pas un `<a>`, tant que le PDF n'existe pas** — même règle que
-l'adresse de contact sans JS : pas d'ancre morte sur le site. Le jour où le fichier est là, il
-repasse en `<a href="assets/home/cv-vincent-waldmann.pdf" download>`, un commentaire HTML le
-rappelle sur place.
+**Le CV est là, en deux langues** — `assets/home/about/cv-fr.pdf` et `cv-en.pdf`, une page
+A4 chacun, fournis par Vincent (export Affinity). Le bouton a donc cessé d'être un `<span>`
+(il l'était tant que le fichier manquait, pas d'ancre morte sur le site) : ce sont deux
+`<a … download>` dans une `.about__cv-row`, le **français d'abord** et l'anglais en second,
+plus discret. Trois choses à garder :
+
+- **le `download` porte le nom du fichier REÇU** (`Vincent-Waldmann-CV.pdf`), pas celui du
+  dépôt : sans lui, le recruteur retrouve un « cv-fr.pdf » anonyme dans ses téléchargements.
+  Les noms de fichiers, eux, suivent la règle des assets — rangés sous la section qui les
+  charge, sans répéter le nom du dossier ;
+- **le français reste le premier bouton** : le fil pointillé du parcours part de sous lui, à
+  64px de son bord gauche (vérifié après l'ajout du second) ;
+- **le survol n'existe que sur le lien** (`a.about__cv:hover`), même règle que
+  `a.contact__mail:hover`.
+
+**RELIS UN CV AVANT DE LE VERSER ICI** : le dépôt est public, donc tout ce qui y entre est
+lisible de tous, historique compris — et un CV porte par nature des coordonnées. La première
+livraison (11 septembre 2026) portait le Gmail personnel de Vincent ; **les fichiers en place
+portent l'adresse de contact du site**, et c'est ce qu'on attend d'une version publiée. Le
+téléphone, lui, y est, et c'est son choix. Deux autres choses à regarder au passage :
+
+- **les dates, et l'écart entre les deux supports est VOULU.** Le CV compte en périodes, la
+  carte du parcours en étapes, et les deux ne disent pas la même chose exprès :
+
+  | | la carte | le CV |
+  |---|---|---|
+  | Jacquie & Michel | **deux étapes** — 2013 Paris, puis 2016 Pau | **un seul poste**, 2013 → 2024 |
+  | ZXY Corp | 2024 | 2024-2025 |
+
+  Sur le site, Vincent a séparé 2013 et 2016 pour montrer **l'évolution des tâches** —
+  webdesigner junior, puis designer et intégrateur. Sur le CV il garde une ligne unique,
+  pour montrer **la longévité** chez le même employeur. Ne « corrige » donc pas l'un
+  d'après l'autre. Budapest, lui, est passé de 2023 à 2024 pour l'inverse — là, les deux
+  devaient concorder : arrivée en décembre 2023, départ en juillet 2025 ;
+- **le poids** — un export Affinity pèse 3,2 Mo la page, dont 3,0 pour le seul motif topo
+  du fond. **`python3 tools/shrink_cv.py` le ramène à 0,46 Mo** sans toucher au texte (150
+  dpi, aplati sur le blanc, niveaux de gris, JPEG) : à relancer après chaque nouvel export,
+  c'est sans effet sur un fichier déjà allégé. Les fichiers servis sont les versions
+  allégées — ne verse pas l'export brut dans le dépôt.
 
 Le texte est **du vrai contenu**, écrit avec Vincent : treize ans d'expérience depuis 2013,
 les années sur des sites à très forte audience, et le « couteau suisse ». Le nombre d'années
@@ -872,6 +925,24 @@ Le recouvrement va jusqu'à 271px et ne cache rien : la scène est transparente 
 fenêtre n'est pas ouverte, donc le texte d'À propos continue de défiler dessous, normalement.
 **Toute position mesurée depuis le haut de la section doit ajouter `--pull`** — c'est le cas de
 `--lead-top` et la hauteur du fil.
+
+**MAIS CE QUI NE CACHE RIEN ATTRAPE QUAND MÊME LE POINTEUR**, et ça a coûté un bug : les deux
+boutons de CV, en bas d'À propos, tombent pile dans le recouvrement, et leurs clics partaient
+dans la piste. Invisible pendant des mois — tant que le bouton était un `<span>` inerte, il
+n'y avait rien à cliquer là-dessous. D'où `pointer-events: none` sur **`.trail`** (la section,
+pas la scène : c'est la piste entière qui recouvre) ; ce qui doit redevenir cliquable le redit
+pour soi, `.trail.is-open .trail__stage` et `.trail.is-open .trail__hud`. Trois corollaires :
+
+- **les gestes du parcours n'en dépendent pas** : molette, doigt et clavier sont écoutés sur
+  `window`, donc la marche et le mode auto fonctionnent à l'identique (vérifié) ;
+- **le fil pointillé est en `pointer-events: none` lui aussi** — il déborde d'une boîte de
+  hauteur nulle et passe devant le bas d'À propos ;
+- **en mouvement réduit, `--pull` est remis à `0px`** : il n'y a là ni carton ni fil à tenir,
+  donc plus de recouvrement du tout, et la scène y garde ses événements pour que le texte de
+  la frise reste sélectionnable.
+
+Si tu ajoutes un élément cliquable en bas d'À propos, teste-le au clic — pas seulement à
+l'œil.
 
 ### La révélation : une fenêtre qui s'ouvre, une carte qui ne bouge pas
 

@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Cette page n'est pas une page du site : c'est la SOURCE du portfolio PDF,
+     que `tools/build_pdf.py` imprime avec Chrome. Elle est servie par GitHub
+     Pages comme tout le dépôt, d'où le noindex. Voir `tools/README.md`. -->
+<meta name="robots" content="noindex">
+<title>Vincent Waldmann — Portfolio</title>
+<link rel="stylesheet" href="portfolio.css">
+
+<!-- L'ADRESSE DE CONTACT N'EST PAS ÉCRITE ICI. Le dépôt est public : on la
+     relit dans `index.html`, où elle est déjà en deux moitiés, et on la pose
+     dans chaque `[data-mail-slot]`. Une seule adresse à tenir, celle du site —
+     le jour où elle redevient celle du domaine, le PDF suit au prochain build.
+     Sans serveur (fichier ouvert en direct), le lien retombe sur la section
+     contact du site. -->
+<script>
+  var mail = new Promise(function (done) {
+    addEventListener('DOMContentLoaded', function () {
+      fetch('../../index.html')
+        .then(function (r) { return r.text(); })
+        .then(function (html) {
+          var src = new DOMParser().parseFromString(html, 'text/html').querySelector('[data-mail]');
+          var parts = [].map.call(src.querySelectorAll(':scope > span > span:not(.contact__at)'),
+                                  function (s) { return s.textContent.trim(); });
+          if (parts.length !== 2) return;
+          var address = parts.join(String.fromCharCode(64));  // l'arobase, jamais en clair ici
+          document.querySelectorAll('[data-mail-slot]').forEach(function (a) {
+            a.href = 'mailto:' + address;
+            a.textContent = address;
+          });
+        })
+        .catch(function () {})
+        .finally(done);
+    });
+  });
+
+  // LE RELEVÉ DES IMAGES, pour `build_pdf.py`. Chrome embarque chaque image
+  // dans le PDF à sa définition d'origine et sans perte : 48 Mo au premier
+  // essai. Le script en sert donc des copies réduites, et c'est la page qui
+  // lui dit de combien — sa boîte de mise en page (`offsetWidth`, que la
+  // rotation ne fausse pas), et si sa transparence compte. Elle compte quand
+  // l'image se pose sur autre chose que le fond d'encre de la page : les
+  // compositions qui se chevauchent, la couverture, le contact.
+  var measured = new Promise(function (done) {
+    addEventListener('load', function () {
+      document.querySelectorAll('img').forEach(function (img) {
+        img.dataset.box = img.offsetWidth + 'x' + img.offsetHeight;
+        if (img.closest('.comp, .cover, .contact')) img.dataset.alpha = '1';
+      });
+      done();
+    });
+  });
+
+  // Les trois polices, relues par le script : un PDF en police système ne
+  // doit pas partir.
+  var fonts = document.fonts.ready.then(function () {
+    var all = [];
+    document.fonts.forEach(function (f) { all.push(f.status); });
+    if (all.length && all.every(function (s) { return s === 'loaded'; })) {
+      document.documentElement.dataset.fonts = '1';
+    }
+  });
+
+  Promise.all([mail, measured, fonts]).then(function () { document.documentElement.dataset.ready = '1'; });
+</script>
+</head>
+<body>
+
+<!-- ======================================================================
+     01 — LA COUVERTURE : le hero du site et son tas de photos.
+     ====================================================================== -->
+<section class="page cover">
+  <div class="cover__panel">
+    <img class="cover__topo" src="../../assets/home/hero/topo.svg" alt="">
+
+    <div class="cover__top">
+      <div class="logo"><span>Waldmann</span><span>Vincent</span></div>
+      <p class="cover__kind">Portfolio<br>2026</p>
+    </div>
+
+    <div class="cover__content">
+      <p class="cover__intro"><span>Enchanté, moi c’est</span><span class="cover__name">Vincent</span></p>
+      <h1>
+        <span class="cover__title">Webdesigner</span>
+        <img class="cover__ghost" src="../../assets/home/hero/ghost-title.svg" alt="&amp; Intégrateur">
+      </h1>
+      <div class="cover__badges">
+        <span class="badge badge--location">Basé en France</span>
+        <span class="badge badge--available">Disponible</span>
+      </div>
+    </div>
+
+    <img class="cover__sticker" style="left: 45.5%; top: 3.5%;  width: 58px;  --rot:  -8deg" src="../../assets/home/hero/sticker-uiux.webp" alt="">
+    <img class="cover__sticker" style="left: 5.5%;  top: 15%;   width: 56px;  --rot:  -6deg" src="../../assets/home/hero/sticker-figma.webp" alt="">
+    <img class="cover__sticker" style="left: 2.5%;  top: 42%;   width: 116px; --rot: -10deg" src="../../assets/home/hero/sticker-adobe.webp" alt="">
+    <img class="cover__sticker" style="left: 9%;    top: 62%;   width: 84px;  --rot:  -6deg" src="../../assets/home/hero/sticker-affinity.webp" alt="">
+    <img class="cover__sticker" style="left: 88%;   top: 13%;   width: 78px;  --rot: -11deg" src="../../assets/home/hero/sticker-html.webp" alt="">
+    <img class="cover__sticker" style="left: 84%;   top: 41%;   width: 138px; --rot:  10deg" src="../../assets/home/hero/sticker-sassless.webp" alt="">
+    <img class="cover__sticker" style="left: 82%;   top: 66%;   width: 80px;  --rot:   8deg" src="../../assets/home/hero/sticker-github.webp" alt="">
+
+    <div class="cover__pile" aria-hidden="true">
+      <img class="pile--1" src="../../assets/home/pile/photo1.png" alt="">
+      <img class="pile--7" src="../../assets/home/pile/photo7.png" alt="">
+      <img class="pile--4" src="../../assets/home/pile/photo4.png" alt="">
+      <img class="pile--3" src="../../assets/home/pile/photo3.png" alt="">
+      <img class="pile--6" src="../../assets/home/pile/photo6.png" alt="">
+      <img class="pile--2" src="../../assets/home/pile/photo2.png" alt="">
+      <img class="pile--5" src="../../assets/home/pile/photo5.png" alt="">
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================================
+     02 — À PROPOS. Les textes sont ceux du site, au mot près : ils ont été
+     écrits avec Vincent, ne les réécris pas ici sans lui.
+     ====================================================================== -->
+<section class="page about">
+  <img class="topo-square topo-square--br" src="../../assets/home/about/topo-square-right.svg" alt="">
+  <div class="about__grid">
+    <div>
+      <p class="eyebrow"><b>01.</b> Sur les sentiers</p>
+      <h2 class="title">Ce qui guide mes pas</h2>
+      <!-- Treize ans = 2026 − 2013, comme sur le site : à incrémenter avec lui. -->
+      <p class="lede">
+        Treize ans d’expérience, et un web qui s’est réinventé plusieurs fois entre-temps.
+        Depuis 2013, les sites ont changé de forme, de rythme et de support&nbsp;— j’ai
+        grandi et je me suis adapté avec eux.
+      </p>
+      <div class="body">
+        <p>
+          L’essentiel de ces années s’est joué sur des sites à <span class="hl">très forte
+          audience</span>, là où un écran validé le matin est vu par des centaines de milliers de
+          personnes le soir. Chaque décision compte, et c’est une excellente raison de faire
+          les choses bien.
+        </p>
+        <p>
+          Mes collègues m’ont souvent comparé à un <span class="hl">couteau suisse</span>,
+          pour ma polyvalence et mon envie de comprendre ce qui m’entoure. UX, product design,
+          création print ou intégration de site&nbsp;: je passe d’un bout à l’autre de la chaîne
+          sans changer de casquette. J’aime comprendre les gens avec qui je travaille, pour
+          échanger facilement avec eux et éviter ainsi de livrer un concept infaisable.
+        </p>
+        <p>
+          L’IA divise le métier&nbsp;; pour moi, elle travaille <span class="hl">en
+          appui</span>. Détourage, relecture ou écriture de code&nbsp;: elle accélère, mais
+          c’est moi qui tiens le crayon — je comprends ce qu’elle produit et je le corrige.
+        </p>
+      </div>
+    </div>
+
+    <div class="about__side">
+      <dl class="facts">
+        <div><dt>Expérience</dt><dd>Depuis 2013</dd></div>
+        <div><dt>Basé en</dt><dd>France</dd></div>
+        <div><dt>Poste actuel</dt><dd>Product Designer</dd></div>
+        <div><dt>Statut</dt><dd>Disponible</dd></div>
+      </dl>
+      <div class="skill">
+        <h3>Design</h3>
+        <ul class="pills">
+          <li>UX Research</li><li>UX Design</li><li>UI Design</li>
+          <li>Wireframing</li><li>Design System</li><li>Graphic Design</li>
+        </ul>
+      </div>
+      <div class="skill">
+        <h3>Dev</h3>
+        <ul class="pills">
+          <li>HTML / CSS</li><li>Sass / Less</li><li>JavaScript</li><li>Responsive design</li>
+        </ul>
+      </div>
+      <div class="skill">
+        <h3>Outils</h3>
+        <ul class="pills">
+          <li>Figma</li><li>Suite Adobe</li><li>Affinity</li><li>Git / GitHub</li>
+        </ul>
+      </div>
+      <!-- Le CV, comme sur le site : le français d'abord. Les URL sont absolues —
+           un PDF n'a pas de page d'où résoudre un chemin relatif. -->
+      <div class="about__cv">
+        <a class="link link--fill" href="https://vincentw.fr/assets/home/about/cv-fr.pdf">Mon CV en PDF</a>
+        <a class="link" href="https://vincentw.fr/assets/home/about/cv-en.pdf" hreflang="en">English version</a>
+      </div>
+    </div>
+  </div>
+  <footer class="page__foot"><span>À propos</span><span><a href="https://vincentw.fr/#a-propos">vincentw.fr</a> · <span class="page__num"></span></span></footer>
+</section>
+
+<!-- ======================================================================
+     03 — LE PARCOURS, en frise. Les cinq étapes et leurs textes sont ceux
+     d'`index.html` : si une étape change là-bas, elle change ici.
+     ====================================================================== -->
+<section class="page trail-page">
+  <div class="page__bg" aria-hidden="true"></div>
+  <p class="eyebrow"><b>02.</b> Suivez le guide</p>
+  <h2 class="title">Carnet de routes</h2>
+
+  <!-- Le chemin qui relie les cinq pastilles : une courbe qui passe PAR leurs
+       centres (x = début de chaque colonne + 9, y = 268 + le point du tracé).
+       Si tu déplaces une pastille, recalcule le tracé avec elle. -->
+  <svg class="trail-line" viewBox="0 0 1123 120" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M -40 48 C -22 46, 16 37, 69 33 C 122 29, 206 25, 275 22 C 344 19, 412 12, 481 14 C 550 16, 618 36, 686 37 C 754 38, 812 22, 892 23 C 972 24, 1118 39, 1163 42"/>
+  </svg>
+
+  <ol class="stops">
+    <li class="stop">
+      <span class="stop__pin" style="--y: -8px"></span>
+      <p class="stop__year">2012</p>
+      <h3 class="stop__role">Graphiste</h3>
+      <p class="stop__org">Nouveau Monde DDB<span>·</span>Lyon</p>
+      <p class="stop__note">Chargé de la création de visuels et de supports web (newsletter, articles, vidéo) pour les clients de l’agence&nbsp;: Wedze, Pilot, SPAR…</p>
+    </li>
+    <li class="stop">
+      <span class="stop__pin" style="--y: -19px"></span>
+      <p class="stop__year">2013</p>
+      <h3 class="stop__role">Webdesigner Junior</h3>
+      <p class="stop__org">Jacquie &amp; Michel<span>·</span>Paris</p>
+      <p class="stop__note">Prise de poste chez J&amp;M&nbsp;: création de visuels pour les réseaux sociaux, design d’interaction web, refonte des sites historiques de la marque.</p>
+    </li>
+    <li class="stop">
+      <span class="stop__pin" style="--y: -27px"></span>
+      <p class="stop__year">2016</p>
+      <h3 class="stop__role">Designer &amp; Frontend dev</h3>
+      <p class="stop__org">Jacquie &amp; Michel<span>·</span>Pau</p>
+      <p class="stop__note">Conception et intégration des projets web de la marque, création des visuels de communication pour les réseaux sociaux, réalisation de concepts marketing.</p>
+    </li>
+    <li class="stop">
+      <span class="stop__pin" style="--y: -4px"></span>
+      <p class="stop__year">2024</p>
+      <h3 class="stop__role">Lead Product Designer</h3>
+      <p class="stop__org">ZXY Corp<span>·</span>Budapest</p>
+      <p class="stop__note">Développement d’une équipe web pour le groupe Ares SAS en Hongrie. Création de designs d’interface, campagnes marketing.</p>
+    </li>
+    <li class="stop stop--now">
+      <span class="stop__pin" style="--y: -18px"></span>
+      <p class="stop__year">2025</p>
+      <h3 class="stop__role">Product Designer</h3>
+      <p class="stop__org">Freelance<span>·</span>France</p>
+      <p class="stop__note">Création d’identités visuelles, design et développement de pages de vente et de sites internet.</p>
+    </li>
+  </ol>
+  <footer class="page__foot"><span>Parcours</span><span><a href="https://vincentw.fr/#parcours">vincentw.fr</a> · <span class="page__num"></span></span></footer>
+</section>
+
+<!-- ======================================================================
+     04 — LES PROJETS : le sommaire. Les trois groupements sont ceux de la
+     section projets de l'accueil, mêmes pièces, mêmes positions (cadre
+     780 × 640). Chaque carte renvoie à la page du projet dans le PDF.
+     ====================================================================== -->
+<section class="page projects-page">
+  <p class="eyebrow"><b>03.</b> Extraits de carte</p>
+  <h2 class="title">Ascensions récentes</h2>
+
+  <div class="projects">
+    <a class="project" href="#jm">
+      <div class="cluster comp" aria-hidden="true">
+        <img style="left: 41.3%; top: 16.1%; width: 46.2%; z-index: 1" src="../../assets/home/projects/jm-ipad.webp" alt="">
+        <img style="left: 12.5%; top: 11.2%; width: 32.3%; z-index: 2" src="../../assets/home/projects/jm-tshirt.webp" alt="">
+        <img style="left: 47.2%; top: 47.3%; width: 32.3%; z-index: 3; --rot: 6deg" src="../../assets/home/projects/jm-logo.webp" alt="">
+        <img style="left: 24.8%; top: 45.9%; width: 32.3%; z-index: 4" src="../../assets/home/projects/jm-sextoy.webp" alt="">
+      </div>
+      <div class="project__card">
+        <img class="project__icon" src="../../assets/home/projects/logo-jm-left.webp" alt="">
+        <div><p class="project__name">Jacquie &amp; Michel</p><p class="project__tag">On dit merci qui&nbsp;?</p></div>
+      </div>
+      <p class="project__meta"><span>UI/UX · Intégration · Graphisme</span><b>p. 05</b></p>
+      <p class="project__sum">Je suis arrivé au tout début de l’équipe, et j’ai grandi avec la marque.</p>
+    </a>
+
+    <a class="project" href="#beepz">
+      <div class="cluster comp" aria-hidden="true">
+        <img style="left: 3.0%;  top: 5.4%;  width: 23.9%; z-index: 1; --rot: -3deg" src="../../assets/home/projects/beepz-iphone.webp" alt="">
+        <img style="left: 21.2%; top: 11.5%; width: 42.6%; z-index: 2; --rot: -2deg" src="../../assets/home/projects/beepz-picture.webp" alt="">
+        <img style="left: 46.1%; top: 51.9%; width: 50.9%; z-index: 3" src="../../assets/home/projects/beepz-car.webp" alt="">
+      </div>
+      <div class="project__card">
+        <img class="project__icon" src="../../assets/home/projects/logo-beepz-left.webp" alt="">
+        <div><p class="project__name">Beepz</p><p class="project__tag">Marketplace de voiture</p></div>
+      </div>
+      <p class="project__meta"><span>2025 · UI/UX Designer · 3 mois</span><b>p. 09</b></p>
+      <p class="project__sum">Beepz permet d’acheter et de vendre une voiture sans vérification de crédit.</p>
+    </a>
+
+    <a class="project" href="#jimizz">
+      <div class="cluster comp" aria-hidden="true">
+        <img style="left: 0.0%;  top: 6.4%;  width: 18.3%; z-index: 1" src="../../assets/home/projects/jmz-coin1.webp" alt="">
+        <img style="left: 7.1%;  top: 49.2%; width: 30.0%; z-index: 1" src="../../assets/home/projects/jmz-coin2.webp" alt="">
+        <img style="left: 10.3%; top: 5.8%;  width: 26.0%; z-index: 2; --rot: 22deg" src="../../assets/home/projects/jmz-rocket.webp" alt="">
+        <img style="left: 39.7%; top: 14.8%; width: 44.5%; z-index: 3; --rot: -5deg" src="../../assets/home/projects/jmz-wallet.webp" alt="">
+        <img style="left: 22.4%; top: 46.9%; width: 46.3%; z-index: 4; --rot: -3deg" src="../../assets/home/projects/jmz-stats.webp" alt="">
+        <img style="left: 29.5%; top: 59.4%; width: 36.8%; z-index: 5" src="../../assets/home/projects/jmz-coin3.webp" alt="">
+        <img style="left: 58.0%; top: 39.1%; width: 44.0%; z-index: 5" src="../../assets/home/projects/jmz-coin4.webp" alt="">
+      </div>
+      <div class="project__card">
+        <img class="project__icon" src="../../assets/home/projects/logo-jimizz-left.webp" alt="">
+        <div><p class="project__name">Jimizz</p><p class="project__tag">Jacquie et Michel Crypto</p></div>
+      </div>
+      <p class="project__meta"><span>UI/UX · Intégration · Graphisme</span><b>p. 15</b></p>
+      <p class="project__sum">Le jeton de Jacquie &amp; Michel, et les quatre surfaces qu’il a fallu dessiner autour pour en faire un produit.</p>
+    </a>
+  </div>
+  <footer class="page__foot"><span>Projets</span><span><a href="https://vincentw.fr/#projets">vincentw.fr</a> · <span class="page__num"></span></span></footer>
+</section>
+
+<!-- ======================================================================
+     05–08 — JACQUIE & MICHEL. L'ordre suit celui de la page du site : les
+     sites d'abord, les campagnes ensuite, les réseaux sociaux en dernier.
+     ====================================================================== -->
+<section class="page opening" id="jm">
+  <div class="band"><img src="../../assets/jm/hero/cover.webp" alt=""></div>
+  <div class="opening__head">
+    <div>
+      <p class="eyebrow">On dit merci qui&nbsp;?</p>
+      <h2 class="title">Jacquie &amp; Michel</h2>
+    </div>
+    <p class="opening__intro">
+      J&amp;M est une marque française de contenu pour adultes fondée en
+      1999, devenue l’un des sites X les plus populaires du pays grâce à son
+      positionnement «&nbsp;amateur&nbsp;» et une stratégie marketing très
+      visible, au point de s’imposer bien au-delà de son public initial dans
+      la culture populaire française.
+    </p>
+    <div class="opening__skills">
+      <h2>Skills</h2>
+      <ul><li>UI/UX</li><li>Intégration</li><li>Graphisme</li></ul>
+    </div>
+  </div>
+  <div class="opening__block">
+    <h3 class="title">Douze ans<br>dans la maison</h3>
+    <p class="lede">
+      Je suis arrivé au tout début de l’équipe, et j’ai grandi avec la marque —
+      assez tôt pour l’aider à prendre sa place dans le paysage français, assez
+      longtemps pour reprendre une à une toutes les surfaces sur lesquelles elle
+      se montre.
+    </p>
+  </div>
+  <footer class="page__foot"><span>Projets · Jacquie &amp; Michel</span><span><a href="https://vincentw.fr/projet-jm">vincentw.fr/projet-jm</a> · <span class="page__num"></span></span></footer>
+</section>
+
+<section class="page page--center">
+  <p class="statement">
+    L’état des lieux était sans ambiguïté&nbsp;: un design vieilli et aucune
+    optimisation.<br>
+    Il n’y avait pas d’ajustement à faire, il fallait tout reprendre depuis le
+    début, pour que les guidelines et les bonnes pratiques s’appliquent enfin
+    partout.
+  </p>
+  <ul class="jm-sites">
+    <li><img src="../../assets/jm/sites/jm.webp" alt="Le site Jacquie &amp; Michel sur un ordinateur portable."></li>
+    <li><img src="../../assets/jm/sites/pornovoisines.webp" alt="Le site PornoVoisines sur un ordinateur portable."></li>
+    <li><img src="../../assets/jm/sites/pornudeo.webp" alt="Le site Pornudeo sur une tablette."></li>
+    <li><img src="../../assets/jm/sites/elite.webp" alt="Le site Jacquie &amp; Michel Élite sur une tablette."></li>
+  </ul>
+  <p class="label" style="margin-top: 26px">Douze marques du groupe</p>
+  <ul class="jm-brands">
+    <li><img src="../../assets/jm/marques/maison-du-porno.webp" alt="La Maison du Porno"></li>
+    <li><img src="../../assets/jm/marques/illicoporno.webp" alt="IllicoPorno"></li>
+    <li><img src="../../assets/jm/marques/colmax.webp" alt="Colmax"></li>
+    <li><img src="../../assets/jm/marques/elite.webp" alt="Jacquie &amp; Michel Élite"></li>
+    <li><img src="../../assets/jm/marques/jmtv.webp" alt="Jacquie &amp; Michel TV"></li>
+    <li><img src="../../assets/jm/marques/swame.webp" alt="Swame"></li>
+    <li><img src="../../assets/jm/marques/hotvideo.webp" alt="Hot Video"></li>
+    <li><img src="../../assets/jm/marques/jmtv2.webp" alt="Jacquie &amp; Michel TV2"></li>
+    <li><img src="../../assets/jm/marques/madame-porno.webp" alt="Madame Porno"></li>
+    <li><img src="../../assets/jm/marques/pornudeo.webp" alt="Pornudeo"></li>
+    <li><img src="../../assets/jm/marques/pornovoisines.webp" alt="PornoVoisines"></li>
+    <li><img src="../../assets/jm/marques/tyjam.webp" alt="Tyjam"></li>
+  </ul>
+  <footer class="page__foot"><span>Projets · Jacquie &amp; Michel · Les sites</span><span><a href="https://vincentw.fr/projet-jm">vincentw.fr/projet-jm</a> · <span class="page__num"></span></span></footer>
+</section>
+
+<section class="page">
+  <img class="topo-square topo-square--bl" src="../../assets/home/about/topo-square-left.svg" alt="">
+  <div class="jm-campaign">
+    <div>
+      <p class="eyebrow">Jacquie &amp; Michel</p>
+      <h2 class="title">Les campagnes<br>marketing</h2>
+      <p class="lede">
+        Jacquie &amp; Michel a toujours été connu pour ses campagnes marketing
+        innovantes et impactantes. Le meilleur exemple&nbsp;: le fameux
+        «&nbsp;On dit merci qui&nbsp;?&nbsp;» est devenu une expression courante
+        dans la culture populaire française.
+      </p>
+      <div class="jm-campaign__note">
+        <p class="label">La campagne JacquIA</p>
+        <p>«&nbsp;Devenez la voix-off de Jacquie &amp; Michel&nbsp;»&nbsp;: une page de campagne et son test en ligne, du lancement jusqu’au score sur 100. Le site est toujours en ligne.</p>
+        <a class="link" href="https://jacquia.com/">jacquia.com</a>
+      </div>
+    </div>
+    <div class="jacquia comp">
+      <img class="jacquia__banner" src="../../assets/jm/jacquia/banner.webp" alt="La page de campagne JacquIA, sur un fond magenta.">
+      <img class="jacquia__phone jacquia__phone--1" src="../../assets/jm/jacquia/ecran-accueil.webp" alt="L’écran d’accueil de JacquIA sur téléphone.">
+      <img class="jacquia__phone jacquia__phone--2" src="../../assets/jm/jacquia/ecran-enregistrement.webp" alt="L’écran d’enregistrement.">
+      <img class="jacquia__phone jacquia__phone--3" src="../../assets/jm/jacquia/ecran-resultat.webp" alt="L’écran de résultat : un score sur 100.">
+    </div>
+  </div>
+  <footer class="page__foot"><span>Projets · Jacquie &amp; Michel · Les campagnes</span><span><a href="https://vincentw.fr/projet-jm">vincentw.fr/projet-jm</a> · <span class="page__num"></span></span></footer>
+</section>
+
+<!-- La grille des réseaux : dix des seize visuels du site, choisis parmi les
+     plus sages — le PDF part en candidature, souvent sur un poste de travail.
+     Le site garde les seize. Les six écartés (présidentielle, yaourt, Pâques,
+     Blue Monday, baiser, Saint-Valentin) montrent de la nudité ou jouent sur
+     le sous-entendu ; les bannières de boutique restantes aussi. -->
+<section class="page">
+  <p class="eyebrow">Jacquie &amp; Michel</p>
+  <h2 class="title">Au quotidien, sur les réseaux</h2>
+  <div class="jm-social">
+    <div class="jm-social__side">
+      <p class="statement">
+        Entre deux campagnes, c’est sur les réseaux sociaux que la marque se fait
+        entendre, au quotidien.
+        Un clin d’œil de saison, une affiche d’événement, une trouvaille qui fait
+        parler&nbsp;: chaque visuel entretient la complicité avec le public
+        français.
+      </p>
+      <p class="label" style="margin-top: 22px">Et, sur deux cases, la page anniversaire des vingt ans de la marque.</p>
+    </div>
+    <ul class="jm-social__grid">
+      <li><img src="../../assets/jm/campagnes/swame-awards.webp" alt="Affiche des Swame Awards 2024."></li>
+      <li><img src="../../assets/jm/social/insta-voix-off.webp" alt="Post Instagram : « Devenez la voix-off de Jacquie &amp; Michel »."></li>
+      <li><img src="../../assets/jm/social/poisson-avril-2018.webp" style="object-position: 30% 50%" alt="Poisson d’avril : deux burgers baptisés « Le Jacquie » et « Le Michel »."></li>
+      <li><img src="../../assets/jm/campagnes/bitometre.webp" alt="Visuel du Bitomètre."></li>
+      <li><img src="../../assets/jm/social/calendrier-avent-2017.webp" alt="Le calendrier de l’avent."></li>
+      <li><img src="../../assets/jm/campagnes/halloween.webp" alt="Visuel d’Halloween : un fantôme en drap blanc dans un lit."></li>
+      <li><img src="../../assets/jm/social/insta-jeu-de-cartes.webp" alt="Post Instagram pour le jeu de cartes de la marque."></li>
+      <li><img src="../../assets/jm/social/happy-hour.webp" alt="Visuel pour Jacquie &amp; Michel TV : « foot ou porno ? »."></li>
+      <li><img src="../../assets/jm/social/store-produit.webp" alt="Visuel produit pour la boutique : « Ceci n’est pas une flûte »."></li>
+      <li><img src="../../assets/jm/social/store-ete.webp" style="object-position: 20% 50%" alt="Bannière d’été de la boutique."></li>
+      <li class="jm-social__frise"><img src="../../assets/jm/frise/vingt-ans.webp" alt="La page anniversaire des vingt ans de Jacquie &amp; Michel, en trois panneaux inclinés."></li>
+    </ul>
+  </div>
+  <footer class="page__foot"><span>Projets · Jacquie &amp; Michel · Les réseaux</span><span><a href="https://vincentw.fr/projet-jm">vincentw.fr/projet-jm</a> · <span class="page__num"></span></span></footer>
+</section>
+
+<!-- ======================================================================
+     09–14 — BEEPZ. Le projet le plus « produit » des trois, d'où six pages :
+     l'ouverture, l'approche, puis un volet par page.
+     ====================================================================== -->
+<section class="page" id="beepz">
+  <img class="topo-square topo-square--tr" src="../../assets/home/about/topo-square-right.svg" alt="">
+  <div class="bz-hero">
+    <div>
+      <p class="eyebrow">Fiche de course</p>
+      <h2 class="title title--xl">Beepz</h2>
+      <p class="bz-hero__claim">
+        Beepz permet d’acheter et de vendre une voiture sans vérification de crédit.
+        Trois mois pour unifier son identité sur l’ensemble de ses supports&nbsp;:
+        design système, landing page, emails.
+      </p>
+    </div>
+    <div class="plates comp">
+      <img class="plate--car" src="../../assets/beepz/car.webp" alt="Une voiture présentée sur fond bleu, accompagnée d’un badge de vérification.">
+      <img class="plate--weekly" src="../../assets/beepz/weekly.webp" alt="Bandeau de marque Beepz : « Pay weekly, Earn Fully ».">
+      <img class="plate--app" src="../../assets/beepz/app.webp" alt="La fiche de l’application Beepz sur l’App Store.">
+    </div>
+  </div>
+  <div class="bz-hero__foot">
+    <dl class="facts">
+      <div><dt>Année</dt><dd>2025</dd></div>
+      <div><dt>Rôle</dt><dd>UI/UX Designer</dd></div>
+      <div><dt>Durée</dt><dd>3 mois</dd></div>
+      <div style="grid-column: span 2"><dt>Livrables</dt><dd>Design système<span class="dot">·</span>Landing page<span class="dot">·</span>Emails</dd></div>
+    </dl>
+  </div>
+  <footer class="page__foot"><span>Projets · Beepz</span><span><a href="https://vincentw.fr/projet-beepz">vincentw.fr/projet-beepz</a> · <span class="page__num"></span></span></footer>
+</section>
+
+<section class="page">
+  <div class="bz-approach">
+    <div>
+      <p class="eyebrow">L’approche</p>
+      <h2 class="title">Ce qu’il y avait en arrivant</h2>
+      <div class="body">
+        <p>
+          Beepz est une place de marché automobile née en Californie. Sa promesse&nbsp;:
+          acheter une voiture <span class="hl">sans vérification de crédit</span>, via
+          des frais d’activation uniques puis des paiements hebdomadaires. Un modèle qui
+          s’adresse à ceux qu’un score écarte du financement classique.
+        </p>
+        <p>
+          La société revendique plus de 100 000 téléchargements, 19 000 utilisateurs
+          actifs et 4 000 voitures vendues, et prépare son expansion hors de Californie.
+          Une croissance rapide, qui exige des fondations réutilisables.
+        </p>
+        <p>
+          À mon arrivée, <span class="hl">aucune ligne directrice</span> n’existait.
+          Chaque intervenant designait selon ses propres repères, et l’ADN de la marque se
+          diluait à chaque nouvel écran&nbsp;: le site ne correspondait pas à
+          l’application, les emails à aucun des deux.
+        </p>
+      </div>
+    </div>
+    <div class="bz-approach__shot">
+      <img src="../../assets/beepz/lifestyle.webp" alt="Photographie de marque Beepz : une personne face à un lac de montagne, vue depuis l’habitacle d’une voiture.">
+    </div>
+  </div>
+  <div class="bz-pivot">
+    <p class="statement">
+      Trois livrables, <span class="hl">un seul système</span>. La landing page et
+      les emails ne sont pas deux chantiers parallèles&nbsp;: ce sont les deux terrains
+      sur lesquels le socle a été appliqué, éprouvé, puis corrigé.
+    </p>
+    <ol class="volets">
+      <li><b>01</b><span>Le design système</span><em>Le socle</em></li>
+      <li><b>02</b><span>La landing page</span><em>La vitrine</em></li>
+      <li><b>03</b><span>L’onboarding</span><em>La montée</em></li>
+      <li><b>04</b><span>Les emails</span><em>La relance</em></li>
+    </ol>
+  </div>
+  <footer class="page__foot"><span>Projets · Beepz · L’approche</span><span><a href="https://vincentw.fr/projet-beepz">vincentw.fr/projet-beepz</a> · <span class="page__num"></span></span></footer>
+</section>
+
+<section class="page">
+  <p class="eyebrow">Beepz · <b class="head__num">01</b> · Le socle</p>
+  <h2 class="title">Le design système</h2>
+  <div class="split split--system">
+    <div>
+      <p class="stake"><b>L’enjeu</b>Formaliser l’ADN de la marque, pour qu’aucun intervenant n’ait plus à le deviner.</p>
+      <div class="body" style="margin-top: 18px">
+        <p>
+          J’ai repris la palette existante plutôt que de la remplacer&nbsp;: intentions
+          conservées, rapports assainis. Surtout, chaque couleur porte désormais le nom
+          de son usage — <em>Buyer Yellow</em>, <em>Seller Blue</em>. Les deux faces de
+          la place de marché ont chacune la leur, et le choix cesse d’être une question
+          de goût.
+        </p>
+        <p>
+          Albert Sans porte l’ensemble&nbsp;: une famille unique, lisible par les deux
+          publics de la plateforme — les professionnels d’un côté, vendeurs et
+          gestionnaires de flottes&nbsp;; les particuliers de l’autre. Sérieuse sans
+          être distante, elle tient du titre d’accroche à la mention légale.
+        </p>
+      </div>
+      <ul class="swatches" aria-label="La palette Beepz">
+        <li class="swatch" style="--hex: #2164BA"><span class="swatch__chip"></span><span class="swatch__name">Blue Sky</span><span class="swatch__hex">#2164BA</span></li>
+        <li class="swatch" style="--hex: #0BA7FF"><span class="swatch__chip"></span><span class="swatch__name">Seller Blue</span><span class="swatch__hex">#0BA7FF</span></li>
+        <li class="swatch" style="--hex: #FBBC04"><span class="swatch__chip"></span><span class="swatch__name">Buyer Yellow</span><span class="swatch__hex">#FBBC04</span></li>
+        <li class="swatch swatch--white" style="--hex: #FFFFFF"><span class="swatch__chip"></span><span class="swatch__name">Pure white</span><span class="swatch__hex">#FFFFFF</span></li>
+      </ul>
+    </div>
+    <div>
+      <div class="shot"><img src="../../assets/beepz/system.webp" alt="Planche du design système Beepz : le logo, la palette, la typographie Albert Sans, des exemples de photographie et de mise en page."></div>
+      <ul class="notes">
+        <li><h3>Nommage</h3><p>Une couleur porte le nom de son destinataire, pas celui de sa teinte.</p></li>
+        <li><h3>Typographie</h3><p>Albert Sans, famille unique. Une seule voix pour deux publics.</p></li>
+        <li><h3>Diffusion</h3><p>Un Figma pour l’équipe, un PDF pour les partenaires.</p></li>
+      </ul>
+      <p style="margin-top: 20px"><a class="link" href="https://vincentw.fr/assets/beepz/branding-kit.pdf">Voir le brand kit · PDF 2,6 Mo</a></p>
+    </div>
+  </div>
+  <footer class="page__foot"><span>Projets · Beepz · Le design système</span><span><a href="https://vincentw.fr/projet-beepz">vincentw.fr/projet-beepz</a> · <span class="page__num"></span></span></footer>
+</section>
+
+<section class="page">
+  <p class="eyebrow">Beepz · <b class="head__num">02</b> · La vitrine</p>
+  <h2 class="title">La landing page</h2>
+  <p class="stake">
+    <b>L’enjeu</b>Rassurer les deux versants de la place de marché <em>en même temps</em>&nbsp;:
+    convaincre l’acheteur que le catalogue est fourni, et le vendeur qu’il y a des
+    acheteurs qui l’attendent.
+  </p>
+  <div class="cols-2 body">
+    <p>
+      La page en place n’avait jamais été pensée comme une page&nbsp;: un template
+      générique, monté pour que le nom de domaine ne reste pas vide. Rien n’y
+      mettait en avant ce qui distingue Beepz. Il n’y avait donc pas de refonte à
+      faire au sens strict — il fallait écrire la page.
+    </p>
+    <p>
+      Une place de marché se vend deux fois. Un vendeur ne dépose sa voiture que
+      s’il croit à la demande&nbsp;; un acheteur ne s’inscrit que s’il croit au
+      stock. <span class="hl">Déséquilibrer la page d’un côté, c’est perdre
+      l’autre</span>&nbsp;— et une marketplace qui paraît vide ne se remplit jamais.
+    </p>
+  </div>
+  <div class="wipe-pair">
+    <figure>
+      <figcaption>Avant</figcaption>
+      <div class="shot"><img src="../../assets/beepz/hero-before.webp" alt="Le hero de la landing page avant refonte : « Pay Weekly, Own Fully » en gros caractères noirs sur fond blanc."></div>
+    </figure>
+    <figure>
+      <figcaption>Après</figcaption>
+      <div class="shot"><img src="../../assets/beepz/hero-after.webp" alt="Le hero de la landing page après refonte : « Owning a car was never that simple »."></div>
+    </figure>
+  </div>
+  <footer class="page__foot"><span>Projets · Beepz · La landing page</span><span><a href="https://getbeepz.com/">getbeepz.com</a> · <span class="page__num"></span></span></footer>
+</section>
+
+<section class="page">
+  <p class="eyebrow">Beepz · <b class="head__num">03</b> · La montée</p>
+  <h2 class="title">L’onboarding</h2>
+  <div class="split split--onb">
+    <div>
+      <p class="stake"><b>L’enjeu</b>Construire un parcours d’entrée là où il n’y en avait aucun — et le faire mener chacun, acheteur ou vendeur, jusqu’à un profil complet.</p>
+      <div class="body" style="margin-top: 18px">
+        <p>
+          <span class="hl">Il n’y avait pas d’onboarding.</span> Rien entre le
+          téléchargement de l’application et son écran d’accueil&nbsp;: ni guidage, ni
+          explication de ce que la plateforme permet de faire.
+        </p>
+        <p>
+          J’ai construit le parcours entier, du splash au profil renseigné. Il ne se
+          contente pas d’inscrire&nbsp;: il mène chacun jusqu’à un profil complet et
+          <em>utile pour ce qu’il vient faire</em> — un acheteur prêt à chercher, un
+          vendeur prêt à publier son annonce. Une quarantaine d’écrans traversés,
+          soixante-sept frames une fois les états comptés.
+        </p>
+        <p>
+          La décision qui tient tout le reste&nbsp;: la question
+          <em>« How will you use Beepz? »</em> est posée avant l’inscription, avant la
+          moindre saisie. Trois réponses — acheter, vendre, parrainer — et tout ce qui
+          suit en découle&nbsp;: un vendeur ne voit jamais les arguments de l’acheteur,
+          et la vérification d’entreprise ne s’adresse qu’aux professionnels.
+        </p>
+      </div>
+    </div>
+    <div>
+      <div class="onb__board shot"><img src="../../assets/beepz/onboarding/wireframe.webp" alt="La page Onboarding du fichier Beepz dans Figma : une soixantaine d’écrans reliés par des flèches."></div>
+      <ol class="onb__rail">
+        <li><img src="../../assets/beepz/onboarding/01-splash.webp" alt="Écran de lancement."></li>
+        <li><img src="../../assets/beepz/onboarding/02-fourche.webp" alt="La question posée avant l’inscription."></li>
+        <li><img src="../../assets/beepz/onboarding/04-acheteur.webp" alt="Onboarding acheteur."></li>
+        <li><img src="../../assets/beepz/onboarding/07-formulaire.webp" alt="Le formulaire du véhicule."></li>
+        <li><img src="../../assets/beepz/onboarding/10-parrain.webp" alt="Le programme de parrainage."></li>
+      </ol>
+    </div>
+  </div>
+  <footer class="page__foot"><span>Projets · Beepz · L’onboarding</span><span><a href="https://vincentw.fr/projet-beepz">vincentw.fr/projet-beepz</a> · <span class="page__num"></span></span></footer>
+</section>
+
+<section class="page">
+  <p class="eyebrow">Beepz · <b class="head__num">04</b> · La relance</p>
+  <h2 class="title">Les emails</h2>
+  <p class="stake"><b>L’enjeu</b>Aligner les emails sur le système, pour que la marque soit la même dans la boîte de réception et sur le site.</p>
+  <div class="cols-2 body">
+    <p>
+      Les gabarits ont été repris un par un&nbsp;: bandeaux, hiérarchie, boutons et
+      pieds de page redessinés sur la palette et sur la typographie du socle.
+    </p>
+    <p>
+      Chaque envoi emprunte désormais ses composants au reste du système — le
+      même appel à l’action, la même fiche véhicule que dans l’application. Le
+      système ne s’arrête pas au site.
+    </p>
+  </div>
+  <ul class="mails">
+    <li class="shot"><img src="../../assets/beepz/mails/vendeur-entier.webp" alt="Email de bienvenue côté vendeur."></li>
+    <li class="shot"><img src="../../assets/beepz/mails/acheteur-entier.webp" alt="Email de bienvenue côté acheteur."></li>
+    <li class="shot"><img src="../../assets/beepz/mails/annonces-entier.webp" alt="Email d’alerte « New cars in your area »."></li>
+    <li class="shot"><img src="../../assets/beepz/mails/transac-entier.webp" alt="Email de service « Golden Week-pass granted »."></li>
+  </ul>
+  <footer class="page__foot"><span>Projets · Beepz · Les emails</span><span><a href="https://vincentw.fr/projet-beepz">vincentw.fr/projet-beepz</a> · <span class="page__num"></span></span></footer>
+</section>
+
+<!-- ======================================================================
+     15–17 — JIMIZZ. Le paragraphe d'ouverture est encore « à valider » sur
+     le site (voir CLAUDE.md) : s'il change là-bas, reprends-le ici.
+     ====================================================================== -->
+<section class="page opening" id="jimizz">
+  <div class="band"><img src="../../assets/jimizz/marque/bande.webp" alt=""></div>
+  <div class="opening__head">
+    <div>
+      <p class="eyebrow">To the moon</p>
+      <h2 class="title">Jimizz</h2>
+    </div>
+    <p class="opening__intro">
+      Le jeton de Jacquie &amp; Michel, et les quatre surfaces qu’il a fallu
+      dessiner autour pour en faire un produit&nbsp;: un site vitrine, un
+      dashboard d’investissement, une marketplace de NFT et un site de quiz.
+      Une identité neuve à tenir d’un écran à l’autre, sur un sujet où
+      presque tout restait à inventer.
+    </p>
+    <div class="opening__skills">
+      <h2>Skills</h2>
+      <ul><li>UI/UX</li><li>Intégration</li><li>Graphisme</li></ul>
+    </div>
+  </div>
+  <div class="opening__block">
+    <h3 class="title">Le projet Crypto de Jacquie &amp; Michel</h3>
+    <p class="lede">
+      Jimizz est la crypto-monnaie pensée par Jacquie et Michel, le leader du X
+      en France, pour révolutionner le secteur du X grâce à des fonctionnalités
+      inédites qui profiteront aux consommateurs, aux créateurs et aux
+      investisseurs.
+    </p>
+  </div>
+  <footer class="page__foot"><span>Projets · Jimizz</span><span><a href="https://vincentw.fr/projet-jimizz">vincentw.fr/projet-jimizz</a> · <span class="page__num"></span></span></footer>
+</section>
+
+<section class="page">
+  <p class="eyebrow">Jimizz</p>
+  <h2 class="title">Le site vitrine</h2>
+  <div class="jmz-site">
+    <div class="jmz-site__main"><img src="../../assets/jimizz/site/collage.webp" alt="Les pages du site Jimizz présentées en perspective sur un fond magenta semé de pièces d’or."></div>
+    <div class="jmz-site__side">
+      <img src="../../assets/jimizz/site/tablette.webp" alt="L’accueil de Jimizz sur une tablette, devant un décor magenta.">
+      <img src="../../assets/jimizz/site/portable.webp" alt="La marketplace de NFT de Jimizz sur un ordinateur portable et sur un téléphone.">
+    </div>
+  </div>
+  <footer class="page__foot"><span>Projets · Jimizz · Le site</span><span><a href="https://vincentw.fr/projet-jimizz">vincentw.fr/projet-jimizz</a> · <span class="page__num"></span></span></footer>
+</section>
+
+<section class="page">
+  <div class="jmz-universe">
+    <div>
+      <p class="eyebrow">Jimizz</p>
+      <h2 class="title">Un univers<br>3.0 complet</h2>
+      <p class="lede">
+        En plus de proposer une monnaie, le projet Jimizz a développé plusieurs
+        plateformes pour construire un écosystème complet. Un dashboard pour la
+        gestion de son investissement, une marketplace pour acheter des NFT
+        exclusifs et même un site de quizz pour animer sa communauté&nbsp;!
+      </p>
+      <div class="jmz-phones">
+        <img src="../../assets/jimizz/app/menu.webp" alt="Le menu du dashboard Jimizz sur téléphone.">
+        <img src="../../assets/jimizz/app/wallet.webp" alt="L’écran « Mon portefeuille » du dashboard Jimizz.">
+        <img src="../../assets/jimizz/app/staking.webp" alt="L’écran de staking du dashboard Jimizz.">
+      </div>
+    </div>
+    <div class="jmz-plateformes">
+      <img src="../../assets/jimizz/plateformes/marketplace.webp" alt="La marketplace de NFT Jimizz.">
+      <img src="../../assets/jimizz/plateformes/dashboard.webp" alt="Le dashboard Jimizz sur ordinateur.">
+      <img src="../../assets/jimizz/plateformes/quizz.webp" alt="Le site de quiz Jimizz Party.">
+      <img src="../../assets/jimizz/plateformes/aide.webp" alt="Le centre d’aide Jimizz.">
+    </div>
+  </div>
+  <footer class="page__foot"><span>Projets · Jimizz · L’écosystème</span><span><a href="https://vincentw.fr/projet-jimizz">vincentw.fr/projet-jimizz</a> · <span class="page__num"></span></span></footer>
+</section>
+
+<!-- ======================================================================
+     18 — LE CONTACT. La phrase de disponibilité est celle du site, écrite
+     avec Vincent : ne la réécris pas sans lui.
+     ====================================================================== -->
+<section class="page contact">
+  <div class="page__bg" aria-hidden="true"><img src="../../assets/home/hero/topo.svg" alt=""></div>
+  <img class="cover__sticker" style="left: 9%;  top: 18%; width: 70px;  --rot:  -8deg" src="../../assets/home/hero/sticker-figma.webp" alt="">
+  <img class="cover__sticker" style="left: 6%;  top: 58%; width: 130px; --rot:  10deg" src="../../assets/home/hero/sticker-sassless.webp" alt="">
+  <img class="cover__sticker" style="left: 83%; top: 16%; width: 96px;  --rot:  12deg" src="../../assets/home/hero/sticker-github.webp" alt="">
+  <img class="cover__sticker" style="left: 82%; top: 56%; width: 84px;  --rot: -10deg" src="../../assets/home/hero/sticker-uiux.webp" alt="">
+  <div class="contact__body">
+    <p class="eyebrow"><b>04.</b> Contact</p>
+    <h2 class="title title--xl">Discutons</h2>
+    <p class="lede">
+      Je suis disponible pour de nouvelles collaborations.<br>
+      Un projet, une idée&nbsp;?
+      Écrivez-moi, on en parle.
+    </p>
+    <a class="contact__mail" data-mail-slot href="https://vincentw.fr/#contact">vincentw.fr/#contact</a>
+    <div class="contact__links">
+      <a class="link link--fill" href="https://vincentw.fr/">vincentw.fr</a>
+      <a class="link" href="https://www.linkedin.com/in/vincent-waldmann-7989b893/">LinkedIn</a>
+      <a class="link" href="https://www.behance.net/lefourbefromage">Behance</a>
+      <a class="link" href="https://dribbble.com/LeFourbeFromage">Dribbble</a>
+    </div>
+  </div>
+  <footer class="page__foot"><span>Contact</span><span><a href="https://vincentw.fr/#contact">vincentw.fr</a> · <span class="page__num"></span></span></footer>
+</section>
+
+</body>
+</html>

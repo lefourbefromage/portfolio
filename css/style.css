@@ -1107,6 +1107,17 @@ html { scroll-padding-top: var(--banner-h); }
   --pull: max(0px, calc(50vh - 260px));
   margin-top: calc(-1 * var(--pull));
 
+  /* LA SECTION N'ATTRAPE PAS LE POINTEUR TANT QUE LA CARTE N'EST PAS OUVERTE,
+     et c'est la contrepartie de la remontée ci-dessus : la piste couvre le bas
+     d'À propos sur `--pull` (jusqu'à 271px), donc elle avalait les clics des
+     boutons de CV qui s'y trouvent. Ça ne s'est pas vu tant que ce bouton était
+     un <span> inerte — il n'y avait rien à cliquer dessous. La règle est sur la
+     SECTION et pas sur la scène : c'est la piste entière qui recouvre, pas
+     seulement elle. Ce qui doit redevenir cliquable le redit pour soi (la scène
+     et le HUD, une fois ouverts) ; les gestes du parcours, eux, sont écoutés sur
+     `window` et n'en dépendent pas. */
+  pointer-events: none;
+
   /* --open : 0 = carton fermé, 1 = carte plein écran. C'est le SEUL nombre que le
      JS écrit pour la révélation, et il est posé ICI plutôt que sur la scène parce
      que le fil pointillé en a besoin lui aussi — et qu'il est son FRÈRE, donc il
@@ -1132,6 +1143,7 @@ html { scroll-padding-top: var(--banner-h); }
   overflow: hidden;
   isolation: isolate;
   color: var(--cream);
+
 
   /* Toute la géométrie de l'ouverture, que `--open` (hérité de .trail) interpole.
      `--card-w` est déclaré sur .trail, le fil pointillé en a besoin lui aussi. */
@@ -1186,6 +1198,9 @@ html { scroll-padding-top: var(--banner-h); }
   position: sticky;
   top: 0;
   height: 0;
+  /* Décor pur, et il déborde de sa boîte de hauteur nulle : sans ça son tracé
+     passerait devant le bas d'À propos et pourrait manger un clic lui aussi. */
+  pointer-events: none;
   /* Mêmes boîtes qu'À propos (.section puis .about__body) : le fil part ainsi
      exactement sous le bouton, sans un seul calcul de centrage à refaire. */
   box-sizing: border-box;
@@ -1471,6 +1486,8 @@ html { scroll-padding-top: var(--banner-h); }
 
 /* Tant que la carte n'est pas ouverte, le bouton du HUD est invisible : il ne
    doit pas non plus être cliquable ni atteignable au clavier. */
+.trail.is-open .trail__stage { pointer-events: auto; }
+
 .trail__hud { pointer-events: none; }
 .trail.is-open .trail__hud { pointer-events: auto; }
 
@@ -2162,21 +2179,47 @@ a.pcard:hover { border-color: rgb(var(--cream-rgb) / .28); }
 }
 
 /* --- Le bouton CV --- */
+/* Les deux CV, français puis anglais. La marge du haut vit sur la RANGÉE et
+   non sur les boutons : deux marges voisines n'en font pas une, et le second
+   bouton se serait décalé du premier en passant à la ligne. */
+.about__cv-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: clamp(6px, 1vh, 14px);
+}
+
 .about__cv {
   font-family: var(--font-display);
   display: inline-flex;
   align-items: center;
   gap: .7em;
-  margin-top: clamp(6px, 1vh, 14px);
   padding: 1em 1.8em;
   border: 1px solid rgb(var(--cream-rgb) / .5);
   border-radius: 999px;
   font-size: clamp(14px, 1.35vw, 20px);
   font-weight: 600;
   color: var(--cream);
+  transition: background-color .2s ease;
+}
+
+/* Le survol ne vient QU'avec le lien — même règle que `a.contact__mail:hover` :
+   tant que le CV manquait, le bouton était un <span>, et rien ne devait
+   promettre un clic qui n'existait pas. */
+a.about__cv:hover { background-color: rgb(var(--cream-rgb) / .08); }
+
+/* L'anglais est la seconde porte : même pastille, moins appuyée. */
+.about__cv--alt {
+  border-color: rgb(var(--cream-rgb) / .28);
+  color: rgb(var(--cream-rgb) / .82);
+  font-weight: 500;
+  font-size: clamp(13px, 1.15vw, 17px);
+  padding: .85em 1.5em;
 }
 
 .about__cv-arrow { color: var(--pink); flex: none; }
+.about__cv--alt .about__cv-arrow { color: rgb(var(--cream-rgb) / .55); }
 
 /* ---------- Contact ---------- */
 /* Centré comme la tête de section : un bloc à la largeur de son contenu,
@@ -2395,12 +2438,18 @@ a.contact__mail:hover { border-bottom-color: var(--pink); }
 
 /* No pinning, no camera: a plain vertical timeline instead */
 @media (prefers-reduced-motion: reduce) {
-  .trail { height: auto; }
+  /* `--pull` ne sert qu'à tenir le fil pointillé de longueur constante jusqu'au
+     carton : ici il n'y a ni carton ni fil, et le recouvrement d'À propos ne
+     ferait que masquer ses boutons. */
+  .trail { height: auto; --pull: 0px; }
 
   .trail__stage {
     position: static;
     height: auto;
     padding: 40px 20px 56px;
+    /* Plus rien ne recouvre rien, et `is-open` n'existe pas dans ce mode : le
+       texte de la frise doit redevenir sélectionnable. */
+    pointer-events: auto;
   }
 
   .trail__map {

@@ -113,6 +113,52 @@ Trois choses à ne pas défaire :
 Changer de lettre tient en une constante — `MARK = "V"` donne le V de « Vincent », qui
 remplit mieux le carré parce qu'il est moins large.
 
+## Les CV, allégés — `shrink_cv.py`
+
+```bash
+python3 tools/shrink_cv.py
+```
+
+Les exports Affinity pèsent 3,2 Mo la page, dont 3,0 pour le motif topographique posé en
+fond : 2484 × 3511 (300 dpi), en CMYK et masqué. Le script le ramène à 150 dpi de la taille
+où il est POSÉ, l'aplatit sur le blanc de la page, le passe en niveaux de gris (ses trois
+canaux sont à moins de 6 l'un de l'autre) et le réencode en JPEG. **3,2 Mo → 0,46 Mo par
+fichier, pour 0,13 niveau d'écart moyen sur 255 au rendu** — invisible.
+
+- **le texte n'est jamais touché**, et c'est la règle à ne pas perdre : un CV rastérisé
+  n'est plus lisible par les outils de tri de candidatures. Vérifié après coup, le texte
+  reste extractible ;
+- **relancer ne recompresse rien** : une passe ne reprend qu'une image plus dense que la
+  cible. C'est aussi ce test qui distingue un export frais d'un fichier déjà allégé — et
+  surtout pas la date des fichiers, puisque le script réécrit lui-même le fichier servi ;
+- **l'original d'un export frais est copié dans `assets/home/src/cv/`** (hors dépôt) avant
+  d'y toucher. Dépose un nouvel export par-dessus le fichier servi, relance, c'est tout.
+
+## Le portfolio PDF — `build_pdf.py`
+
+```bash
+python3 tools/build_pdf.py
+```
+
+Imprime `tools/pdf/portfolio.html` avec Chrome (sans fenêtre) en
+`tools/pdf/out/Vincent-Waldmann-Portfolio.pdf` : 18 pages A4 paysage, ~7 Mo. La page
+source se relit dans le navigateur avec le serveur de dev, à `/tools/pdf/portfolio.html`
+— l'écran montre les pages empilées. Les textes sont ceux du site : quand une page du
+site change, reprends le passage ici.
+
+- **le PDF n'est pas versionné** (`tools/pdf/out/` est ignoré) : il porte l'adresse de
+  contact en clair, relue dans `index.html` au moment de l'impression. La source, elle,
+  ne l'écrit nulle part ;
+- **les images sont servies réduites** à Chrome, aux mêmes adresses : deux fois leur
+  taille affichée en JPEG, 1,5 fois en PNG quand leur transparence compte. Sans ça le
+  fichier pesait 48 Mo ;
+- **pas d'ombre portée dans `portfolio.css`**, sauf sur les stickers : Chrome rastérise
+  tout ce qu'une ombre floue entoure, et sur un élément tourné une `box-shadow`
+  s'imprime en rectangles d'encre ;
+- **Chrome ne rend pas la main sur macOS** une fois son travail fait : le script guette
+  la fin (le DOM complet, puis « bytes written to file ») et l'arrête lui-même. Et sans
+  `--use-mock-keychain`, il attend en silence un accès au trousseau.
+
 ## Limite connue
 
 `gen_topo.py` sort un SVG matplotlib brut de 204 Ko, alors que l'asset livré

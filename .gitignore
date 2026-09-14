@@ -43,3 +43,8 @@ assets/jm/*
 !assets/jm/frise/
 !assets/jm/shots/
 !assets/jm/social/
+
+# Le portfolio PDF généré par tools/build_pdf.py. Il porte l'adresse de contact en
+# clair (voir « L'adresse de contact » dans CLAUDE.md) : il ne doit jamais entrer
+# dans ce dépôt public. La source, tools/pdf/portfolio.html, est versionnée.
+tools/pdf/out/

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vincent Waldmann — Webdesigner & Intégrateur</title>
 <meta name="description" content="Webdesigner et intégrateur depuis 2013. Treize ans à concevoir et intégrer des sites à très forte audience, du premier tracé à la mise en ligne.">
-<link rel="stylesheet" href="css/style.css?v=0.32">
+<link rel="stylesheet" href="css/style.css?v=0.33">
 
 <!-- L'ICÔNE DU SITE. Les trois fichiers sont à la RACINE du dépôt et non dans
      `assets/`, qui se range par page : ils n'appartiennent à aucune page, et
@@ -63,7 +63,7 @@
 <!-- LE VOILE DE TRANSITION, en tête et sur les quatre pages : sa moitié
      « arrivée » doit s'exécuter avant le premier rendu, sinon la page apparaît
      un instant à nu avant d'être recouverte. Voir l'en-tête de `js/veil.js`. -->
-<script src="js/veil.js?v=0.32"></script>
+<script src="js/veil.js?v=0.33"></script>
 
 <!-- L'ARRIVÉE SUR L'ACCUEIL, et elle se règle AVANT le premier rendu — d'où ce
      script en tête de page et non dans `main.js`, qui charge en bas. Même parti
@@ -164,7 +164,7 @@
   <span class="banner__flag">Site en cours de construction.</span>
   <span>Des bugs peuvent apparaître.</span>
   <!-- Posé par tools/bump_version.py, avec les ?v= du <head> : ne pas éditer à la main. -->
-  <span class="banner__version">v0.32</span>
+  <span class="banner__version">v0.33</span>
 </div>
 
 <header class="site-header">
@@ -347,15 +347,32 @@
         </div>
       </div>
 
-      <!-- Bouton volontairement en <span> : le PDF n'existe pas encore, et on ne laisse
-           pas d'ancre morte sur le site. À repasser en
-           <a href="assets/home/cv-vincent-waldmann.pdf" download> le jour où il est là. -->
-      <span class="about__cv">
-        Télécharger mon CV
-        <svg class="about__cv-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true" focusable="false">
-          <path d="M1 9L9 1M9 1H2M9 1V8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </span>
+      <!-- LE CV EXISTE, en deux langues, et ce sont de VRAIS liens : le <span> d'avant
+           n'était là que tant que le fichier manquait. Le français d'abord — c'est le
+           marché visé —, l'anglais en second et plus discret.
+
+           `download` porte le NOM DU FICHIER REÇU, et pas celui du dépôt : sans lui, le
+           recruteur retrouve un « cv-fr.pdf » anonyme dans ses téléchargements. Les deux
+           noms de fichiers, eux, suivent la règle des assets (rangés par la section qui
+           les charge, sans répéter le nom du dossier).
+
+           Le fil pointillé du parcours part de sous le PREMIER bouton : garde le
+           français en tête, ou recale `.trail__lead-line` (voir CLAUDE.md). -->
+      <div class="about__cv-row">
+        <a class="about__cv" href="assets/home/about/cv-fr.pdf" download="Vincent-Waldmann-CV.pdf">
+          Télécharger mon CV
+          <svg class="about__cv-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true" focusable="false">
+            <path d="M1 9L9 1M9 1H2M9 1V8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+        <a class="about__cv about__cv--alt" href="assets/home/about/cv-en.pdf" hreflang="en"
+           download="Vincent-Waldmann-Resume.pdf" aria-label="Télécharger mon CV en anglais">
+          English version
+          <svg class="about__cv-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true" focusable="false">
+            <path d="M1 9L9 1M9 1H2M9 1V8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+      </div>
 
     </div>
 
@@ -470,7 +487,10 @@
           <li class="trail__stop" data-at="0.343">
             <span class="trail__stop-pin"></span>
             <div class="trail__stop-card">
-              <span class="trail__stop-year">2023</span>
+              <!-- 2024 et non 2023 : l'arrivée à Budapest est de décembre 2023, le
+                   poste s'est joué en 2024-2025 (départ en juillet 2025). C'est aussi
+                   ce que dit le CV — les deux doivent rester d'accord. -->
+              <span class="trail__stop-year">2024</span>
               <h3 class="trail__stop-role">Lead Product Designer</h3>
               <p class="trail__stop-org">ZXY Corp<span class="trail__stop-dot">·</span>Budapest</p>
               <p class="trail__stop-note">
@@ -608,9 +628,7 @@
          messagerie dans ce fichier, pour les robots qui ratissent le HTML. L'arobase
          est dessinée par le CSS, et main.js monte le vrai lien (« L'adresse de contact »). -->
     <span class="contact__mail" data-mail>
-      <!-- TEMPORAIRE : une adresse Gmail, le temps que la redirection du domaine
-           marche. À remettre à « contact » + « vincentw.fr » ensuite. -->
-      <span><span>pro.vincentw</span><span class="contact__at"></span><span>gmail.com</span></span>
+      <span><span>contact</span><span class="contact__at"></span><span>vincentw.fr</span></span>
       <svg class="contact__arrow" width="14" height="14" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <path d="M1 9L9 1M9 1H2M9 1V8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
@@ -642,6 +660,6 @@
   </div>
 </footer>
 
-<script src="js/main.js?v=0.32"></script>
+<script src="js/main.js?v=0.33"></script>
 </body>
 </html>

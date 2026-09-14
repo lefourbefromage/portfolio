@@ -1,0 +1,736 @@
+/* ==========================================================================
+   LE PORTFOLIO PDF — la feuille de style de `tools/pdf/portfolio.html`.
+
+   Une feuille À PART, et pas `css/style.css` : celle du site porte le
+   parcours épinglé, les révélations au scroll, le voile, le header collant —
+   tout ce qui rend une impression inutilisable. Ici il n'y a que des pages
+   fixes, de 297 × 210 mm, et rien ne bouge.
+
+   Ce qui est repris du site, et doit le rester : les quatre couleurs et
+   l'encre, les trois polices et leurs rôles (Clash pour les titres et les
+   labels, Inter pour le texte, Garamond en italique seulement), la tête de
+   section (œil numéroté en vert, titre en Clash), les pastilles de
+   compétences et les compositions posées en pourcentage d'un cadre.
+
+   Les unités sont en px CSS, 96 par pouce : une page fait 1123 × 794.
+   ========================================================================== */
+
+@font-face {
+  font-family: "Clash Display";
+  src: url("../../fonts/ClashDisplay-Variable.woff2") format("woff2-variations");
+  font-weight: 200 700;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Inter";
+  src: url("../../fonts/Inter-Variable.woff2") format("woff2-variations");
+  font-weight: 100 900;
+  font-style: normal;
+}
+@font-face {
+  font-family: "EB Garamond";
+  src: url("../../fonts/EBGaramond-Italic-Variable.woff2") format("woff2-variations");
+  font-weight: 400 800;
+  font-style: italic;
+}
+
+:root {
+  --cream: #fef1da;
+  --navy: #172247;
+  --green: #4f914f;
+  --pink: #f8d0ee;
+  --ink: #060d22;
+  --ink-rgb: 6 13 34;
+  --cream-rgb: 254 241 218;
+  --navy-rgb: 23 34 71;
+
+  --font-display: "Clash Display", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
+  --font-serif: "EB Garamond", Georgia, serif;
+
+  /* Les marges de page. Le pied relit `--pad-x`, il n'y a qu'un nombre. */
+  --pad-x: 60px;
+  --pad-top: 52px;
+  --pad-bottom: 72px;
+}
+
+@page { size: 297mm 210mm; margin: 0; }
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+/* Sans ça, Chrome n'imprime pas les fonds : texte crème sur papier blanc. */
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body {
+  font-family: var(--font-body);
+  color: var(--cream);
+  background: #1b1d24;
+  -webkit-font-smoothing: antialiased;
+  counter-reset: page;
+}
+img { display: block; max-width: 100%; height: auto; }
+a { color: inherit; text-decoration: none; }
+p { margin: 0; }
+h1, h2, h3 { margin: 0; font-weight: 700; }
+ul, ol { margin: 0; padding: 0; list-style: none; }
+
+/* ---------- La page ---------- */
+.page {
+  position: relative;
+  width: 297mm;
+  height: 210mm;
+  overflow: hidden;
+  background: var(--ink);
+  padding: var(--pad-top) var(--pad-x) var(--pad-bottom);
+  break-after: page;
+  counter-increment: page;
+  isolation: isolate;
+}
+.page:last-child { break-after: auto; }
+
+/* À l'écran seulement : les pages empilées comme dans un lecteur de PDF,
+   pour relire la mise en page dans le navigateur avant d'imprimer. */
+@media screen {
+  body { padding: 32px 0; }
+  .page { margin: 0 auto 32px; box-shadow: 0 10px 40px rgb(0 0 0 / .45); }
+}
+
+.page__foot {
+  position: absolute;
+  left: var(--pad-x);
+  right: var(--pad-x);
+  bottom: 26px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-family: var(--font-display);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: rgb(var(--cream-rgb) / .46);
+}
+.page__foot a:hover { color: var(--cream); }
+.page__num::before { content: counter(page, decimal-leading-zero); color: var(--cream); }
+
+/* ---------- La tête de section, celle du site ---------- */
+.eyebrow {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 22px;
+  line-height: 1.2;
+  color: rgb(var(--cream-rgb) / .86);
+}
+.eyebrow b { color: var(--green); font-weight: 600; }
+
+.title {
+  font-family: var(--font-display);
+  font-size: 44px;
+  line-height: 1.12;
+  letter-spacing: -.005em;
+  margin-top: 6px;
+}
+.title--xl { font-size: 76px; line-height: 1; }
+
+.lede { font-size: 18px; line-height: 1.5; }
+.body p { font-size: 14px; line-height: 1.62; color: rgb(var(--cream-rgb) / .86); }
+.body p + p { margin-top: .85em; }
+.hl {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 700;
+  font-size: 1.08em;
+  color: var(--cream);
+}
+
+/* Le libellé court au-dessus d'un bloc d'images : Garamond, comme les œils,
+   mais sans le numéro. */
+.label {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 17px;
+  color: rgb(var(--cream-rgb) / .7);
+}
+
+/* Le lien sortant, avec la flèche du bouton « Discutons ». */
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border: 1px solid rgb(var(--cream-rgb) / .3);
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.link::after {
+  content: "";
+  width: 9px;
+  height: 9px;
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M1 9L9 1M9 1H2M9 1V8' stroke='black' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M1 9L9 1M9 1H2M9 1V8' stroke='black' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.link--fill { background: var(--cream); color: var(--ink); border-color: var(--cream); }
+
+/* Les pastilles de compétences, celles d'À propos. */
+.pills { display: flex; flex-wrap: wrap; gap: 8px; }
+.pills li {
+  padding: .45em 1em;
+  border: 1px solid rgb(var(--cream-rgb) / .22);
+  border-radius: 999px;
+  background: rgb(var(--navy-rgb) / .55);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* La fiche : des paires terme / valeur, comme celle de la page Beepz. */
+.facts {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  border-top: 1px solid rgb(var(--cream-rgb) / .18);
+  margin: 0;
+}
+.facts div { padding: 14px 18px 0 0; }
+.facts dt {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 15px;
+  color: rgb(var(--cream-rgb) / .62);
+}
+.facts dd {
+  margin: 4px 0 0;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+}
+.facts .dot { color: var(--green); margin: 0 .4em; }
+
+/* Une capture posée : coins arrondis et filet crème.
+
+   PAS D'OMBRE PORTÉE, ni ici ni sur les compositions, et c'est le poids du
+   fichier qui le décide : pour imprimer une ombre floue, Chrome RASTÉRISE
+   tout le groupe qu'elle entoure — images comprises, en PNG sans perte —, et
+   le PDF passait de 8,8 à 10,6 Mo. Sur le fond d'encre elles ne se voyaient
+   presque pas. Seuls les stickers gardent la leur : ils sont petits.
+   (Et jamais de `box-shadow` sur un élément tourné : elle s'imprime en
+   rectangles d'encre par-dessus les voisins.) */
+.shot {
+  border-radius: 10px;
+  border: 1px solid rgb(var(--cream-rgb) / .12);
+  overflow: hidden;
+  background: var(--navy);
+}
+.shot img { width: 100%; height: 100%; object-fit: cover; }
+
+/* Une composition posée en % d'un cadre de référence : même convention que
+   le hero, le tas de photos et les groupements des projets sur le site. La
+   rotation vit dans `--rot`. */
+.comp { position: relative; }
+.comp > * { position: absolute; transform: rotate(var(--rot, 0deg)); }
+
+/* Le carré topographique d'À propos, en décor de fond. */
+/* `z-index: -1` le passe sous le texte sans rien imposer au reste : la page
+   est un contexte d'empilement (`isolation`), donc il ne descend pas sous son
+   fond. Même chose pour `.page__bg`. */
+.topo-square { position: absolute; width: 300px; opacity: .9; z-index: -1; }
+.topo-square--br { right: -70px; bottom: -80px; }
+.topo-square--bl { left: -90px; bottom: -110px; }
+.topo-square--tr { right: -80px; top: -90px; }
+
+/* ==========================================================================
+   01 — LA COUVERTURE
+   ========================================================================== */
+.cover { padding: 20px; }
+.cover__panel {
+  position: relative;
+  height: 100%;
+  border-radius: 20px;
+  overflow: hidden;
+  background: linear-gradient(to bottom, var(--navy), var(--ink));
+  isolation: isolate;
+}
+.cover__topo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: .5;
+}
+.cover__top {
+  position: absolute;
+  top: 26px;
+  left: 32px;
+  right: 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  z-index: 5;
+}
+.logo {
+  font-family: var(--font-display);
+  display: flex;
+  flex-direction: column;
+  font-weight: 700;
+  font-size: 17px;
+  line-height: 1.15;
+}
+.cover__kind {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: rgb(var(--cream-rgb) / .7);
+  text-align: right;
+  line-height: 1.6;
+}
+.cover__content {
+  position: absolute;
+  top: 118px;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  z-index: 2;
+}
+.cover__intro {
+  font-family: var(--font-display);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 22px;
+  margin-bottom: 6px;
+}
+.cover__intro span:first-child { color: var(--pink); }
+.cover__name {
+  background: var(--green);
+  font-weight: 700;
+  border-radius: 5px;
+  padding: .15em .5em;
+}
+.cover__title {
+  font-family: var(--font-display);
+  font-size: 100px;
+  line-height: .92;
+  letter-spacing: -.01em;
+  text-transform: uppercase;
+}
+.cover__ghost { width: 843px; margin: -4px auto 0; }
+.cover__badges { display: flex; gap: 14px; margin-top: 14px; }
+.badge {
+  font-family: var(--font-display);
+  font-size: 14px;
+  border-radius: 5px;
+  padding: .65em 1.25em;
+  border: 1px solid transparent;
+}
+.badge--location {
+  background: rgb(var(--navy-rgb) / .85);
+  border-color: #4258a2;
+  color: rgb(var(--cream-rgb) / .74);
+}
+.badge--available {
+  background: rgba(68, 212, 68, .13);
+  border-color: #44d444;
+  color: #44d444;
+  font-weight: 500;
+}
+
+.cover__sticker {
+  position: absolute;
+  z-index: 3;
+  filter: drop-shadow(0 8px 14px rgb(0 0 0 / .4));
+  transform: rotate(var(--rot));
+}
+
+/* Le tas de photos, sous le titre. Les positions et les couches sont
+   celles du site (cadre 1472 × 490), le cadre est simplement plus étroit. */
+.cover__pile {
+  position: absolute;
+  left: -2%;
+  right: -2%;
+  top: 405px;
+  aspect-ratio: 1472 / 490;
+  z-index: 1;
+}
+.cover__pile img {
+  position: absolute;
+  height: auto;
+  transform: rotate(var(--rot));
+}
+.pile--1 { z-index: 1; left: 18.63%; top: 29.16%; width: 22.23%; --rot:  -8deg; }
+.pile--7 { z-index: 1; left: 59.76%; top: 27.90%; width: 21.39%; --rot:  12deg; }
+.pile--4 { z-index: 2; left: 38.85%; top: 31.55%; width: 19.52%; --rot:  -2deg; }
+.pile--3 { z-index: 3; left: 32.38%; top: 42.63%; width:  9.80%; --rot: -15deg; }
+.pile--6 { z-index: 3; left: 58.61%; top: 48.02%; width: 10.14%; --rot: -10deg; }
+.pile--2 { z-index: 4; left: 27.32%; top: 58.76%; width:  7.81%; --rot: -12deg; }
+.pile--5 { z-index: 4; left: 54.18%; top: 44.37%; width:  7.34%; --rot: -15deg; }
+
+/* ==========================================================================
+   02 — À PROPOS
+   ========================================================================== */
+.about__grid {
+  display: grid;
+  grid-template-columns: 1.42fr 1fr;
+  gap: 64px;
+  height: 100%;
+}
+.about .lede { margin-top: 26px; }
+.about .body { margin-top: 18px; }
+.about__side { padding-top: 8px; display: flex; flex-direction: column; gap: 26px; }
+.about__side .facts { grid-auto-flow: row; grid-template-columns: 1fr 1fr; border: 0; row-gap: 4px; }
+.about__side .facts div { border-top: 1px solid rgb(var(--cream-rgb) / .18); }
+.about__cv { display: flex; flex-wrap: wrap; gap: 10px; }
+
+.skill h3 {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--green);
+  margin-bottom: 10px;
+}
+
+/* ==========================================================================
+   03 — LE PARCOURS
+   ========================================================================== */
+.page__bg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+}
+.trail-page .page__bg {
+  background:
+    linear-gradient(163deg, rgb(var(--navy-rgb) / .88), rgb(var(--ink-rgb) / .2) 70%),
+    url("../../assets/home/trail/relief.svg") 0 0 / 700px;
+}
+.trail-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 268px;
+  height: 120px;
+  z-index: 1;
+}
+.trail-line path {
+  fill: none;
+  stroke: rgb(var(--cream-rgb) / .45);
+  stroke-width: 2;
+  stroke-dasharray: 2 9;
+  stroke-linecap: round;
+}
+.stops {
+  position: absolute;
+  left: var(--pad-x);
+  right: var(--pad-x);
+  top: 300px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 26px;
+}
+.stop { position: relative; padding-top: 58px; }
+.stop__pin {
+  position: absolute;
+  top: var(--y, 0);
+  left: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 0 4px rgb(var(--ink-rgb) / .9), 0 0 0 5px rgb(var(--cream-rgb) / .35);
+}
+.stop--now .stop__pin { box-shadow: 0 0 0 4px rgb(var(--ink-rgb) / .9), 0 0 0 5px var(--green), 0 0 0 13px rgb(79 145 79 / .25); }
+.stop__year {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 600;
+  font-size: 30px;
+  color: var(--green);
+  line-height: 1;
+}
+.stop__role {
+  font-family: var(--font-display);
+  font-size: 18px;
+  line-height: 1.2;
+  margin-top: 10px;
+}
+.stop__org {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 500;
+  color: rgb(var(--cream-rgb) / .7);
+  margin-top: 6px;
+}
+.stop__org span { color: var(--green); margin: 0 .35em; }
+.stop__note { font-size: 12.5px; line-height: 1.55; color: rgb(var(--cream-rgb) / .8); margin-top: 12px; }
+
+/* ==========================================================================
+   04 — LES PROJETS (le sommaire)
+   ========================================================================== */
+.projects {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px;
+  margin-top: 44px;
+}
+.project { display: flex; flex-direction: column; }
+/* Le cadre des groupements de l'accueil : 780 × 640. */
+.cluster { aspect-ratio: 780 / 640; margin-bottom: 22px; }
+.cluster img { height: auto; }
+.project__card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid rgb(var(--cream-rgb) / .14);
+  background: rgb(var(--navy-rgb) / .5);
+}
+.project__icon { width: 54px; height: 54px; }
+.project__name { font-family: var(--font-display); font-size: 20px; font-weight: 600; }
+.project__tag { font-family: var(--font-serif); font-style: italic; font-size: 16px; color: rgb(var(--cream-rgb) / .72); }
+.project__meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 14px;
+  padding: 0 4px;
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  color: rgb(var(--cream-rgb) / .66);
+}
+.project__meta b { color: var(--cream); font-weight: 600; }
+.project__sum { font-size: 13.5px; line-height: 1.55; color: rgb(var(--cream-rgb) / .8); margin-top: 16px; padding: 0 4px; }
+
+/* ==========================================================================
+   LES PAGES PROJET
+   ========================================================================== */
+
+/* L'ouverture : une bande pleine largeur en haut, puis la tête en trois
+   colonnes — titre, présentation, compétences —, le gabarit de J&M et
+   Jimizz sur le site. */
+.band {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 300px;
+  overflow: hidden;
+}
+.band img { width: 100%; height: 100%; object-fit: cover; }
+.band::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 120px;
+  /* L'encre PLEINE sur les derniers 15 % : un dégradé qui ne l'atteint qu'au
+     bord laisse une marche claire au raccord, une fois imprimé. */
+  background: linear-gradient(to bottom, transparent, var(--ink) 85%);
+}
+.opening { padding-top: 330px; }
+.opening__head {
+  display: grid;
+  grid-template-columns: 330px 1fr 150px;
+  gap: 48px;
+  align-items: start;
+}
+.opening__intro { font-size: 15px; line-height: 1.6; color: rgb(var(--cream-rgb) / .88); padding-top: 34px; }
+.opening__skills { padding-top: 34px; }
+.opening__skills h2 {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--green);
+  margin-bottom: 10px;
+}
+.opening__skills li { font-family: var(--font-display); font-size: 15px; line-height: 1.7; }
+.opening__block {
+  display: grid;
+  grid-template-columns: 330px 1fr;
+  gap: 48px;
+  margin-top: 40px;
+  padding-top: 30px;
+  border-top: 1px solid rgb(var(--cream-rgb) / .14);
+  align-items: start;
+}
+.opening__block .title { font-size: 34px; margin: 0; }
+.opening__block .lede { font-size: 17px; }
+
+/* La tête courte des pages suivantes d'un projet : le nom du projet en œil,
+   le titre du volet en dessous. */
+.head { display: flex; justify-content: space-between; align-items: flex-end; gap: 40px; }
+.head .title { font-size: 36px; }
+.head__num { color: var(--green); }
+
+/* Le chapô centré, repris des « énoncés » de la page J&M. */
+.statement {
+  font-size: 17px;
+  line-height: 1.55;
+  text-align: center;
+  max-width: 820px;
+  margin: 0 auto;
+}
+
+/* Une page dont le contenu se centre en hauteur, faute d'en remplir toute la page. */
+.page--center { display: flex; flex-direction: column; justify-content: center; }
+
+/* ---------- Jacquie & Michel ---------- */
+.jm-sites { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 26px; }
+.jm-sites img { border-radius: 10px; aspect-ratio: 1; object-fit: cover; }
+.jm-brands { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-top: 12px; }
+.jm-brands img { border-radius: 6px; }
+
+.jm-campaign { display: grid; grid-template-columns: 1fr 470px; gap: 56px; height: 100%; }
+.jm-campaign .lede { margin-top: 22px; font-size: 16px; }
+.jm-campaign__note { margin-top: 26px; }
+.jm-campaign__note p { font-size: 14px; line-height: 1.6; color: rgb(var(--cream-rgb) / .8); margin-top: 8px; }
+.jm-campaign__note .link { margin-top: 16px; }
+/* JacquIA, cadre 1472 × 1819 : la bannière, puis trois écrans en escalier. */
+.jacquia { aspect-ratio: 1472 / 1819; margin-top: -10px; }
+.jacquia__banner { left: 0; top: 0; width: 100%; border-radius: 8px; }
+.jacquia__phone { width: 30.163%; }
+.jacquia__phone--1 { left:  2.13%; top: 30.38%; }
+.jacquia__phone--2 { left: 32.29%; top: 43.53%; }
+.jacquia__phone--3 { left: 62.45%; top: 56.69%; }
+
+.jm-social { display: grid; grid-template-columns: 290px 1fr; gap: 44px; margin-top: 26px; }
+.jm-social__side .statement { text-align: left; margin: 0; font-size: 16px; }
+.jm-social__frise { margin-top: 26px; }
+.jm-social__frise img { border-radius: 8px; }
+.jm-social__frise .label { margin-bottom: 10px; display: block; }
+.jm-social__grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.jm-social__grid img { aspect-ratio: 1; object-fit: cover; border-radius: 8px; width: 100%; }
+/* La fresque des vingt ans tient deux cases : c'est une page web, pas un visuel. */
+.jm-social__grid .jm-social__frise { grid-column: span 2; margin: 0; }
+.jm-social__grid .jm-social__frise img { aspect-ratio: auto; height: 100%; }
+
+/* ---------- Beepz ---------- */
+.bz-hero { display: grid; grid-template-columns: 1fr 540px; gap: 48px; }
+.bz-hero .eyebrow { margin-top: 30px; }
+.bz-hero__claim { font-size: 18px; line-height: 1.5; margin-top: 22px; max-width: 470px; }
+.bz-hero .facts { margin-top: 42px; }
+/* Les trois plaques, cadre 620 × 500 comme sur le site. */
+.plates { aspect-ratio: 620 / 500; margin-top: 20px; }
+.plates img {
+  border-radius: 14px;
+  border: 1px solid rgb(var(--cream-rgb) / .14);
+}
+.plate--car    { z-index: 1; left:  0%; top:  4%; width: 56%; --rot: -4deg; }
+.plate--weekly { z-index: 2; left:  6%; top: 63%; width: 78%; --rot: -3deg; }
+.plate--app    { z-index: 3; left: 50%; top:  0%; width: 44%; --rot:  3deg; }
+.bz-hero__foot {
+  position: absolute;
+  left: var(--pad-x);
+  right: var(--pad-x);
+  bottom: 84px;
+}
+
+.bz-approach { display: grid; grid-template-columns: 1fr 380px; gap: 56px; }
+.bz-approach .body { margin-top: 20px; }
+.bz-approach .body p:first-child { font-size: 17px; line-height: 1.5; color: var(--cream); }
+.bz-approach__shot { margin-top: 12px; }
+.bz-approach__shot img { border-radius: 10px; }
+.bz-pivot {
+  margin-top: 40px;
+  padding-top: 30px;
+  border-top: 1px solid rgb(var(--cream-rgb) / .14);
+}
+.bz-pivot .statement { font-size: 20px; max-width: 880px; }
+.volets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 28px; }
+.volets li {
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgb(var(--cream-rgb) / .14);
+  background: rgb(var(--navy-rgb) / .45);
+}
+.volets b { font-family: var(--font-serif); font-style: italic; font-size: 18px; color: var(--green); font-weight: 600; }
+.volets span { display: block; font-family: var(--font-display); font-size: 15px; font-weight: 600; margin-top: 4px; }
+.volets em { display: block; font-family: var(--font-serif); font-size: 14px; color: rgb(var(--cream-rgb) / .65); margin-top: 2px; }
+
+.stake {
+  margin-top: 18px;
+  padding-left: 16px;
+  border-left: 2px solid var(--green);
+  font-size: 16px;
+  line-height: 1.5;
+}
+.stake b {
+  display: block;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--green);
+  margin-bottom: 2px;
+}
+.split { display: grid; gap: 48px; margin-top: 24px; align-items: start; }
+.split--system { grid-template-columns: 1fr 530px; }
+.split--onb { grid-template-columns: 1fr 500px; }
+
+.swatches { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 20px; }
+.swatch__chip { display: block; height: 42px; border-radius: 8px; background: var(--hex); }
+.swatch--white .swatch__chip { box-shadow: inset 0 0 0 1px rgb(var(--ink-rgb) / .28); }
+.swatch__name { display: block; font-family: var(--font-display); font-size: 12.5px; font-weight: 600; margin-top: 6px; }
+.swatch__hex { display: block; font-family: var(--font-display); font-size: 11.5px; color: rgb(var(--cream-rgb) / .6); }
+.notes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 22px; }
+.notes h3 { font-family: var(--font-display); font-size: 13.5px; font-weight: 600; color: var(--green); }
+.notes p { font-size: 12.5px; line-height: 1.5; color: rgb(var(--cream-rgb) / .78); margin-top: 4px; }
+
+.wipe-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 26px; }
+.wipe-pair figure { margin: 0; }
+.wipe-pair figcaption {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 16px;
+  color: rgb(var(--cream-rgb) / .7);
+  margin-bottom: 8px;
+}
+.wipe-pair figure:last-child figcaption { color: var(--green); }
+.cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; margin-top: 18px; }
+.cols-2.body p + p { margin-top: 0; }
+
+.onb__board img { border-radius: 10px; }
+.onb__rail { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 14px; }
+.onb__rail img { border-radius: 10px; }
+
+.mails { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-top: 28px; }
+.mails img { border-radius: 8px; aspect-ratio: 5 / 8; object-fit: cover; object-position: top; width: 100%; }
+.beepz-links { display: flex; gap: 12px; margin-top: 22px; }
+
+/* ---------- Jimizz ---------- */
+.jmz-site { display: grid; grid-template-columns: 1fr 330px; gap: 24px; margin-top: 26px; align-items: start; }
+.jmz-site__main img { border-radius: 10px; }
+.jmz-site__side { display: grid; gap: 16px; }
+.jmz-site__side img { border-radius: 10px; }
+.jmz-universe { display: grid; grid-template-columns: 380px 1fr; gap: 48px; }
+.jmz-universe .lede { margin-top: 20px; font-size: 16px; }
+.jmz-phones { display: flex; gap: 12px; margin-top: 26px; align-items: flex-start; }
+.jmz-phones img { width: calc((100% - 24px) / 3); }
+.jmz-plateformes { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-self: center; }
+.jmz-plateformes img { border-radius: 8px; aspect-ratio: 1216 / 746; object-fit: cover; width: 100%; }
+
+/* ==========================================================================
+   LE CONTACT
+   ========================================================================== */
+.contact { text-align: center; }
+.contact .page__bg { background: linear-gradient(to bottom, var(--navy), var(--ink)); }
+.contact .page__bg img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .45; }
+.contact__body { padding-top: 150px; }
+.contact .lede { margin-top: 22px; }
+.contact__mail {
+  display: inline-block;
+  margin-top: 40px;
+  font-family: var(--font-display);
+  font-size: 34px;
+  font-weight: 600;
+  border-bottom: 2px solid var(--green);
+  padding-bottom: 4px;
+}
+.contact__links { display: flex; justify-content: center; gap: 12px; margin-top: 40px; }
+.contact .cover__sticker { z-index: 1; }
