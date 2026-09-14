@@ -850,14 +850,18 @@ téléphone, lui, y est, et c'est son choix. Deux autres choses à regarder au p
 
   | | la carte | le CV |
   |---|---|---|
-  | Jacquie & Michel | **deux étapes** — 2013 Paris, puis 2016 Pau | **un seul poste**, 2013 → 2024 |
-  | ZXY Corp | 2024 | 2024-2025 |
+  | Jacquie & Michel | **deux étapes** — 2013 Paris, puis 2016 Pau | **un seul poste**, 2013-2023 |
+  | ZXY Corp | 2023 | 2023-2025 |
 
   Sur le site, Vincent a séparé 2013 et 2016 pour montrer **l'évolution des tâches** —
   webdesigner junior, puis designer et intégrateur. Sur le CV il garde une ligne unique,
   pour montrer **la longévité** chez le même employeur. Ne « corrige » donc pas l'un
-  d'après l'autre. Budapest, lui, est passé de 2023 à 2024 pour l'inverse — là, les deux
-  devaient concorder : arrivée en décembre 2023, départ en juillet 2025 ;
+  d'après l'autre.
+
+  **Chaque étape de la carte porte l'année d'ARRIVÉE**, elle : septembre 2012 pour
+  l'alternance, décembre 2023 pour Budapest. Cette dernière a fait l'aller-retour 2023 →
+  2024 → 2023, le temps que les deux CV s'accordent entre eux ; c'est réglé, les trois
+  disent la même chose ;
 - **le poids** — un export Affinity pèse 3,2 Mo la page, dont 3,0 pour le seul motif topo
   du fond. **`python3 tools/shrink_cv.py` le ramène à 0,46 Mo** sans toucher au texte (150
   dpi, aplati sur le blanc, niveaux de gris, JPEG) : à relancer après chaque nouvel export,

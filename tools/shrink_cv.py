@@ -174,8 +174,13 @@ def main():
             total_apres += avant
             continue
 
-        # Un export frais : on en garde une copie hors dépôt avant d'y toucher.
+        # Un export frais : on en garde une copie hors dépôt, et c'est ELLE qu'on
+        # relit pour écrire le fichier servi — pikepdf refuse de réécrire le
+        # fichier qu'il est en train de lire, et passer outre reviendrait à
+        # travailler sans filet sur le seul exemplaire.
+        pdf.close()
         shutil.copy2(servi, source)
+        pdf = pikepdf.open(source)
         rapport = allege(pdf)
         pdf.save(servi, compress_streams=True,
                  object_stream_mode=pikepdf.ObjectStreamMode.generate)
