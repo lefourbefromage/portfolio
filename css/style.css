@@ -308,128 +308,6 @@ html.is-entering .veil__sticker {
 
 html.is-arriving { scroll-behavior: auto; }
 
-/* ---------- Le bandeau de chantier ----------
-   IL EST STICKY ET IL EST ROSE, et les deux sont demandés : il doit rester
-   sous les yeux tant que le débogage n'est pas fini.
-
-   Le rose en FOND est la seule entorse du site à la règle « le rose est une
-   touche de couleur, sur fond foncé uniquement » — c'est justement ce qui le
-   fait sortir d'une page sombre de bout en bout, et c'est ce qu'on lui
-   demande. Rien d'autre n'est ajouté à la palette : le texte, les hachures et
-   la pastille sont de l'encre.
-
-   Sa hauteur est un TOKEN, `--banner-h`, et pas une hauteur libre : trois
-   choses la lisent — le calage des ancres (`scroll-padding-top`), la tête du
-   parcours qui passe dessous, et la barre elle-même. Elle est donc fixée, pas
-   déduite du texte.
-
-   Il passe SOUS le voile de transition (9000) : entre deux pages, c'est le
-   panneau d'encre qui couvre tout, bandeau compris.
-
-   À RETIRER LE JOUR OÙ LE SITE EST FINI : ce bloc entier (les trois règles
-   qu'il emporte avec lui — `scroll-padding-top`, `.trail__intro` et la règle
-   mobile plus bas) et le `<div class="banner">` en tête des QUATRE pages. */
-:root { --banner-h: 46px; }
-
-/* Une ancre ne doit pas se poser SOUS la barre. `scroll-padding` ne touche que
-   le saut vers un fragment et `scrollIntoView` — les `scrollTo` du mode auto du
-   parcours, qui visent des positions calculées, ne sont pas concernés. */
-html { scroll-padding-top: var(--banner-h); }
-
-.banner {
-  font-family: var(--font-display);
-  position: sticky;
-  top: 0;
-  z-index: 8000;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 0 .6em;
-  min-height: var(--banner-h);
-  padding: 6px clamp(14px, 2.6vw, 40px);
-  background: var(--pink);
-  font-size: clamp(11px, 1.05vw, 14px);
-  font-weight: 600;
-  line-height: 1.35;
-  letter-spacing: .09em;
-  text-transform: uppercase;
-  text-align: center;
-  color: rgb(var(--ink-rgb) / .72);
-  /* L'ombre portée le décolle de la page : sans elle, une barre collante se lit
-     comme un morceau de page qui refuse de partir. */
-  box-shadow: 0 12px 32px rgb(var(--ink-rgb) / .55);
-}
-
-/* Les hachures de chantier, sur le bord bas — en encre sur le rose, donc encore
-   aucune couleur de plus. C'est ce qui dit « travaux » sans un mot de plus. */
-.banner::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 4px;
-  background: repeating-linear-gradient(
-    -45deg,
-    var(--ink) 0 7px,
-    transparent 7px 14px
-  );
-}
-
-.banner__flag {
-  display: inline-flex;
-  align-items: center;
-  gap: .5em;
-  font-weight: 700;
-  color: var(--ink);
-}
-
-/* La pastille qui bat, comme celle du badge « Disponible » du hero. Elle est
-   décorative : le texte dit déjà tout. */
-.banner__flag::before {
-  content: "";
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
-  background: var(--ink);
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .banner__flag::before { animation: banner-pulse 1.8s ease-in-out infinite; }
-}
-
-/* Le numéro de version, pour vérifier depuis un téléphone qu'une mise en ligne
-   est arrivée. Il est posé par `tools/bump_version.py` avec le `?v=` des
-   ressources : le lire, c'est savoir que le CSS et le JS sont de la même
-   livraison. Une pastille à filet d'encre, en casse normale — « V0.25 » en
-   capitales se lirait mal. Chiffres tabulaires : il ne tressaute pas d'une
-   version à l'autre. */
-.banner__version {
-  padding: 0 .6em;
-  border: 1px solid rgb(var(--ink-rgb) / .32);
-  border-radius: 999px;
-  font-size: .86em;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: .04em;
-  text-transform: none;
-  color: var(--ink);
-}
-
-@keyframes banner-pulse {
-  0%, 100% { opacity: 1;  transform: scale(1);   }
-  50%      { opacity: .3; transform: scale(.72); }
-}
-
-/* Sous ~490px les deux phrases ne tiennent plus sur une ligne : la barre passe
-   à deux, et `--banner-h` avec elle — les ancres et la tête du parcours
-   suivent toutes seules. La rampe est mesurée, pas choisie : à 11px de corps le
-   texte fait 460px de large. */
-@media (max-width: 520px) {
-  :root { --banner-h: 58px; }
-  .banner { letter-spacing: .05em; }
-}
-
 /* ---------- Header ----------
    IL EST COLLANT, ET IL S'EFFACE QUAND ON DESCEND. Un geste vers le bas le fait
    remonter sous le bandeau ; le moindre geste vers le haut le fait revenir. Le
@@ -438,9 +316,10 @@ html { scroll-padding-top: var(--banner-h); }
 
    `sticky` et pas `fixed` : il garde sa place dans le flux, donc rien sous lui
    n'a à être décalé, et au sommet de la page il est exactement là où il était.
-   Il colle SOUS le bandeau de chantier (`--banner-h`, avec le même repli à 0
-   que la tête du parcours) et passe dessous en s'effaçant — 7000, sous le
-   bandeau (8000) et le voile (9000).
+   Il est à 7000, sous le voile (9000). `--banner-h` n'est plus déclaré depuis
+   le retrait du bandeau de chantier : le repli à `0px` le colle en haut de la
+   fenêtre, et il suffirait de redéclarer le token pour qu'un bandeau revienne
+   se loger au-dessus de lui.
 
    Le dégradé est un `::before` pleine largeur — le header, lui, reste borné à
    1512px — qui DÉBORDE sous lui de `--header-fade` : c'est ce qui fond l'encre
@@ -490,6 +369,45 @@ html { scroll-padding-top: var(--banner-h); }
 
 @media (prefers-reduced-motion: reduce) {
   .site-header { transition: none; }
+}
+
+/* ---------- Le header rappelé par le mousqueton de la carte ----------
+   Un clic sur `.trail__menu` pose `is-summoned` le temps de l'arrivée (le JS la
+   retire au bout de l'animation, et dès que le header repart). Le retour
+   ordinaire, au scroll, n'est pas touché : c'est un geste du visiteur, il n'a
+   pas à se donner en spectacle. Ici c'est un appel, et il se VOIT.
+
+   Deux mouvements superposés, sans une ligne de JS de plus :
+   - LA DESCENTE : la translation reprend sa transition, allongée, sur la courbe
+     d'entrée du site. Sans dépassement : un balancement autour du coin du
+     mousqueton, avec une chute qui rebondissait, a été essayé et retiré à la
+     demande de Vincent ;
+   - LA CASCADE : le logo, les liens, puis « Discutons » arrivent l'un après
+     l'autre, de gauche à droite. */
+.site-header.is-summoned {
+  transition: translate .7s var(--ease-out);
+}
+
+.site-header.is-summoned .logo,
+.site-header.is-summoned .main-nav a,
+.site-header.is-summoned .btn-contact {
+  animation: header-drop .62s var(--ease-out) both;
+}
+
+.site-header.is-summoned .main-nav a:nth-child(1) { animation-delay: .14s; }
+.site-header.is-summoned .main-nav a:nth-child(2) { animation-delay: .2s; }
+.site-header.is-summoned .main-nav a:nth-child(3) { animation-delay: .26s; }
+.site-header.is-summoned .btn-contact            { animation-delay: .34s; }
+
+@keyframes header-drop {
+  from { opacity: 0; translate: 0 -22px; }
+  to   { opacity: 1; translate: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-header.is-summoned .logo,
+  .site-header.is-summoned .main-nav a,
+  .site-header.is-summoned .btn-contact { animation: none; }
 }
 
 .logo {
@@ -1513,11 +1431,10 @@ html { scroll-padding-top: var(--banner-h); }
   right: 0;
   top: 0;
   z-index: 4;
-  /* `--banner-h` est la hauteur du bandeau de chantier, qui est collant en haut
-     de fenêtre : sans ce terme il passerait sur l'œil de la section, la scène
-     étant épinglée à `top: 0`. Le repli à `0px` n'est pas décoratif — c'est ce
-     qui rend au titre son calage d'origine le jour où le bandeau est retiré,
-     sans avoir à repasser ici. */
+  /* `--banner-h` a été la hauteur du bandeau de chantier, collant en haut de
+     fenêtre : sans ce terme il passait sur l'œil de la section, la scène étant
+     épinglée à `top: 0`. Le bandeau est retiré et le token n'est plus déclaré,
+     donc le repli à `0px` rend au titre son calage d'origine. */
   padding: calc(var(--banner-h, 0px) + clamp(26px, 5vh, 56px)) clamp(24px, 4.5vw, 64px) 0;
   pointer-events: none;
 }
@@ -1652,6 +1569,90 @@ html { scroll-padding-top: var(--banner-h); }
   font-size: clamp(13px, 1vw, 15px);
   line-height: 1.5;
   color: rgb(var(--cream-rgb) / .62);
+}
+
+/* --- le mousqueton de la carte : rappeler le menu, en haut à droite ---
+   Carte ouverte, le header s'est effacé au premier geste vers le bas, et le seul
+   moyen de le revoir était de remonter — donc de reculer dans la marche. Ce
+   bouton le rappelle SANS bouger : même effet qu'un geste vers le haut, et le
+   geste suivant vers le bas le chasse de nouveau.
+
+   C'est du CHROME, donc le JS le fabrique (`js/main.js`, IIFE du header), en
+   clonant l'icône du mousqueton du header : un seul dessin à tenir. Sans JS, il
+   n'existe pas — et le header revient toujours en remontant.
+
+   À TOUTE LARGEUR, mais il ne fait pas la même chose : en desktop il rappelle
+   le header, en mobile il OUVRE LE MENU — la nav y est repliée, et la barre
+   seule ne donnerait accès à rien. Il attend `is-open` comme le HUD, et
+   s'efface dès que le header est affiché : le header passe par-dessus ce coin,
+   et deux mousquetons l'un sur l'autre ne diraient rien de plus. Sa hauteur est
+   celle de l'œil du titre, en face ; son retrait à droite, celui du HUD. */
+.trail__menu {
+  position: absolute;
+  top: calc(var(--banner-h, 0px) + clamp(26px, 5vh, 56px));
+  right: clamp(16px, 2.4vw, 38px);
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  /* 38px au plus étroit : à 360px de large, le titre « Carnet de routes » finit à
+     299px, et un bouton de 42 laissait 3px entre les deux. */
+  width: clamp(38px, 3.2vw, 48px);
+  height: clamp(38px, 3.2vw, 48px);
+  padding: 0;
+  border: 1px solid rgb(var(--cream-rgb) / .16);
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--pink);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .5s ease, border-color .2s ease, background-color .2s ease;
+}
+
+.trail.is-open .trail__menu {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+html:has(.site-header:not(.is-hidden)) .trail.is-open .trail__menu {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Rappelé, il n'est pas simplement effacé : il ouvre son doigt, bascule, et
+   remonte vers le header qui descend — comme s'il venait de le lâcher. Le
+   fondu attend un peu, sans quoi on ne verrait rien de tout ça. */
+html:has(.site-header.is-summoned) .trail.is-open .trail__menu {
+  translate: 0 -28px;
+  scale: .7;
+  transition: opacity .35s ease .22s,
+              translate .55s var(--ease-out) .12s,
+              scale .55s var(--ease-out) .12s;
+}
+
+html:has(.site-header.is-summoned) .trail__menu .menu-toggle__icon { rotate: -14deg; }
+
+html:has(.site-header.is-summoned) .trail__menu .menu-toggle__gate {
+  transform: rotate(-30deg);
+  transition: transform .25s var(--ease-out);
+}
+
+.trail__menu:hover,
+.trail__menu:focus-visible {
+  border-color: rgb(var(--cream-rgb) / .5);
+  background-color: var(--navy);
+}
+
+/* Au survol le doigt s'entrouvre, comme le mousqueton du header à l'ouverture
+   du menu : le bouton annonce ce qu'il va faire. */
+.trail__menu:hover .menu-toggle__gate,
+.trail__menu:focus-visible .menu-toggle__gate {
+  transform: rotate(-30deg);
+  transition: transform .5s var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trail__menu { display: none; }
 }
 
 /* --- le HUD : une pastille d'encre posée sur la carte --- */
@@ -3819,6 +3820,35 @@ a.contact__mail:hover { border-bottom-color: var(--pink); }
 @media (prefers-reduced-motion: reduce) {
   .nsfw__gate,
   .nsfw__hide { transition-duration: 0s; }
+}
+
+/* ---------- La porte, posée sur UNE vignette ----------
+   Les quatre mises en scène de projet-jm.html portent chacune la leur, et c'est
+   une consigne : on ne découvre que le visuel qu'on a désigné. Le voile ci-dessus
+   a été dessiné pour un bloc de 2 356 px, celui-ci pour un carré de 630 — d'où
+   trois écarts, tous motivés :
+
+   - LES COINS SONT DROITS. `.nsfw__gate` porte 16 px d'arrondi ; les mises en
+     scène, elles, n'en portent aucun. Les quatre coins de la photo ressortiraient
+     du voile, ce qui est exactement ce qu'on lui demande de couvrir ;
+   - LE PANNEAU EST CENTRÉ, PAS COLLANT. Le `sticky` à 38 vh a été mis pour qu'on
+     ne cherche pas le bouton en défilant dans un mur d'images. Sur une vignette
+     entière à l'écran, il n'y a rien à suivre : il se centre ;
+   - PAS DE `.nsfw__note`. Répétée quatre fois côte à côte, la phrase devient du
+     bruit. La pastille dit ce qu'il y a derrière, le bouton dit quoi faire. */
+.nsfw--tile,
+.nsfw--tile .nsfw__gate { border-radius: 0; }
+
+.nsfw--tile .nsfw__gate {
+  display: grid;
+  place-items: center;
+  padding: clamp(12px, 2.4vw, 24px);
+}
+
+.nsfw--tile .nsfw__panel {
+  position: static;
+  margin: 0;
+  gap: clamp(8px, 1.2vw, 14px);
 }
 
 

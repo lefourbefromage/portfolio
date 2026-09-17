@@ -508,7 +508,6 @@
   const GLIDE_MIN = 250;     // ms — jamais atteint par une marche réelle
   const GLIDE_MAX = 6500;    // ms — idem : assez haut pour qu'aucune marche ne
                              // soit écrêtée sur un écran courant.
-  const INERTIA_LOCK = 1100; // ms — le temps qu'un flick de trackpad retombe
   const WHEEL_TRIGGER = 24;  // px de molette cumulés avant de déclencher
   const SWIPE_TRIGGER = 34;  // px de doigt
   const REARM = 260;         // ms de battement après une marche, contre l'inertie
@@ -551,16 +550,18 @@
     return next.getBoundingClientRect().top + window.scrollY;
   }
 
-  const glideTo = (frac) => glideToY(pageYFor(frac), frac);
+  const glideTo = (frac, dir) => glideToY(pageYFor(frac), frac, dir);
 
   // `key` identifie la destination : une fraction de scroll, ou EXIT. C'est elle
-  // que `step` relit pour savoir si une autre marche l'a supplantée.
-  function glideToY(to, key) {
+  // que `step` relit pour savoir si une autre marche l'a supplantée. `dir` dit
+  // dans quel sens on marche : c'est lui qui permet à `handle` d'avaler les
+  // gestes qui sauteraient l'étape en cours sans avaler le demi-tour.
+  function glideToY(to, key, dir) {
     const from = window.scrollY;
     const dur = Math.min(GLIDE_MAX, Math.max(GLIDE_MIN, Math.abs(to - from) * GLIDE_PACE));
     const t0 = performance.now();
-    glide = { to: key };
-    lockUntil = t0 + Math.min(dur, INERTIA_LOCK) + REARM;
+    glide = { to: key, dir };
+    lockUntil = t0 + dur + REARM;
 
     const step = (now) => {
       if (!glide || glide.to !== key) return;
@@ -612,12 +613,24 @@
   function handle(dir) {
     const target = targetFor(dir);
     if (target === null) return false;
-    if (performance.now() < lockUntil) return true; // avalé, mais sans avancer
+    // UNE MARCHE VA TOUJOURS JUSQU'À SA CARTE. Un geste de plus dans le MÊME
+    // sens est donc avalé sans rien relancer : il ne fait pas sauter l'étape en
+    // cours. Sans ce garde, une marche longue (jusqu'à ~4,7 s) restait ouverte
+    // aux gestes dès la retombée de l'inertie, et trois crans de molette
+    // menaient d'une carte à celle d'APRÈS la suivante sans s'arrêter entre les
+    // deux. Le demi-tour, lui, reprend la main tout de suite — c'est ce qui
+    // permet de revenir sur la dernière carte pendant la sortie, et ce qui
+    // évite d'enfermer quelqu'un pendant une marche.
+    if (glide) {
+      if (dir === glide.dir) return true;
+    } else if (performance.now() < lockUntil) {
+      return true; // avalé, mais sans avancer : battement anti-inertie
+    }
     // Déjà en route vers là : on avale sans relancer l'animation depuis la
     // position courante, ce qui la ferait repartir plus lentement à chaque cran.
     if (glide && glide.to === target) return true;
-    if (target === EXIT) glideToY(exitY(), EXIT);
-    else glideTo(target);
+    if (target === EXIT) glideToY(exitY(), EXIT, dir);
+    else glideTo(target, dir);
     return true;
   }
 
@@ -709,6 +722,7 @@
       if (!a || a.hash !== '#parcours' || a.pathname !== location.pathname) return;
       e.preventDefault();
       glide = null;
+      lockUntil = 0; // le verrou couvre toute la marche : il part avec elle
       if (location.hash !== '#parcours') history.pushState(null, '', '#parcours');
       window.scrollTo({ top: openY(), behavior: 'smooth' });
     });
@@ -1196,9 +1210,19 @@
   let last = window.scrollY;
   let run = 0;          // cumul signé du déplacement dans le sens courant
   let hold = 0;         // minuteur du gel pendant un saut d'ancre
+  // Rappelé par le mousqueton de la carte, le header reste affiché jusqu'au
+  // prochain geste du VISITEUR. En mode auto, la marche fait défiler la page
+  // toute seule ; sans ce drapeau, ce défilement était lu comme un geste vers
+  // le bas et le header repartait à l'image suivante.
+  let kept = false;
   let ticking = false;
 
-  const hide = (on) => header.classList.toggle('is-hidden', on);
+  const hide = (on) => {
+    header.classList.toggle('is-hidden', on);
+    // Un header qui repart n'a plus à rejouer son arrivée : on lui rend sa
+    // transition ordinaire, l'arrivée animée reste réservée au mousqueton.
+    if (on) header.classList.remove('is-summoned');
+  };
 
   function render() {
     ticking = false;
@@ -1211,7 +1235,7 @@
     const top = y <= header.offsetHeight;
     header.classList.toggle('is-stuck', !top);
 
-    if (hold) return;
+    if (hold || kept) return;
     if (top) { hide(false); run = 0; return; }
 
     run = (d > 0) === (run > 0) ? run + d : d;
@@ -1223,6 +1247,15 @@
     hold = 0;
     last = window.scrollY;
     run = 0;
+  }
+
+  // Seul un geste du visiteur lève le drapeau — molette, doigt, clavier,
+  // pointeur. Le défilement qu'il déclenche est alors lu normalement : un geste
+  // vers le bas chasse le header, comme partout ailleurs. `pointerdown` précède
+  // le `click` du mousqueton, donc il ne lève pas le drapeau que ce clic pose.
+  const unkeep = () => { kept = false; run = 0; last = window.scrollY; };
+  for (const type of ['wheel', 'touchstart', 'keydown', 'pointerdown']) {
+    window.addEventListener(type, unkeep, { passive: true, capture: true });
   }
 
   window.addEventListener('scroll', () => {
@@ -1239,6 +1272,61 @@
     clearTimeout(hold);
     hold = setTimeout(release, SETTLE);
   });
+
+  // LE MOUSQUETON DE LA CARTE. Carte ouverte, le header s'est effacé, et le
+  // faire revenir demandait de remonter — donc de reculer dans la marche. Le
+  // bouton le rappelle sur place, comme un geste vers le haut : le cumul repart
+  // de zéro, et le prochain vrai geste vers le bas le chasse de nouveau.
+  // C'est du chrome, donc fabriqué ici, en clonant l'icône du header — un seul
+  // dessin à tenir. Tout le reste (desktop seulement, fondu à l'ouverture,
+  // effacement quand le header est là) est dans le CSS.
+  const icon = header.querySelector('.menu-toggle__icon');
+  const hud = document.querySelector('.trail__hud');
+  if (icon && hud) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'trail__menu';
+    btn.setAttribute('aria-label', 'Afficher le menu');
+    btn.appendChild(icon.cloneNode(true));
+    // L'arrivée animée tient à une classe posée le temps de l'animation. On la
+    // retire puis la repose pour qu'un second clic rejoue l'arrivée, et un
+    // minuteur la reprend si `animationend` ne vient pas (onglet en fond).
+    let summoned = 0;
+    const settle = () => { clearTimeout(summoned); header.classList.remove('is-summoned'); };
+    // La cascade finit sur « Discutons » : c'est la dernière pièce à se poser.
+    header.addEventListener('animationend', (e) => {
+      if (e.animationName === 'header-drop' && e.target.matches('.btn-contact')) settle();
+    });
+    btn.addEventListener('click', () => {
+      // EN MOBILE, IL OUVRE LE MENU. La nav y est repliée derrière le
+      // mousqueton du header : afficher la barre seule ne donnerait accès à
+      // rien, il faudrait encore un second clic. On passe donc par ce bouton-là
+      // — son IIFE affiche le header, ouvre le panneau et gère le focus. Le
+      // drapeau `kept` garde la barre en place une fois le panneau refermé.
+      const toggle = header.querySelector('.menu-toggle');
+      if (toggle && toggle.offsetParent) {
+        hide(false);
+        run = 0;
+        kept = true;
+        toggle.click();
+        return;
+      }
+      header.classList.remove('is-summoned');
+      void header.offsetWidth;
+      header.classList.add('is-summoned');
+      clearTimeout(summoned);
+      summoned = setTimeout(settle, 1600);
+      hide(false);
+      run = 0;
+      kept = true;
+      // Au clavier, le focus passe au premier lien du menu : sans ça, il
+      // resterait sur un bouton qui vient de s'effacer.
+      if (btn.matches(':focus-visible')) {
+        header.querySelector('.main-nav a')?.focus({ preventScroll: true });
+      }
+    });
+    hud.before(btn);
+  }
 
   // Au chargement la page peut déjà être plus bas (ancre, position restaurée) :
   // le dégradé doit être là, le header reste affiché.

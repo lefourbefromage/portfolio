@@ -413,78 +413,42 @@ donnerait un faux romain synthétisé par le navigateur — ne le fais pas, ou r
 Son œil est plus petit que celui d'Inter : `.about__hl` compense par un `font-size: 1.08em`,
 sinon les mots en avant paraissent en retrait au lieu d'en relief.
 
-## Le bandeau de chantier
+## Le bandeau de chantier, retiré
 
-Un bandeau **rose et collant** annonce en tête des **quatre** pages que le site est en
-construction et que des bugs peuvent apparaître. **Il est temporaire** : le retirer, c'est
-le bloc « Le bandeau de chantier » de `css/style.css` — qui emporte avec lui le
-`scroll-padding-top` et la règle des écrans étroits — et le `<div class="banner">` en tête
-des quatre pages. Rien d'autre : le seul endroit du site qu'il touche, la tête du parcours,
-se recale tout seul (voir plus bas).
+Un bandeau **rose et collant** a annoncé en tête des quatre pages que le site était en
+construction, avec une pastille `v0.N` pour vérifier une mise en ligne depuis un
+téléphone. **Vincent l'a fait retirer le 17 septembre 2026**, pastille comprise : le bloc
+CSS et le `<div class="banner">` des quatre pages sont partis.
 
-**Le rose EN FOND est la seule entorse à la règle « le rose est une touche de couleur, sur
-fond foncé uniquement »**, et elle est assumée : c'est ce qui le fait sortir d'une page
-sombre de bout en bout, et c'est ce qu'on lui demande. Aucune cinquième couleur pour
-autant — le texte, les hachures du bord bas et la pastille qui bat sont de l'encre.
-
-**Sa hauteur est un token, `--banner-h`, et pas une hauteur libre**, parce que quatre choses
-la lisent :
-
-- la barre elle-même (`min-height`) ;
-- **le header**, collant JUSTE SOUS elle (`top: var(--banner-h, 0px)`) — voir « Le header »
-  plus bas. Même repli à `0px` que la tête du parcours, et pour la même raison ;
-- le calage des ancres, `scroll-padding-top` sur `html` — sans quoi un lien du header
-  poserait sa section SOUS la barre. Il ne concerne que le saut vers un fragment et
-  `scrollIntoView` : les `scrollTo` du mode auto du parcours, qui visent des positions
-  calculées, ne sont pas touchés ;
-- **la tête du parcours**, seule chose du site que le bandeau déplace. La scène est
-  épinglée à `top: 0`, donc la barre passerait sur son œil ; son `padding-top` vaut donc
-  `calc(var(--banner-h, 0px) + …)`. **Le repli à `0px` n'est pas décoratif** : c'est lui qui
-  rend au titre son calage d'origine le jour où le bandeau part, sans avoir à repasser dans
-  la règle du parcours.
-
-Sous 520px les deux phrases ne tiennent plus sur une ligne : `--banner-h` passe à 58px et
-les quatre lecteurs suivent. Le seuil est mesuré (460px de texte à 11px de corps), pas choisi.
-
-**Il est à `z-index: 8000`, donc SOUS le voile de transition** (9000) : entre deux pages,
-c'est le panneau d'encre qui couvre tout, bandeau compris. La visionneuse, elle, est un
-`<dialog>` en couche supérieure et passe devant sans rien avoir à déclarer.
-
-Aucun JS, aucune fermeture : il n'y a rien à mémoriser, et il doit rester sous les yeux tant
-que le débogage n'est pas fini.
+**Il en reste des `var(--banner-h, 0px)`, et c'est voulu** : le header, le menu mobile et
+la tête du parcours les lisent encore. Le token n'étant plus déclaré, le repli à `0px`
+les rend à leur calage d'origine. Pour qu'un bandeau revienne, il suffit de redéclarer
+`--banner-h` (et de rétablir `scroll-padding-top` sur `html`) : les trois lecteurs
+suivront.
 
 ### Le numéro de version
 
-Le bandeau se termine par une pastille `v0.N` (`.banner__version`), demandée par Vincent
-pour voir **depuis son téléphone** si une mise en ligne est arrivée. **N est le numéro du
-commit qui la livre** — le nombre de commits de `main` plus un —, donc il se lit dans
-l'historique et il n'y a rien à retenir : v0.25 est le 25e commit.
+**Lance `python3 tools/bump_version.py` juste avant chaque commit qui touche au site.**
+Il pose `?v=0.N` sur `css/style.css`, `js/veil.js` et `js/main.js` dans les quatre
+pages — N étant le nombre de commits de `main` plus un — et il est idempotent. Ne
+l'édite pas à la main.
 
-**Lance `python3 tools/bump_version.py` juste avant chaque commit qui touche au site.** Il
-réécrit les quatre pages, et il est idempotent : le relancer avant de commiter redonne le
-même numéro. Ne l'édite pas à la main.
-
-**Le même numéro est posé en `?v=` sur `css/style.css`, `js/veil.js` et `js/main.js`**, et
-c'est ce qui rend l'étiquette digne de foi. Sans lui, un navigateur mobile peut servir le
-HTML neuf avec le CSS ou le JS de la veille — c'est exactement ce qui a fait croire à un
-correctif raté. Une URL qui change ne peut pas venir du cache, donc lire v0.N, c'est savoir
-que les trois ressources sont de la même livraison. Ce qui peut encore retarder, c'est le
-HTML lui-même : GitHub Pages le sert avec dix minutes de cache.
-
-Le jour où le bandeau part, la pastille part avec lui ; les `?v=` peuvent rester, ils ne
-coûtent rien et continuent de protéger les mises en ligne.
+C'est ce qui empêche un navigateur mobile de servir le HTML neuf avec le CSS ou le JS de
+la veille : une URL qui change ne peut pas venir du cache. Le numéro n'est plus affiché
+nulle part ; il se lit dans le `<head>`, ou dans l'historique (v0.25 est le 25e commit).
+Ce qui peut encore retarder, c'est le HTML lui-même : GitHub Pages le sert avec dix
+minutes de cache.
 
 ## Le header
 
 **Il est collant, et il s'efface quand on descend** : un geste vers le bas le fait remonter
-sous le bandeau, le moindre geste vers le haut le fait revenir. Demandé par Vincent, sur les
+hors de l'écran, le moindre geste vers le haut le fait revenir. Demandé par Vincent, sur les
 quatre pages — c'est le même `<header class="site-header">` partout.
 
 **`sticky` et pas `fixed`**, pour la même raison que tout le reste : il garde sa place dans le
 flux, donc rien sous lui n'a à être décalé d'une hauteur à recopier, et au sommet de la page
 il est exactement là où il a toujours été. Visuellement c'est la même chose. Il est à
-`z-index: 7000` — sous le bandeau (8000), qu'il traverse en s'effaçant, et sous le voile
-(9000).
+`z-index: 7000`, sous le voile (9000).
 
 **Le partage habituel** : le JS (`js/main.js`, dernière IIFE) ne pose que deux classes,
 `is-stuck` dès que la page a quitté son sommet et `is-hidden` en descendant ; le dessin est
@@ -495,14 +459,14 @@ dans le CSS.
   de tracer un bord. Il n'apparaît qu'avec `is-stuck`, sans quoi il assombrirait le haut du
   panneau du hero au chargement ;
 - **le masquage remonte de sa hauteur PLUS `--header-fade`**, sinon la frange du dégradé
-  resterait visible sous le bandeau ;
+  resterait visible en haut de l'écran ;
 - **les déplacements se CUMULENT dans un même sens** (8px vers le haut pour revenir, 24px vers
   le bas pour partir) : l'inertie d'un trackpad envoie des deltas d'un pixel dans les deux
   sens en fin de course, et un seuil nul le ferait clignoter ;
 - **un clic sur une ancre de la page le cache et gèle la détection** jusqu'à 220ms sans
   scroll. Sans ça, un saut vers une section plus HAUTE le laissait affiché pile sur la tête
-  de la section — `scroll-padding-top` ne compte que le bandeau, et il ne faut pas lui
-  ajouter le header : les sauts vers le bas se poseraient 70px trop bas, et celui vers
+  de la section — et il ne faut pas compenser par un `scroll-padding-top` à la hauteur du
+  header : les sauts vers le bas se poseraient 70px trop bas, et celui vers
   `#parcours` avant l'épinglage de la scène ;
 - **il revient au clavier** (`:has(:focus-visible)`) — pas `:focus-within`, qui le garderait
   affiché après un clic de souris sur un lien du menu, pendant le saut.
@@ -510,6 +474,47 @@ dans le CSS.
 Remonter dans le parcours le fait revenir par-dessus la tête de la carte, y compris pendant
 une marche du mode auto vers l'arrière. C'est le comportement demandé — il suffit de
 redescendre d'un cran.
+
+**Sur la carte ouverte, un mousqueton le rappelle sans bouger** (`.trail__menu`, en haut à
+droite, **à toute largeur** — demandé par Vincent, d'abord en desktop seulement, puis en
+mobile aussi). Sans lui, revoir le menu obligeait à
+remonter, donc à reculer dans la marche. Un clic fait exactement ce que ferait un geste vers
+le haut : `is-hidden` part et le cumul repart de zéro, donc le prochain vrai geste vers le
+bas le chasse de nouveau.
+
+- **c'est du chrome, fabriqué par l'IIFE du header** en clonant `.menu-toggle__icon` : un
+  seul dessin de mousqueton à tenir. Il est posé juste avant le HUD, dans `.trail__window` ;
+- **il attend `is-open` comme le HUD**, et **s'efface quand le header est affiché**
+  (`html:has(.site-header:not(.is-hidden))`) : le header passe sur ce coin, et deux
+  mousquetons superposés n'apprennent rien. Au survol, son doigt s'entrouvre ;
+- **sa hauteur est celle de l'œil du titre, son retrait à droite celui du HUD** — les deux
+  calques de droite tombent sur la même verticale (vérifié : 24px chacun en 996px) ;
+- **le header rappelé reste là jusqu'au prochain geste du VISITEUR** (drapeau `kept`, levé
+  par `wheel`, `touchstart`, `keydown` ou `pointerdown`). Ce n'est pas un confort : en mode
+  auto la marche fait défiler la page toute seule, et ce défilement était lu comme un geste
+  vers le bas — le header s'ouvrait et repartait dans la même seconde. Un vrai geste lève le
+  drapeau, puis le défilement qu'il déclenche est lu normalement ;
+- **au clavier, le focus passe au premier lien du menu**, sans quoi il resterait sur un
+  bouton qui vient de s'effacer ;
+- **EN MOBILE, IL OUVRE LE MENU** au lieu de rappeler la barre — demandé par Vincent : la
+  nav y est repliée derrière le mousqueton du header, donc la barre seule n'ouvrait sur
+  rien. Le bouton de la carte **clique ce mousqueton-là** (reconnu à ce qu'il est affiché) :
+  l'IIFE du menu fait le reste — header visible, panneau, focus — et `kept` garde la barre
+  une fois le panneau refermé. Pas de descente animée dans ce cas, c'est le déroulé du
+  panneau qui se voit ;
+- **il descend à 38px au plus étroit** : à 360px, le titre « Carnet de routes » finit à
+  299px et il reste 7px entre les deux. **Sous 340px ils se touchent** — à reprendre avec le
+  design des titres (voir « À préciser ») ;
+- **l'arrivée ainsi rappelée est animée, et elle seule** — demandé par Vincent. Le JS pose
+  `is-summoned` sur le header le temps de l'animation (retirée quand « Discutons », dernière
+  pièce de la cascade, a fini sa `header-drop` ; un minuteur de 1,6 s en filet ; et dès que
+  `hide(true)` le renvoie). Le CSS superpose **la descente** (la transition de `translate`
+  passe à 700 ms sur `--ease-out`) et **la cascade** du logo, des trois liens et de
+  « Discutons ». Le mousqueton, lui, ouvre son doigt et remonte en rétrécissant avant de
+  s'effacer. **Pas de balancement ni de rebond** : un `rotate` amorti autour du coin du
+  mousqueton et une chute qui dépassait ont été essayés, Vincent les a fait retirer. Le
+  retour au scroll garde sa transition ordinaire de 420 ms ;
+- **rien en mouvement réduit**, où la carte est une frise sans épinglage.
 
 ### En mobile : le mousqueton
 
@@ -1418,12 +1423,21 @@ principe même de la section en défilement libre. Si ça devait gêner en mode 
 n'est pas de retoucher la courbe mais d'interpoler `p` au lieu du scroll — en passant par
 `scrollFor(p)` à chaque image, ce qui donnerait une vitesse au sol constante.
 
-**Le verrou anti-inertie ne couvre pas toute la marche**, seulement `INERTIA_LOCK` (1,1 s), le
-temps qu'un flick de trackpad retombe. C'est indispensable depuis que les marches durent
-plusieurs secondes : avec un verrou couvrant toute la durée, un visiteur pressé restait
-prisonnier 8 s. Passé ce délai, un nouveau geste **enchaîne** sur l'étape d'après en cours de
-route — `glide.to` sert de référence, donc il vise bien la marque suivant la destination et
-non celle suivant la position courante.
+**UNE MARCHE VA TOUJOURS JUSQU'À SA CARTE.** Tant qu'elle dure, un geste de plus **dans le
+même sens est avalé** sans rien relancer : il ne fait pas sauter l'étape en cours. Le verrou
+de temps (`lockUntil`) couvre donc la marche entière plus `REARM`, et c'est `glide.dir` qui
+distingue le geste à avaler du demi-tour.
+
+Le verrou ne valait auparavant que `INERTIA_LOCK` (1,1 s), le temps qu'un flick de trackpad
+retombe, et un geste passé ce délai **enchaînait** sur l'étape d'après en cours de route.
+C'était un bug à l'usage : une marche dure jusqu'à ~4,7 s, donc trois crans de molette
+menaient d'une carte à celle d'**après** la suivante — 2016 filait jusqu'à 2025 — sans
+s'arrêter sur celle du milieu, ce qui est exactement ce que le mode promet.
+
+**Le demi-tour, lui, reprend la main tout de suite**, verrou ou pas : c'est ce qui permet de
+revenir sur la dernière carte pendant la sortie, et ce qui évite d'enfermer quelqu'un pendant
+une marche — l'autre issue restant le bouton du HUD. `glide.to` sert alors de référence, donc
+on repart bien vers la marque voisine de la DESTINATION et non de la position courante.
 
 `MARKS` est la liste des seules fractions de scroll où le mode s'arrête : **une par étape, et
 rien d'autre**. Elles sont obtenues en **inversant `progressFor` par dichotomie**
@@ -1634,7 +1648,8 @@ Intégration de la maquette refaite par Vincent (1512 px de large ; le PNG n'est
 le disque, voir « Le ménage du 11 septembre 2026 »). **Elle a remplacé la version
 précédente EN ENTIER** : les trois volets, la fiche de course, les notes de terrain, la
 porte NSFW et le mur de vingt visuels réseaux ont disparu avec elle. Ne les remonte pas
-par morceaux.
+par morceaux. Seule la porte est revenue, et sur un autre bloc que le sien — voir
+« Les quatre sites, sous porte ».
 
 **Elle ne partage pas la grammaire de `projet-beepz.html`, et c'est le point.** Beepz
 raconte un projet — un problème, un système, trois volets qui en découlent. J&M montre un
@@ -1729,6 +1744,32 @@ trois lignes, pas du corps.
 la page en Clash Display, corps de texte compris, là où le reste du site réserve Clash aux
 titres et donne Inter au texte courant. C'est repris tel quel — c'est le dessin de Vincent
 — mais les deux pages projet ne se ressemblent plus sur ce point.
+
+### Les quatre sites, sous porte
+
+Les quatre mises en scène sont floutées derrière une porte NSFW — la marque est pour
+adultes et la page s'ouvre souvent sur un poste de travail. **Il y en a QUATRE, une par
+vignette, et c'est une consigne de Vincent** : une porte unique posée sur la grille
+découvrirait les quatre d'un coup, alors qu'ici on ne révèle que le visuel qu'on a
+désigné, les trois autres restant floutés.
+
+Le mécanisme est celui du bloc « Le gate NSFW » du CSS, sans une ligne de JS : une case à
+cocher native, le contenu et les deux étiquettes en frères derrière elle (`~`). **L'ordre
+du DOM le porte en entier** — input, `.nsfw__content`, `.nsfw__gate`, `.nsfw__hide-rail` —
+et le déplacer casse la porte en silence.
+
+Le voile d'origine avait été dessiné pour un bloc de 2 356 px ; `.nsfw--tile` le ramène à
+un carré de 630, par trois écarts consignés dans sa règle CSS : **coins droits** (les
+16 px d'arrondi laisseraient les quatre coins de la photo ressortir du voile), **panneau
+centré et non collant** (il n'y a rien à suivre en défilant sur une vignette entière à
+l'écran), et **pas de `.nsfw__note`** (répétée quatre fois côte à côte, la phrase devient
+du bruit).
+
+Deux choses qui marchent déjà et qu'il ne faut pas défaire : l'IIFE de la visionneuse
+recale la focusabilité des images sur **chaque** `.nsfw__toggle` de la page, donc les
+quatre portes sont prises en charge sans rien y ajouter ; et la case porte un `aria-label`
+propre à son visuel, les deux étiquettes étant `aria-hidden` — sans quoi le nom accessible
+concaténerait « Contenu adulte Afficher Masquer ».
 
 ### Les compositions posées en pourcentage
 
@@ -2511,10 +2552,10 @@ Ces points ne sont pas encore arbitrés — demande plutôt que de supposer :
   toute la page en Clash Display, corps compris ; le reste du site donne Inter au texte
   courant. C'est intégré tel quel, mais Beepz ne fait pas comme elles — à trancher pour de
   bon, dans un sens ou dans l'autre.
-- **La porte NSFW.** La version précédente de `projet-jm.html` cachait ses captures derrière
-  une case à cocher, parce que la marque est pour adultes et que la page s'ouvre souvent sur
-  un poste de travail. La maquette n'en montre pas, donc elle n'a pas été remontée — le CSS
-  `.nsfw` est resté, il suffit d'un conteneur pour la rétablir. À confirmer.
+- **La porte NSFW SUR LES AUTRES BLOCS.** Elle est revenue sur les quatre mises en scène
+  (voir « Les quatre sites, sous porte »), et la question se repose pour les douze marques,
+  le collage des campagnes et la grille des réseaux — qui montrent eux aussi du contenu pour
+  adultes, et qui n'en portent pas. À trancher avec Vincent.
 - **Les sources en 1x de la page J&M.** Douze des vingt-cinq pièces sont exportées à
   l'échelle 1 et sortent donc molles sur un écran retina ; `build_jm.py` les liste à chaque
   passe. Il faut les réexporter deux fois plus grand.

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Jacquie &amp; Michel — Vincent Waldmann</title>
 <meta name="description" content="Douze ans en interne chez Jacquie &amp; Michel : les sites de la marque, ses campagnes et les visuels des réseaux sociaux.">
-<link rel="stylesheet" href="css/style.css?v=0.34">
+<link rel="stylesheet" href="css/style.css?v=0.35">
 
 <!-- L'ICÔNE DU SITE. Les trois fichiers sont à la RACINE du dépôt et non dans
      `assets/`, qui se range par page : ils n'appartiennent à aucune page, et
@@ -63,7 +63,7 @@
 <!-- LE VOILE DE TRANSITION, en tête et sur les quatre pages : sa moitié
      « arrivée » doit s'exécuter avant le premier rendu, sinon la page apparaît
      un instant à nu avant d'être recouverte. Voir l'en-tête de `js/veil.js`. -->
-<script src="js/veil.js?v=0.34"></script>
+<script src="js/veil.js?v=0.35"></script>
 
 <!-- Même amorce de motion que `projet-beepz.html`, et pour les mêmes raisons :
      la classe est posée AVANT le premier rendu, elle n'est pas posée du tout en
@@ -81,17 +81,6 @@
 </script>
 </head>
 <body>
-
-<!-- LE BANDEAU DE CHANTIER, à retirer quand le site est fini — ici, dans les
-     trois autres pages, et son bloc dans `css/style.css`, qui emporte tout le
-     reste avec lui. Il est collant en haut de fenêtre ; sa hauteur est le token
-     `--banner-h`, que lisent les ancres et la tête du parcours. -->
-<div class="banner" role="status">
-  <span class="banner__flag">Site en cours de construction.</span>
-  <span>Des bugs peuvent apparaître.</span>
-  <!-- Posé par tools/bump_version.py, avec les ?v= du <head> : ne pas éditer à la main. -->
-  <span class="banner__version">v0.34</span>
-</div>
 
 <header class="site-header">
   <a class="logo" href="./">
@@ -251,6 +240,15 @@
        Les appareils, le décor et l'ombre sont DANS la photo : il n'y a plus de
        `.stage` dessinée en CSS comme dans la version précédente.
 
+       CHAQUE VIGNETTE PORTE SA PROPRE PORTE NSFW, et c'est demandé : quatre
+       `.nsfw`, quatre cases à cocher, quatre voiles. Une porte unique posée sur
+       la grille entière ouvrirait les quatre d'un coup — ici on ne découvre que
+       ce qu'on a désigné, et les trois autres restent floutées.
+
+       L'ORDRE DU DOM COMPTE : l'input EN PREMIER, le contenu ensuite, les deux
+       étiquettes après. Tout tient sur le sélecteur frère `~` — voir le bloc
+       « Le gate NSFW » du CSS.
+
        PAS DE `data-parallax` ICI, ET C'EST DEMANDÉ : ces quatre mises en scène
        n'ont qu'une révélation au scroll. Même chose pour la grille des marques
        plus bas. Elles ont porté un cisaillement par colonne, retiré à la
@@ -258,14 +256,74 @@
   <div class="proj-wrap">
     <ul class="jm-sites" data-reveal="group"
         data-viewer="Les sites de la marque" aria-label="Quatre sites du groupe">
-      <li><img src="assets/jm/sites/jm.webp" width="719" height="719" loading="lazy" decoding="async"
-               alt="Le site Jacquie &amp; Michel affiché sur un ordinateur portable posé en forêt : en-tête sombre, bandeau promotionnel et grille de vidéos."></li>
-      <li><img src="assets/jm/sites/pornovoisines.webp" width="719" height="719" loading="lazy" decoding="async"
-               alt="Le site PornoVoisines sur un ordinateur portable : interface claire, formulaire de recherche et grilles de profils."></li>
-      <li><img src="assets/jm/sites/pornudeo.webp" width="719" height="720" loading="lazy" decoding="async"
-               alt="Le site Pornudeo sur une tablette : rail de navigation à gauche, bannière pleine largeur et rangées de vignettes."></li>
-      <li><img src="assets/jm/sites/elite.webp" width="719" height="720" loading="lazy" decoding="async"
-               alt="Le site Jacquie &amp; Michel Élite sur une tablette inclinée : lecteur en grand et sélections éditoriales."></li>
+      <li class="nsfw nsfw--tile">
+        <input class="nsfw__toggle" type="checkbox" id="nsfw-site-jm"
+               aria-label="Afficher le visuel du site Jacquie &amp; Michel">
+        <div class="nsfw__content">
+          <img src="assets/jm/sites/jm.webp" width="719" height="719" loading="lazy" decoding="async"
+               alt="Le site Jacquie &amp; Michel affiché sur un ordinateur portable posé en forêt : en-tête sombre, bandeau promotionnel et grille de vidéos.">
+        </div>
+        <label class="nsfw__gate" for="nsfw-site-jm" aria-hidden="true">
+          <span class="nsfw__panel">
+            <span class="nsfw__tag">Contenu adulte</span>
+            <span class="nsfw__cta">Afficher</span>
+          </span>
+        </label>
+        <span class="nsfw__hide-rail">
+          <label class="nsfw__hide" for="nsfw-site-jm" aria-hidden="true">Masquer</label>
+        </span>
+      </li>
+      <li class="nsfw nsfw--tile">
+        <input class="nsfw__toggle" type="checkbox" id="nsfw-site-pornovoisines"
+               aria-label="Afficher le visuel du site PornoVoisines">
+        <div class="nsfw__content">
+          <img src="assets/jm/sites/pornovoisines.webp" width="719" height="719" loading="lazy" decoding="async"
+               alt="Le site PornoVoisines sur un ordinateur portable : interface claire, formulaire de recherche et grilles de profils.">
+        </div>
+        <label class="nsfw__gate" for="nsfw-site-pornovoisines" aria-hidden="true">
+          <span class="nsfw__panel">
+            <span class="nsfw__tag">Contenu adulte</span>
+            <span class="nsfw__cta">Afficher</span>
+          </span>
+        </label>
+        <span class="nsfw__hide-rail">
+          <label class="nsfw__hide" for="nsfw-site-pornovoisines" aria-hidden="true">Masquer</label>
+        </span>
+      </li>
+      <li class="nsfw nsfw--tile">
+        <input class="nsfw__toggle" type="checkbox" id="nsfw-site-pornudeo"
+               aria-label="Afficher le visuel du site Pornudeo">
+        <div class="nsfw__content">
+          <img src="assets/jm/sites/pornudeo.webp" width="719" height="720" loading="lazy" decoding="async"
+               alt="Le site Pornudeo sur une tablette : rail de navigation à gauche, bannière pleine largeur et rangées de vignettes.">
+        </div>
+        <label class="nsfw__gate" for="nsfw-site-pornudeo" aria-hidden="true">
+          <span class="nsfw__panel">
+            <span class="nsfw__tag">Contenu adulte</span>
+            <span class="nsfw__cta">Afficher</span>
+          </span>
+        </label>
+        <span class="nsfw__hide-rail">
+          <label class="nsfw__hide" for="nsfw-site-pornudeo" aria-hidden="true">Masquer</label>
+        </span>
+      </li>
+      <li class="nsfw nsfw--tile">
+        <input class="nsfw__toggle" type="checkbox" id="nsfw-site-elite"
+               aria-label="Afficher le visuel du site Jacquie &amp; Michel Élite">
+        <div class="nsfw__content">
+          <img src="assets/jm/sites/elite.webp" width="719" height="720" loading="lazy" decoding="async"
+               alt="Le site Jacquie &amp; Michel Élite sur une tablette inclinée : lecteur en grand et sélections éditoriales.">
+        </div>
+        <label class="nsfw__gate" for="nsfw-site-elite" aria-hidden="true">
+          <span class="nsfw__panel">
+            <span class="nsfw__tag">Contenu adulte</span>
+            <span class="nsfw__cta">Afficher</span>
+          </span>
+        </label>
+        <span class="nsfw__hide-rail">
+          <label class="nsfw__hide" for="nsfw-site-elite" aria-hidden="true">Masquer</label>
+        </span>
+      </li>
     </ul>
   </div>
 
@@ -527,7 +585,7 @@
   </div>
 </footer>
 
-<script src="js/main.js?v=0.34"></script>
+<script src="js/main.js?v=0.35"></script>
 
 </body>
 </html>

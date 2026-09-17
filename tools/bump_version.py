@@ -3,14 +3,14 @@
 Le numéro vaut `v0.N`, N étant le numéro du commit qui va le livrer : le nombre
 de commits de `main` plus un. On le lit donc dans l'historique, rien à retenir.
 
-Il est écrit à deux endroits par page, et c'est tout le sujet :
+Il est écrit en paramètre `?v=` des trois ressources partagées
+(`css/style.css`, `js/veil.js`, `js/main.js`). Sans lui, un navigateur mobile
+peut afficher le HTML neuf avec le CSS ou le JS de la veille. Une URL qui
+change ne peut pas être servie depuis le cache.
 
-- dans le bandeau de chantier (`.banner__version`), pour le LIRE sur un
-  téléphone et savoir si la mise en ligne est arrivée ;
-- en paramètre `?v=` des trois ressources partagées (`css/style.css`,
-  `js/veil.js`, `js/main.js`). Sans lui, un navigateur mobile peut afficher le
-  HTML neuf avec le CSS ou le JS de la veille, et le numéro mentirait. Une URL
-  qui change ne peut pas être servie depuis le cache.
+Il a aussi été AFFICHÉ, dans une pastille du bandeau de chantier, pour vérifier
+depuis un téléphone qu'une mise en ligne était arrivée. Le bandeau est parti
+avec elle ; les `?v=` sont restés, ils continuent de protéger les mises en ligne.
 
 À lancer juste avant chaque commit qui touche au site. Idempotent : le relancer
 sans commit entre deux redonne le même numéro.
@@ -33,7 +33,6 @@ ASSETS = ["css/style.css", "js/veil.js", "js/main.js"]
 ASSET_RE = re.compile(
     r'((?:href|src)=")(' + "|".join(re.escape(a) for a in ASSETS) + r')(?:\?v=[^"]*)?(")'
 )
-LABEL_RE = re.compile(r'(<span class="banner__version">)[^<]*(</span>)')
 
 
 def next_number():
@@ -52,10 +51,9 @@ def main():
         path = ROOT / name
         html = path.read_text(encoding="utf-8")
         html, assets = ASSET_RE.subn(rf"\g<1>\g<2>?v={version}\g<3>", html)
-        html, labels = LABEL_RE.subn(rf"\g<1>v{version}\g<2>", html)
-        if assets != len(ASSETS) or labels != 1:
-            sys.exit(f"{name} : {assets} ressource(s) et {labels} étiquette(s) trouvées, "
-                     f"{len(ASSETS)} et 1 attendues — rien n'est écrit pour cette page.")
+        if assets != len(ASSETS):
+            sys.exit(f"{name} : {assets} ressource(s) trouvée(s), {len(ASSETS)} "
+                     f"attendues — rien n'est écrit pour cette page.")
         path.write_text(html, encoding="utf-8")
 
     print(f"v{version} posée dans les {len(PAGES)} pages.")
