@@ -1156,12 +1156,14 @@ a.trail__proj:focus-visible {
   border-color: rgb(var(--cream-rgb) / .45);
 }
 
+/* Le logo de la pastille est rond : un cercle, quelle que soit la forme de l'image. */
 .trail__proj-icon {
   display: block;
   flex: none;
   width: 26px;
   height: 26px;
-  border-radius: 7px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 /* Swame n'a pas d'icône carrée : seulement la vignette large de la page J&M
@@ -1296,6 +1298,10 @@ a.trail__proj:focus-visible {
   translate: var(--fx) var(--fy);
   rotate: var(--fr);
 }
+
+/* La carte survolée passe devant ses voisines de l'éventail, quelle que soit sa place. */
+.trail__card:hover,
+.trail__card:focus-visible { z-index: 3; }
 
 a.trail__card:hover,
 a.trail__card:focus-visible { border-color: rgb(var(--cream-rgb) / .5); }

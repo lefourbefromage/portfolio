@@ -164,7 +164,11 @@
       const isLink = p.tagName === 'A';
       const card = document.createElement(isLink ? 'a' : 'div');
       card.className = 'trail__card';
-      if (isLink) card.href = p.getAttribute('href');
+      if (isLink) {
+        card.href = p.getAttribute('href');
+        // Un site externe s'ouvre dans un nouvel onglet, comme sa pastille.
+        if (p.target) { card.target = p.target; card.rel = p.rel; }
+      }
       card.style.setProperty('--x', `${x}px`);
       card.style.setProperty('--y', `${y}px`);
       card.style.setProperty('--r', `${r}deg`);
@@ -198,7 +202,9 @@
       title.textContent = name;
       const tags = document.createElement('span');
       tags.className = 'trail__card-tags';
-      for (const t of [stops[i].year, isLink ? 'Étude de cas' : 'À venir']) {
+      // Le libellé se lit sur la pastille (`data-tag`) ; sinon : une étude si le projet a une page.
+      const tag = p.dataset.tag || (isLink ? 'Étude de cas' : 'À venir');
+      for (const t of [stops[i].year, tag]) {
         const tag = document.createElement('span');
         tag.className = 'trail__card-tag';
         tag.textContent = t;

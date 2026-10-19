@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vincent Waldmann — Webdesigner & Intégrateur</title>
 <meta name="description" content="Webdesigner et intégrateur depuis 2013. Douze ans à concevoir et intégrer des sites à très forte audience, du premier tracé à la mise en ligne.">
-<link rel="stylesheet" href="css/style.css?v=0.36">
+<link rel="stylesheet" href="css/style.css?v=0.37">
 
 <!-- L'ICÔNE DU SITE. Les trois fichiers sont à la RACINE du dépôt et non dans
      `assets/`, qui se range par page : ils n'appartiennent à aucune page, et
@@ -63,7 +63,7 @@
 <!-- LE VOILE DE TRANSITION, en tête et sur les quatre pages : sa moitié
      « arrivée » doit s'exécuter avant le premier rendu, sinon la page apparaît
      un instant à nu avant d'être recouverte. Voir l'en-tête de `js/veil.js`. -->
-<script src="js/veil.js?v=0.36"></script>
+<script src="js/veil.js?v=0.37"></script>
 
 <!-- L'ARRIVÉE SUR L'ACCUEIL, et elle se règle AVANT le premier rendu — d'où ce
      script en tête de page et non dans `main.js`, qui charge en bas. Même parti
@@ -418,21 +418,27 @@
                ni icône ni page pour ces projets pour l'instant. -->
           <div class="trail__projs">
             <a class="trail__proj" href="projet-beepz" data-name="Beepz"
-               data-image="assets/beepz/lifestyle.webp">
+               data-image="assets/home/projects/beepz.svg">
               <img class="trail__proj-icon" src="assets/home/projects/logo-beepz-left.webp" alt="" width="220" height="220" loading="lazy" decoding="async">
-              Voir le projet Beepz
+              Beepz
               <svg class="trail__proj-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true" focusable="false">
                 <path d="M1 9L9 1M9 1H2M9 1V8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </a>
-            <span class="trail__proj" data-name="VPN.fr">
-              <span class="trail__proj-icon trail__proj-icon--ph" aria-hidden="true">V</span>
-              Projet VPN.fr
-            </span>
-            <span class="trail__proj" data-name="TGP Creator">
-              <span class="trail__proj-icon trail__proj-icon--ph" aria-hidden="true">T</span>
-              Projet TGP Creator
-            </span>
+            <a class="trail__proj" href="https://vpnfree-self.vercel.app/" target="_blank" rel="noopener" data-name="VPN.free" data-tag="Prototype" data-image="assets/home/projects/vpn-free.svg">
+              <img class="trail__proj-icon" src="assets/home/projects/vpn-free-icon.svg" alt="" width="220" height="220" loading="lazy" decoding="async">
+              VPN.free
+              <svg class="trail__proj-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true" focusable="false">
+                <path d="M1 9L9 1M9 1H2M9 1V8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </a>
+            <a class="trail__proj" href="https://tgp-creator-demo.vercel.app/editeur" target="_blank" rel="noopener" data-name="TGP Creator" data-tag="Prototype" data-image="assets/home/projects/tgp-creator.svg">
+              <img class="trail__proj-icon" src="assets/home/projects/tgp-icon.svg" alt="" width="220" height="220" loading="lazy" decoding="async">
+              TGP Creator
+              <svg class="trail__proj-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true" focusable="false">
+                <path d="M1 9L9 1M9 1H2M9 1V8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </a>
           </div>
         </li>
         <li class="trail__step">
@@ -447,10 +453,20 @@
             </span>
           </button>
           <div class="trail__projs">
-            <span class="trail__proj" data-name="Swame" data-image="assets/jm/marques/swame.webp">
+            <a class="trail__proj" href="https://www.behance.net/gallery/147418195/Swame-Logo-Design" target="_blank" rel="noopener" data-name="Swame" data-image="assets/jm/marques/swame.webp">
               <span class="trail__proj-icon trail__proj-icon--swame" aria-hidden="true"></span>
-              Projet Swame
-            </span>
+              Swame
+              <svg class="trail__proj-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true" focusable="false">
+                <path d="M1 9L9 1M9 1H2M9 1V8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </a>
+            <a class="trail__proj" href="https://jacquia.com/" target="_blank" rel="noopener" data-name="JacquIA" data-tag="Site en ligne" data-image="assets/jm/jacquia/banner.webp">
+              <img class="trail__proj-icon" src="assets/home/projects/jacquia-icon.svg" alt="" width="220" height="220" loading="lazy" decoding="async">
+              JacquIA
+              <svg class="trail__proj-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true" focusable="false">
+                <path d="M1 9L9 1M9 1H2M9 1V8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </a>
           </div>
         </li>
         <li class="trail__step">
@@ -467,22 +483,25 @@
             </span>
           </button>
           <div class="trail__projs">
-            <a class="trail__proj" href="projet-jm" data-name="Jacquie &amp; Michel"
-               data-image="assets/jm/hero/cover.webp">
-              <img class="trail__proj-icon" src="assets/home/projects/logo-jm-left.webp" alt="" width="220" height="220" loading="lazy" decoding="async">
-              Voir le projet Jacquie &amp; Michel
+            <a class="trail__proj" href="https://straceo.com/" target="_blank" rel="noopener" data-name="Straceo" data-tag="Site en ligne" data-image="assets/home/projects/straceo.svg">
+              <img class="trail__proj-icon" src="assets/home/projects/straceo-icon.png" alt="" width="180" height="180" loading="lazy" decoding="async">
+              Straceo
               <svg class="trail__proj-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true" focusable="false">
                 <path d="M1 9L9 1M9 1H2M9 1V8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </a>
-            <span class="trail__proj" data-name="Straceo">
-              <span class="trail__proj-icon trail__proj-icon--ph" aria-hidden="true">S</span>
-              Projet Straceo
-            </span>
+            <a class="trail__proj" href="projet-jm" data-name="Jacquie &amp; Michel"
+               data-image="assets/jm/hero/cover.webp">
+              <img class="trail__proj-icon" src="assets/home/projects/logo-jm-left.webp" alt="" width="220" height="220" loading="lazy" decoding="async">
+              Jacquie &amp; Michel
+              <svg class="trail__proj-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true" focusable="false">
+                <path d="M1 9L9 1M9 1H2M9 1V8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </a>
             <a class="trail__proj" href="projet-jimizz" data-name="Jimizz"
                data-image="assets/jimizz/marque/bande.webp">
               <img class="trail__proj-icon" src="assets/home/projects/logo-jimizz-left.webp" alt="" width="220" height="220" loading="lazy" decoding="async">
-              Voir le projet Jimizz
+              Jimizz
               <svg class="trail__proj-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true" focusable="false">
                 <path d="M1 9L9 1M9 1H2M9 1V8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
@@ -536,6 +555,22 @@
     <ul class="projects" data-projects>
 
       <li class="projects__item is-active">
+        <a class="pcard" href="projet-beepz">
+          <img class="pcard__icon" src="assets/home/projects/logo-beepz-left.webp" alt="" loading="lazy" decoding="async" width="220" height="220">
+          <span class="pcard__text">
+            <span class="pcard__name">Beepz</span>
+            <span class="pcard__tag">Marketplace de voiture</span>
+          </span>
+        </a>
+
+        <div class="pcluster pcluster--beepz" aria-hidden="true">
+          <img class="pcluster__item pcluster__item--bz-phone" src="assets/home/projects/beepz-iphone.webp"  alt="" loading="lazy" decoding="async" width="363" height="736">
+          <img class="pcluster__item pcluster__item--bz-photo" src="assets/home/projects/beepz-picture.webp" alt="" loading="lazy" decoding="async" width="647" height="799">
+          <img class="pcluster__item pcluster__item--bz-car"   src="assets/home/projects/beepz-car.webp"     alt="" loading="lazy" decoding="async" width="773" height="531">
+        </div>
+      </li>
+
+      <li class="projects__item">
         <a class="pcard" href="projet-jm">
           <!-- L'icône porte son fond de marque ET ses coins arrondis dans le PNG :
                `.pcard__icon` n'est plus qu'une boîte de dimension. -->
@@ -551,22 +586,6 @@
           <img class="pcluster__item pcluster__item--jm-tshirt" src="assets/home/projects/jm-tshirt.webp" alt="" loading="lazy" decoding="async" width="490" height="766">
           <img class="pcluster__item pcluster__item--jm-logo"   src="assets/home/projects/jm-logo.webp"   alt="" loading="lazy" decoding="async" width="490" height="518">
           <img class="pcluster__item pcluster__item--jm-toy"    src="assets/home/projects/jm-sextoy.webp" alt="" loading="lazy" decoding="async" width="490" height="535">
-        </div>
-      </li>
-
-      <li class="projects__item">
-        <a class="pcard" href="projet-beepz">
-          <img class="pcard__icon" src="assets/home/projects/logo-beepz-left.webp" alt="" loading="lazy" decoding="async" width="220" height="220">
-          <span class="pcard__text">
-            <span class="pcard__name">Beepz</span>
-            <span class="pcard__tag">Marketplace de voiture</span>
-          </span>
-        </a>
-
-        <div class="pcluster pcluster--beepz" aria-hidden="true">
-          <img class="pcluster__item pcluster__item--bz-phone" src="assets/home/projects/beepz-iphone.webp"  alt="" loading="lazy" decoding="async" width="363" height="736">
-          <img class="pcluster__item pcluster__item--bz-photo" src="assets/home/projects/beepz-picture.webp" alt="" loading="lazy" decoding="async" width="647" height="799">
-          <img class="pcluster__item pcluster__item--bz-car"   src="assets/home/projects/beepz-car.webp"     alt="" loading="lazy" decoding="async" width="773" height="531">
         </div>
       </li>
 
@@ -640,6 +659,6 @@
   </div>
 </footer>
 
-<script src="js/main.js?v=0.36"></script>
+<script src="js/main.js?v=0.37"></script>
 </body>
 </html>

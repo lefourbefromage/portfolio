@@ -922,15 +922,34 @@ une seule source de vérité. L'année se pose à droite du repère, sauf si le 
 par Vincent parce que les repères sont proches et que leurs années se chevauchaient.
 
 **Chaque étape porte ses projets** (`.trail__projs`, sous la description) — demandé par
-Vincent : 2025 Beepz, VPN.fr, TGP Creator ; 2023 Swame ; 2013 Jacquie & Michel, Straceo,
+Vincent : 2025 Beepz, VPN.free, TGP Creator ; 2023 Swame ; 2013 Jacquie & Michel, Straceo,
 Jimizz (les projets des deux anciennes étapes ARES, réunis) ; 2012 rien. Un projet est un lien quand sa page existe (Beepz, Jimizz,
 J&M, avec les icônes de la section Projets), un `<span>` sinon — pas de lien mort. Le bloc
 est un FRÈRE du bouton de l'étape, jamais dedans : un lien dans un `<button>` n'est pas du
 HTML valide.
 
-**VPN.fr, TGP Creator et Straceo sont des PLACEHOLDERS** : une icône d'attente
-(`.trail__proj-icon--ph`, l'initiale sur un carré pointillé) et pas de page. À remplacer
-par une vraie icône et un lien quand ils existeront. Swame n'ayant pas d'icône carrée, la
+**Beepz** : son visuel (`assets/home/projects/beepz.svg`) est la photo lifestyle de `assets/beepz/`, voilée, avec
+l'icône de la marque et le nom centrés (comme les autres visuels de cartes).
+
+**Sur mobile, les pastilles ne portent que le nom du projet** (sans « Voir le projet »), et
+leur logo est ROND (`.trail__proj-icon`, `border-radius: 50%`). VPN.free et TGP Creator ont
+leur logo : le favicon de la démo (`vpn-free-icon.svg`, sur un disque sombre) et son logo
+(`tgp-icon.svg`). Straceo a l'icône de sa marque (`straceo-icon.png`, 180 px, depuis straceo.com) et JacquIA le
+marqueur de son logo (`jacquia-icon.svg`, depuis le header de jacquia.com) ; tous les logos sont
+rognés en rond. Il ne reste aucun placeholder sur les pastilles.
+
+**Liens et visuels externes** : Swame ouvre son étude Behance, VPN.free la démo
+(vpnfree-self.vercel.app) ; son visuel est l'image Open Graph de la démo
+(`assets/home/projects/vpn-free.svg`) : l'image Open Graph de la démo (1200 × 630) en fond,
+assombrie (voile à 72 %), avec le logo blanc vpn.free centré (favicon.svg de la démo, variante sombre), JacquIA (2023) jacquia.com — tous dans un nouvel onglet
+(`target="_blank" rel="noopener"`, relayé à la carte). Straceo ouvre straceo.com (même règle) : son visuel
+(`assets/home/projects/straceo.svg`) est le fond de la page de connexion de straceo.com
+(`statics/css/img/login-page/background.ecf69babcc8b.webp`, 845 × 1081, intégré en data URI et
+recadré en 16:10) avec le logo crème du site posé au centre (`logo-light.svg`, tracé inline). **TGP Creator** ouvre sa démo (tgp-creator-demo.vercel.app/editeur) ; son visuel
+(`assets/home/projects/tgp-creator.svg`) est un fond noir, la photo de foule (`6.webp`, fournie par Vincent) en
+transparence (38 %), le logo de la démo (`logo.svg`) et le nom centrés. Les
+placeholders (`.trail__proj-icon--ph`, l'initiale sur un carré pointillé) ne restent que pour
+les projets sans icône ni page. Swame n'ayant pas d'icône carrée, la
 sienne cadre en CSS le « a » en bulle de `assets/jm/marques/swame.webp` — une entorse au
 rangement des assets, à corriger le jour où une icône existe.
 
@@ -946,9 +965,11 @@ on zoomait.
   « Mobbin ») : carte de 180 px de large, **haute de son contenu** (le visuel en 16:10, le
   nom, les puces — d'abord fixée à 236 px, trop haute une fois le titre réduit au nom), le
   visuel en haut, puis **le seul nom de la
-  marque** et deux puces (l'année, « Étude de cas » ou « À venir »). Pas de petit logo ni
+  marque** et deux puces (l'année, puis le libellé du projet). Pas de petit logo ni
   de ligne de titre : le logo est dans le visuel, demandé par Vincent. Une carte lit
-  `data-name` et `data-image` sur sa pastille ; sans image, un morceau de relief et
+  `data-name`, `data-image` et `data-tag` sur sa pastille (libellé : « Étude de cas » par défaut
+pour un projet avec page, « À venir » sans, « Prototype » pour VPN.free et TGP Creator,
+« Site en ligne » pour JacquIA et Straceo) ; sans image, un morceau de relief et
   l'initiale ;
 - **au repos**, la carte du dessus est presque droite et les autres dépassent derrière,
   tournées d'un côté puis de l'autre (table `REST` dans le JS) ; **au survol ou au
@@ -1002,7 +1023,7 @@ Points à retenir si tu retouches la section :
 
 ## La section projets (`#projets`, « Ascensions récentes »)
 
-Trois projets — Jacquie & Michel, Beepz, Jimizz — en trois cartes à gauche, et à
+Trois projets — Beepz, Jacquie & Michel, Jimizz (J&M en deuxième place, demandé par Vincent) — en trois cartes à gauche, et à
 droite **un seul emplacement** où trois groupements de visuels se superposent :
 survoler une carte fait entrer le sien. C'est la maquette de Vincent, intégrée
 telle quelle.
@@ -1010,7 +1031,7 @@ telle quelle.
 **Le JS ne pose qu'un état**, la classe `is-active` déplacée d'un `<li>` à
 l'autre (`js/main.js`, troisième IIFE). Le fondu, les décalages d'entrée, l'échelle de la
 carte : tout est dans le CSS, comme `--out` du tas de
-photos. La classe part du HTML, sur le premier projet — **sans JS, en mouvement
+photos. La classe part du HTML, sur le premier projet (Beepz depuis la réorganisation) — **sans JS, en mouvement
 réduit ou si `main.js` ne charge pas, c'est lui qui reste affiché**. Rien de
 visible ne dépend d'ici.
 
