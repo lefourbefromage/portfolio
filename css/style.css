@@ -59,6 +59,7 @@ a { text-decoration: none; color: inherit; }
   --ink-rgb: 6 13 34;
   --cream-rgb: 254 241 218;
   --navy-rgb: 23 34 71;
+  --green-rgb: 79 145 79;
   --border-cream: #ebd9b7;
 
   /* --- Typographie : Clash pour les titres et labels, Inter pour le texte --- */
@@ -369,45 +370,6 @@ html.is-arriving { scroll-behavior: auto; }
 
 @media (prefers-reduced-motion: reduce) {
   .site-header { transition: none; }
-}
-
-/* ---------- Le header rappelé par le mousqueton de la carte ----------
-   Un clic sur `.trail__menu` pose `is-summoned` le temps de l'arrivée (le JS la
-   retire au bout de l'animation, et dès que le header repart). Le retour
-   ordinaire, au scroll, n'est pas touché : c'est un geste du visiteur, il n'a
-   pas à se donner en spectacle. Ici c'est un appel, et il se VOIT.
-
-   Deux mouvements superposés, sans une ligne de JS de plus :
-   - LA DESCENTE : la translation reprend sa transition, allongée, sur la courbe
-     d'entrée du site. Sans dépassement : un balancement autour du coin du
-     mousqueton, avec une chute qui rebondissait, a été essayé et retiré à la
-     demande de Vincent ;
-   - LA CASCADE : le logo, les liens, puis « Discutons » arrivent l'un après
-     l'autre, de gauche à droite. */
-.site-header.is-summoned {
-  transition: translate .7s var(--ease-out);
-}
-
-.site-header.is-summoned .logo,
-.site-header.is-summoned .main-nav a,
-.site-header.is-summoned .btn-contact {
-  animation: header-drop .62s var(--ease-out) both;
-}
-
-.site-header.is-summoned .main-nav a:nth-child(1) { animation-delay: .14s; }
-.site-header.is-summoned .main-nav a:nth-child(2) { animation-delay: .2s; }
-.site-header.is-summoned .main-nav a:nth-child(3) { animation-delay: .26s; }
-.site-header.is-summoned .btn-contact            { animation-delay: .34s; }
-
-@keyframes header-drop {
-  from { opacity: 0; translate: 0 -22px; }
-  to   { opacity: 1; translate: none; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .site-header.is-summoned .logo,
-  .site-header.is-summoned .main-nav a,
-  .site-header.is-summoned .btn-contact { animation: none; }
 }
 
 .logo {
@@ -993,192 +955,523 @@ html.is-arriving { scroll-behavior: auto; }
 .pile__line,
 .pile__hint { animation: pile-appear .6s ease 620ms backwards; }
 
-/* ---------- Parcours : la carte topographique ---------- */
+/* ---------- Parcours : le carnet de routes et sa carte ----------
+   Une section qui tient en un écran. À gauche les cinq étapes, toujours visibles ;
+   à droite la carte, qui glisse vers l'étape survolée ou cliquée et y dessine le
+   tracé. Sur mobile, la liste seule. Le JS ne pose que la position de la caméra
+   et deux états (survol, étape active) : tout le reste est ici. */
 .trail {
   position: relative;
-  /* La traversée se lit 100 + 717 = 817vh, et la hauteur de la piste en vaut 717 :
-       100vh — la section entre par le bas, le carton monte jusqu'au centre ;
-       717vh — la marche, épinglée puis en sortie, exactement le budget d'origine.
-     La RÉVÉLATION n'a pas de budget à elle : elle se superpose aux 80 premiers vh
-     de la marche (voir REVEAL_VH dans le JS). Le marcheur avance donc pendant que
-     la fenêtre s'ouvre, et il est presque sur la première carte quand elle finit
-     de s'ouvrir — c'est ce que règle l'écart entre REVEAL_VH et les 100vh que coûte
-     l'amorce. Changer REVEAL_VH ne change PAS cette hauteur : ce sont deux choses
-     indépendantes depuis que la marche démarre à l'épinglage. */
-  height: 717vh;
+  max-width: 1512px;
+  margin-inline: auto;
+  padding: 0 clamp(20px, 2.6vw, 40px) clamp(72px, 11vh, 150px);
 
-  /* Le parcours REMONTE sur le bas d'À propos, et ce n'est pas un ajustement
-     esthétique : c'est ce qui rend le fil pointillé de longueur constante.
-
-     Le carton se tient à 50vh sous le haut de la section, donc sans ça le trajet
-     du bouton « CV » jusqu'à lui grandissait avec la hauteur de la fenêtre — 465px
-     sur un portable, plus de 1000 sur un grand écran, dont 640 de descente droite.
-     En remontant la section de `50vh − 260px`, ce terme disparaît du calcul : la
-     descente droite tombe à 60–130px de 900 × 600 à 2560 × 1440, quelle que soit la
-     hauteur. Le `max(0px, ...)` évite de POUSSER la section vers le bas sur une
-     fenêtre de moins de 520px de haut.
-
-     La scène est transparente jusqu'à l'ouverture, donc le recouvrement ne cache
-     rien : le texte d'À propos continue de défiler dessous, normalement. Toute
-     position qui se mesure depuis le haut de la section doit en revanche ajouter
-     `--pull` — c'est le cas de `--lead-top` et la hauteur du fil. */
-  --pull: max(0px, calc(50vh - 260px));
-  margin-top: calc(-1 * var(--pull));
-
-  /* LA SECTION N'ATTRAPE PAS LE POINTEUR TANT QUE LA CARTE N'EST PAS OUVERTE,
-     et c'est la contrepartie de la remontée ci-dessus : la piste couvre le bas
-     d'À propos sur `--pull` (jusqu'à 271px), donc elle avalait les clics des
-     boutons de CV qui s'y trouvent. Ça ne s'est pas vu tant que ce bouton était
-     un <span> inerte — il n'y avait rien à cliquer dessous. La règle est sur la
-     SECTION et pas sur la scène : c'est la piste entière qui recouvre, pas
-     seulement elle. Ce qui doit redevenir cliquable le redit pour soi (la scène
-     et le HUD, une fois ouverts) ; les gestes du parcours, eux, sont écoutés sur
-     `window` et n'en dépendent pas. */
-  pointer-events: none;
-
-  /* --open : 0 = carton fermé, 1 = carte plein écran. C'est le SEUL nombre que le
-     JS écrit pour la révélation, et il est posé ICI plutôt que sur la scène parce
-     que le fil pointillé en a besoin lui aussi — et qu'il est son FRÈRE, donc il
-     ne peut pas le lire depuis elle. La classe `is-open` suit la même logique. */
-  --open: 0;
-  --card-w: clamp(200px, 24vw, 330px);
-
-  --rot: 0deg;
-  --zoom: 1;
-
-  /* Le ciel de la carte : un bleu qui s'assombrit doucement du haut vers le bas,
-     entièrement pris sur l'axe des bleus (teinte 226) — de `--navy` à `--ink`,
-     deux tokens existants, aucune cinquième couleur. Il finit exactement sur
-     l'encre du site : la fenêtre étant bordée d'une marge (`--frame`) qui laisse
-     voir la page, le raccord ne se voit pas au bas de la carte. */
+  /* Le ciel de la carte : de `--navy` à `--ink`, l'axe des bleus, deux tokens
+     existants. Il finit sur l'encre de la page. */
   --trail-sky: linear-gradient(163deg, var(--navy) 0%, var(--ink) 88%);
 }
 
-.trail__stage {
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  overflow: hidden;
-  isolation: isolate;
-  color: var(--cream);
-
-
-  /* Toute la géométrie de l'ouverture, que `--open` (hérité de .trail) interpole.
-     `--card-w` est déclaré sur .trail, le fil pointillé en a besoin lui aussi. */
-  --card-h: calc(var(--card-w) / 1.57);
-  --frame: clamp(10px, 1vw, 18px);   /* la marge d'encre une fois grand ouvert */
-
-  /* La place que le HUD tient dans le coin bas droit. Le journal s'arrête avant :
-     c'est ce qui laisse les deux blocs sur la MÊME ligne du bas sans jamais se
-     rencontrer, au lieu d'obliger l'un à passer au-dessus de l'autre. */
-  --hud-reserve: clamp(148px, 15vw, 250px);
-
-  /* La part de la scène que les barres du navigateur mobile recouvrent. `100vh`
-     vaut la fenêtre barres ESCAMOTÉES : quand elles sont affichées, le bas de la
-     scène passe sous la barre d'outils, et le journal comme le HUD avec lui.
-     `100dvh` suit la fenêtre réellement visible, donc l'écart des deux est
-     exactement ce qui est caché — 0 sur ordinateur, 0 barres escamotées. Seuls
-     les calques ancrés en bas le relisent : la scène garde 100vh, sa hauteur, la
-     caméra et les rendez-vous de la marche ne bougent pas d'un pixel. */
-  --bar-gap: 0px;
-}
-
-@supports (height: 100dvh) {
-  .trail__stage { --bar-gap: max(0px, calc(100vh - 100dvh)); }
-}
-
-/* Pas de fond ici mais sur la fenêtre : hors d'elle, on doit voir l'encre de la
-   page, sinon le carton ne se détache de rien. */
-.trail__window {
-  position: absolute;
-  inset: 0;
-  background: var(--trail-sky);
-  /* Le masque, interpolé entièrement en CSS entre les deux états. Les % se
-     résolvent sur la boîte de la fenêtre — hauteur pour haut/bas, largeur pour
-     les côtés — donc le carton reste centré à toute taille d'écran. La carte
-     dessous n'est pas transformée : c'est bien la fenêtre qui s'ouvre. */
-  clip-path: inset(
-    calc((50% - var(--card-h) / 2) * (1 - var(--open)) + var(--frame) * var(--open))
-    calc((50% - var(--card-w) / 2) * (1 - var(--open)) + var(--frame) * var(--open))
-    round calc(10px + 12px * var(--open))
-  );
-}
-
-/* --- le fil qui vient d'À propos, et qui se fige avec la scène --- */
-/* `sticky` sur un bloc de hauteur nulle, posé en tête de section : il se colle en
-   haut de l'écran à l'instant PRÉCIS où la scène s'épingle, donc au début de la
-   révélation. Avant, il défile avec la page et reste accroché sous le bouton « CV »
-   d'À propos ; après, il ne bouge plus, et le carton le recouvre en grandissant.
-   Hauteur nulle : il ne décale pas la scène d'un pixel. Il est avant elle dans le
-   DOM et tous deux sont en `z-index: auto`, donc la fenêtre peint par-dessus — ne
-   les réordonne pas. */
+/* Le fil pointillé : il part sous le bouton « CV » d'À propos et vient se poser sur
+   la tête de section. Sa boîte est celle d'À propos, donc il part exactement sous le
+   bouton. La marge négative le fait démarrer dans le padding bas d'À propos. Il
+   n'existe pas sur mobile. */
 .trail__lead {
-  position: sticky;
-  top: 0;
-  height: 0;
-  /* Décor pur, et il déborde de sa boîte de hauteur nulle : sans ça son tracé
-     passerait devant le bas d'À propos et pourrait manger un clic lui aussi. */
-  pointer-events: none;
-  /* Mêmes boîtes qu'À propos (.section puis .about__body) : le fil part ainsi
-     exactement sous le bouton, sans un seul calcul de centrage à refaire. */
-  box-sizing: border-box;
-  max-width: 1512px;
-  margin-inline: auto;
-  padding-inline: clamp(20px, 2.6vw, 40px);
-  /* Le haut du fil : sous le bouton, donc au-dessus du haut de la section de tout
-     le padding bas d'À propos moins les 26px de dégagement — et moins la remontée
-     de la section, qui rapproche les deux d'autant. */
-  --lead-top: calc(26px - clamp(120px, 18vh, 240px) + var(--pull));
-}
-
-/* Dès que la carte est ouverte, le fil n'a plus rien à relier — et il est déjà
-   caché derrière elle, donc l'escamoter ne se voit pas. C'est indispensable : son
-   bloc reste collant sur toute la hauteur de la section, alors sans ça il
-   réapparaissait par-dessus la section projets une fois la carte sortie par le
-   haut. */
-.trail.is-open .trail__lead { opacity: 0; }
-
-.trail__lead-inner {
   position: relative;
-  height: 0;
-  max-width: var(--about-col);
-  margin-inline: auto;
+  height: clamp(90px, 11vw, 150px);
+  margin-top: calc(-1 * clamp(40px, 7vh, 90px));
+  pointer-events: none;
 }
 
-/* La boîte du SVG EST le trajet, puisque le tracé va d'un coin à l'autre.
-   En largeur : du bouton (62 + 2 = 64px, l'axe du trait) jusqu'au carton. La
-   colonne étant centrée comme lui, sa moitié est le centre du carton — d'où le
-   « 50 % » ; le terme en `--card-w` décale l'arrivée à 58 % de sa largeur, comme
-   sur la maquette.
-   En hauteur : jusqu'à 70px SOUS le bord haut du carton, pour finir derrière lui.
-   Le carton étant à 50vh du haut de la section, on retire sa demi-hauteur (d'où le
-   /3,14 — deux fois son rapport 1,57) puis le haut du fil. */
+/* Du bouton (64px, l'axe du trait) jusqu'au centre de la page : la moitié de la
+   colonne d'À propos est justement le centre, d'où « 50 % » à droite. */
 .trail__lead-line {
   position: absolute;
-  left: 64px;
-  top: var(--lead-top);
-  width: calc(50% - 64px + var(--card-w) * 0.08);
-  height: max(0px, calc(
-    50vh - var(--card-w) / 3.14 + 70px - var(--lead-top)
-  ));
-  overflow: visible;   /* le ventre de la courbe sort de la boîte par la gauche */
+  top: 0;
+  left: calc(50% - var(--about-col) / 2 + 64px);
+  width: calc(var(--about-col) / 2 - 64px);
+  height: 100%;
+  overflow: visible;
 }
 
 .trail__lead-line path {
   fill: none;
   stroke: var(--cream);
   stroke-linecap: round;
-  /* Le trait est donné en PIXELS D'ÉCRAN, pas en unités du viewBox. C'est ce qui
-     rend la déformation possible : le SVG est étiré différemment en largeur et en
-     hauteur (jusqu'à 3,8x d'écart en mobile), et sans ça les bouts ronds partiraient
-     en biseaux et les tirets seraient écrasés d'un côté. Là, ils restent nets.
-     Les valeurs sont celles de `src/home/separator.svg`. */
+  /* Le trait est donné en pixels d'écran : la boîte est étirée différemment selon
+     les axes, et sans ça les bouts et les tirets se déformeraient. */
   vector-effect: non-scaling-stroke;
   stroke-width: 5;
   stroke-dasharray: 10 10;
 }
 
-/* --- the map that slides, turns and zooms under you --- */
+.trail__head {
+  text-align: center;
+  margin-bottom: clamp(28px, 4.5vh, 52px);
+}
+
+.trail__body {
+  display: grid;
+  gap: clamp(24px, 3.5vh, 40px);
+  max-width: 1200px;
+  margin-inline: auto;
+}
+
+/* Le tracé et sa colonne n'existent qu'avec JS et hors mobile : sans cela, la
+   liste seule reste lisible, et rien ne se donne l'air cliquable pour rien. */
+@media (scripting: enabled) and (min-width: 901px) {
+  .trail__body {
+    grid-template-columns: minmax(0, 6fr) minmax(0, 4fr);
+    align-items: stretch;
+    gap: clamp(32px, 3.4vw, 56px);
+  }
+}
+
+/* --- les étapes : la liste, en permanence ---
+   Au repos, une étape n'a NI fond NI bordure : juste du texte. La carte — filet et
+   fond de bleu translucide, comme celles de la section Projets — n'apparaît qu'au
+   survol et sur l'étape active. Le poste
+   d'abord, puis sur une même ligne l'année — une pastille verte — et l'entreprise en
+   Garamond italique rose ; la description dessous. La carte est le <li> : il contient
+   le bouton de l'étape ET ses pastilles de projet, qui ne peuvent pas être dans le
+   bouton. */
+.trail__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+}
+
+.trail__step {
+  --pad-y: 12px;
+  --pad-x: 16px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  background: transparent;
+  transition: border-color .22s ease, background-color .22s ease, scale .28s var(--ease-out);
+}
+
+/* Le poste sur toute la largeur, puis l'année et l'entreprise côte à côte, puis la
+   description. */
+.trail__step-btn {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    "role role"
+    "year org"
+    "note note";
+  column-gap: 10px;
+  row-gap: 4px;
+  align-items: center;
+  width: 100%;
+  margin: 0;
+  padding: var(--pad-y) var(--pad-x);
+  border: 0;
+  border-radius: inherit;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: default;
+}
+
+.trail__role {
+  grid-area: role;
+  font-family: var(--font-display);
+  font-size: clamp(17px, 1.45vw, 21px);
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--cream);
+}
+
+/* L'année, une pastille verte : la touche de couleur de la palette. */
+.trail__year {
+  grid-area: year;
+  padding: 2px 9px;
+  border: 1px solid rgb(var(--green-rgb) / .55);
+  border-radius: 999px;
+  background: rgb(var(--green-rgb) / .16);
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  line-height: 1.4;
+  color: var(--green);
+}
+
+/* Comme `.pcard__tag` : le Garamond italique, ici en rose — l'autre touche de la
+   palette, permise sur fond sombre. */
+.trail__org {
+  grid-area: org;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: clamp(15px, 1.25vw, 18px);
+  line-height: 1.3;
+  color: var(--pink);
+}
+
+.trail__dot {
+  margin-inline: .35em;
+  color: rgb(var(--cream-rgb) / .4);
+}
+
+.trail__note {
+  grid-area: note;
+  margin-top: 4px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgb(var(--cream-rgb) / .66);
+}
+
+/* La pastille du projet, sous l'étape. Un lien quand la page existe, un simple
+   <span> sinon : le survol n'existe que sur le lien (même règle que le bouton CV). */
+/* Dans la carte, sous la description. */
+.trail__projs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: calc(-1 * var(--pad-y) + 8px) var(--pad-x) var(--pad-y);
+}
+
+.trail__proj {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 14px 4px 4px;
+  border: 1px solid rgb(var(--cream-rgb) / .2);
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--cream);
+  text-decoration: none;
+  transition: background-color .2s ease, border-color .2s ease;
+}
+
+a.trail__proj:hover,
+a.trail__proj:focus-visible {
+  background: rgb(var(--cream-rgb) / .08);
+  border-color: rgb(var(--cream-rgb) / .45);
+}
+
+.trail__proj-icon {
+  display: block;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+}
+
+/* Swame n'a pas d'icône carrée : seulement la vignette large de la page J&M
+   (938 × 492). On en cadre le « a » en bulle, un carré de 170 px de source
+   dont le coin est en (365, 158). `--b` est le côté de la pastille. */
+/* L'icône d'attente d'un projet qui n'a encore ni icône ni page : l'initiale. */
+.trail__proj-icon--ph {
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  border: 1px dashed rgb(var(--cream-rgb) / .4);
+  background: var(--navy);
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  color: rgb(var(--cream-rgb) / .8);
+}
+
+.trail__proj-icon--swame {
+  --b: 26px;
+  background: url("../assets/jm/marques/swame.webp") no-repeat;
+  background-size: calc(var(--b) * 938 / 170) auto;
+  background-position: calc(var(--b) * -365 / 170) calc(var(--b) * -158 / 170);
+}
+
+.trail__proj-arrow { color: var(--pink); }
+
+/* --- les piles de projets, au-dessus des repères (desktop) ---
+   Fabriquées par le JS à partir des pastilles, qui sont alors masquées dans la liste.
+   Une pile par étape, posée dans la carte au point du repère. Elle SUIT le zoom de la
+   carte, comme le terrain — demandé par Vincent — alors que le repère et son année,
+   eux, gardent leur taille (`--k`). Le dessin des cartes suit l'exemple de Vincent :
+   une carte portrait, le visuel en haut, puis le nom de la marque et des puces. Au repos, la carte du dessus est presque droite et les autres dépassent
+   derrière (`--x`, `--y`, `--r`, posés par le JS) ; au survol ou au clavier, elles
+   s'étalent en éventail (`--fx`, `--fy`, `--fr`). Elles s'effacent quand la carte est
+   dézoomée (`is-near` absente) : la vue d'ensemble reste lisible. */
+@media (scripting: enabled) and (min-width: 901px) {
+  .trail.has-deck .trail__projs { display: none; }
+}
+
+.trail__deck {
+  position: absolute;
+  width: 0;
+  height: 0;
+  visibility: hidden;
+  transition: visibility 0s linear .4s;
+}
+
+/* `is-shown` : la carte est assez zoomée et le repère est dans le cadre (JS). */
+.trail__deck.is-shown {
+  visibility: visible;
+  transition: visibility 0s;
+}
+
+/* La pile survolée passe devant ses voisines. */
+.trail__deck:hover,
+.trail__deck:focus-within { z-index: 2; }
+
+/* Centrée au-dessus du repère, assez haut pour laisser l'année posée au-dessus. */
+.trail__stack {
+  --card-w: 180px;
+  /* La hauteur d'une carte vient de son contenu (visuel en 16:10, nom, puces) ;
+     celle-ci n'est que la boîte de survol de la pile, réglée sur elle. */
+  --card-h: 180px;
+  position: absolute;
+  left: calc(var(--card-w) / -2);
+  bottom: 34px;
+  width: var(--card-w);
+  height: var(--card-h);
+}
+
+/* La zone de survol s'élargit avec l'éventail, sans quoi la pile se refermerait
+   quand le pointeur passe d'une carte à sa voisine. */
+.trail__stack::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.trail__stack:hover::before,
+.trail__stack:focus-within::before {
+  inset: -24px calc(-1 * var(--spread) - 24px);
+}
+
+.trail__card {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: var(--card-w);
+  overflow: hidden;
+  border: 1px solid rgb(var(--cream-rgb) / .14);
+  border-radius: 16px;
+  background: var(--ink);
+  box-shadow: 0 14px 32px rgb(var(--ink-rgb) / .7);
+  color: var(--cream);
+  text-decoration: none;
+  translate: var(--x) var(--y);
+  rotate: var(--r);
+  /* Hors champ : effacée, plus petite et plus basse — l'entrée la fait monter et se
+     poser. Le retard `--d` (posé par le JS) ne vaut que pour l'entrée, pas pour
+     l'éventail. */
+  opacity: 0;
+  scale: .7;
+  transform: translateY(40px);
+  transition:
+    translate .5s var(--ease-out),
+    rotate .5s var(--ease-out),
+    border-color .2s ease,
+    opacity .25s ease,
+    scale .3s ease,
+    transform .3s ease;
+}
+
+.trail__deck.is-shown .trail__card {
+  opacity: 1;
+  scale: 1;
+  transform: none;
+  transition:
+    translate .5s var(--ease-out),
+    rotate .5s var(--ease-out),
+    border-color .2s ease,
+    opacity .35s ease var(--d),
+    scale .6s var(--ease-out) var(--d),
+    transform .6s var(--ease-out) var(--d);
+}
+
+.trail__stack:hover .trail__card,
+.trail__stack:focus-within .trail__card {
+  translate: var(--fx) var(--fy);
+  rotate: var(--fr);
+}
+
+a.trail__card:hover,
+a.trail__card:focus-visible { border-color: rgb(var(--cream-rgb) / .5); }
+
+a.trail__card:focus-visible {
+  outline: 2px solid var(--cream);
+  outline-offset: 3px;
+}
+
+/* Un cadre 16:10 que l'image ne peut pas pousser : elle est posée dedans en absolu,
+   sans quoi une photo plus haute que le cadre agrandissait la carte. */
+.trail__card-media {
+  position: relative;
+  flex: none;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: var(--navy);
+}
+
+.trail__card-media img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Sans visuel : un morceau de relief et l'initiale — c'est un placeholder. */
+.trail__card-media--ph {
+  display: grid;
+  place-items: center;
+  background: var(--navy) url("../assets/home/trail/relief.svg") 0 0 / 420px 420px;
+  font-family: var(--font-display);
+  font-size: 44px;
+  font-weight: 700;
+  color: rgb(var(--cream-rgb) / .55);
+}
+
+.trail__card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+  padding: 10px 12px 12px;
+}
+
+/* Le nom de la marque, seul : son logo est déjà dans le visuel. */
+.trail__card-title {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.trail__card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: auto;
+}
+
+.trail__card-tag {
+  padding: 2px 7px;
+  border: 1px solid rgb(var(--cream-rgb) / .22);
+  border-radius: 999px;
+  font-size: 10px;
+  color: rgb(var(--cream-rgb) / .75);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trail__card,
+  .trail__deck,
+  .trail__deck.is-shown .trail__card { transition: none; }
+}
+
+/* --- le zoom : deux boutons ronds en haut à droite de la carte --- */
+.trail__zoom {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.trail__zoom-btn {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid rgb(var(--cream-rgb) / .25);
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--cream);
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color .2s ease, background-color .2s ease;
+}
+
+.trail__zoom-btn:hover,
+.trail__zoom-btn:focus-visible {
+  border-color: rgb(var(--cream-rgb) / .6);
+  background: var(--navy);
+}
+
+.trail__zoom-btn:focus-visible {
+  outline: 2px solid var(--cream);
+  outline-offset: 2px;
+}
+
+/* Désactivés sur mobile par le JS, donc sans effet là-bas. */
+.trail__step-btn:disabled { opacity: 1; cursor: default; }
+
+@media (scripting: enabled) and (min-width: 901px) {
+  .trail__step-btn { cursor: pointer; }
+
+  /* La carte n'apparaît qu'au survol ; l'étape active la garde, avec le filet vert
+     du chemin qui se dessine sur la carte, et grandit juste un peu. */
+  .trail__step:hover {
+    border-color: rgb(var(--cream-rgb) / .22);
+    background: rgb(var(--navy-rgb) / .4);
+  }
+
+  .trail__step.is-active {
+    border-color: rgb(var(--green-rgb) / .8);
+    background: rgb(var(--navy-rgb) / .62);
+    scale: 1.02;
+  }
+
+  .trail__step.is-active .trail__year {
+    background: var(--green);
+    border-color: var(--green);
+    color: var(--cream);
+  }
+
+  .trail__step-btn:focus-visible {
+    outline: 2px solid var(--cream);
+    outline-offset: 3px;
+  }
+}
+
+/* --- la carte : une fenêtre, et dedans une seule transformation --- */
+.trail__view { display: none; }
+
+@media (scripting: enabled) and (min-width: 901px) {
+  .trail__view {
+    display: block;
+    position: relative;
+    min-height: clamp(440px, 62vh, 580px);
+    overflow: hidden;
+    isolation: isolate;
+    border-radius: 18px;
+    background: var(--trail-sky);
+    box-shadow: inset 0 0 0 1px rgb(var(--cream-rgb) / .12);
+    /* On attrape le terrain pour le faire glisser. */
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+  }
+
+  .trail__view.is-dragging { cursor: grabbing; }
+}
+
+/* La carte fait 7200 px et n'est jamais affichée à cette taille : le JS la pose à
+   l'échelle voulue, en une seule `transform`. `--k` est l'inverse de cette échelle,
+   que les repères lisent pour rester à taille constante à l'écran. */
 .trail__map {
   position: absolute;
   left: 0;
@@ -1187,31 +1480,14 @@ html.is-arriving { scroll-behavior: auto; }
   height: 7200px;
   transform-origin: 0 0;
   will-change: transform;
+  --k: 1;
 }
 
-.trail__route {
-  position: absolute;
-  inset: 0;
-  width: 7200px;
-  height: 7200px;
-}
-
-/* --- le relief : une seule tuile, les décalages déjà dessinés dedans ---
-   Chaque niveau de courbe est remonté dans le dessin lui-même, par
-   tools/gen_relief.py : on obtient l'empilement des cartes topo dessinées sans
-   la moindre 3D. Une version précédente empilait un calque par niveau en Z, et
-   la surface composée saturait le compositeur — la carte et le tracé
-   clignotaient, et disparaissaient au scroll. Avec un calque unique le problème
-   ne peut plus revenir : ne redécoupe pas ce fond en calques.
-
-   La tuile fait 1400px, moins que les 2400 de la carte plate : il faut voir un
-   massif entier pour que l'empilement se lise comme du volume. */
+/* Le relief : une seule tuile, les décalages déjà dessinés dedans (voir
+   tools/gen_relief.py). Il déborde de deux tuiles de chaque côté, ce qui garde la
+   phase du motif — le terrain ne bouge pas quand la caméra recule. */
 .trail__relief {
   position: absolute;
-  /* Déborde largement les 7200px de la carte : en reculant la caméra on voit
-     plus de terrain, et le bord du motif se retrouvait dans le champ. Le décalage
-     de 2800px est un multiple de la tuile (2 x 1400), donc la phase du motif est
-     inchangée — le terrain ne bouge pas d'un pixel. */
   left: -2800px;
   top: -2800px;
   width: 12800px;
@@ -1219,507 +1495,84 @@ html.is-arriving { scroll-behavior: auto; }
   background: url("../assets/home/trail/relief.svg") 0 0 / 1400px 1400px repeat;
 }
 
-/* --- the route: dashed grey ahead, solid green behind --- */
+.trail__route {
+  position: absolute;
+  inset: 0;
+  width: 7200px;
+  height: 7200px;
+  overflow: visible;
+  pointer-events: none;
+}
+
+/* Le tracé gris devant, le tracé vert par-dessus jusqu'au point atteint. Les deux
+   traits gardent leur épaisseur à l'écran, quel que soit le zoom. */
 .trail__track,
 .trail__track-done {
   fill: none;
   stroke-linecap: round;
   stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
 }
 
 .trail__track {
-  stroke: rgb(var(--cream-rgb) / .38);
-  stroke-width: 5;
-  stroke-dasharray: 16 14;
+  stroke: rgb(var(--cream-rgb) / .42);
+  stroke-width: 2;
 }
 
 .trail__track-done {
   stroke: var(--green);
-  stroke-width: 7;
+  stroke-width: 4;
 }
 
-/* --- waypoints: anchored to the terrain, kept upright --- */
-.trail__stops {
-  position: absolute;
-  inset: 0;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.trail__stop {
+/* Un repère par étape, posé sur le tracé. Le point d'ancrage est le centre du rond. */
+.trail__pin {
   position: absolute;
   width: 0;
   height: 0;
-  /* undo the map's rotation and zoom so labels stay readable */
-  transform-origin: 0 0;
-  transform: rotate(calc(-1 * var(--rot))) scale(calc(1 / var(--zoom)));
-}
-
-.trail__stop-pin {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 15px;
-  height: 15px;
-  margin: -7.5px 0 0 -7.5px;
-  border-radius: 50%;
-  background: var(--cream);
-  border: 3px solid var(--green);
-  box-shadow: 0 2px 6px rgb(var(--ink-rgb) / .28);
-}
-
-/* La carte du tracé est réduite à l'ANNÉE : le poste, la boîte et la description
-   se lisent une seule fois, en bas à gauche, dans le journal. Le balisage complet
-   reste dans le <li> — c'est la source que le JS clone, et c'est ce que le mode
-   réduit réaffiche en entier. On masque donc les feuilles, jamais le conteneur. */
-.trail__stop-role,
-.trail__stop-org,
-.trail__stop-note { display: none; }
-
-.trail__stop-card {
-  position: absolute;
-  left: 0;
-  /* Juste au-dessus de la pastille du marcheur (18px + 4px de bord, donc 13px de
-     rayon) : de quoi la dégager sans que l'année ne flotte loin de son point. La
-     valeur était à 40px du temps où la carte portait tout le texte. */
-  bottom: 22px;
-  width: max-content;
-  max-width: 30ch;
-  padding: 4px 12px 6px;
-  border: 1px solid rgb(var(--ink-rgb) / .16);
-  border-radius: 10px;
-  background: #fffaf0;
-  box-shadow: 0 10px 26px rgb(var(--ink-rgb) / .16);
-  opacity: 0;
-  transform: translate(-50%, 6px) scale(.92);
-  transform-origin: 50% 100%;
-  transition: opacity .4s ease, transform .5s cubic-bezier(.34, 1.4, .64, 1);
-}
-
-.trail__stop.is-reached .trail__stop-card {
-  opacity: 1;
-  transform: translate(-50%, 0) scale(1);
-}
-
-.trail__stop-year {
-  font-family: var(--font-serif);
-  font-style: italic;
-  display: block;
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 0;
-  color: var(--green);
-}
-
-.trail__stop-role {
-  font-family: var(--font-display);
-  margin: 2px 0 0;
-  font-size: 19px;
-  font-weight: 700;
-  line-height: 1.15;
-  color: var(--ink);
-}
-
-.trail__stop-org {
-  margin: 3px 0 0;
-  font-size: 13px;
-  color: rgb(var(--ink-rgb) / .66);
-}
-
-.trail__stop-dot {
-  display: inline-block;
-  margin: 0 6px;
-  color: rgb(var(--ink-rgb) / .38);
-}
-
-/* --- you are here --- */
-/* Il vit *dans* la carte, posé en coordonnées carte par le JS, et non sur la
-   scène. La carte est un contexte d'empilement à elle seule : c'est le seul
-   moyen de glisser le point sous les étiquettes tout en le gardant au-dessus du
-   terrain. Il annule la caméra comme les étapes, donc il retombe exactement au
-   même endroit à l'écran qu'avant. */
-.trail__you {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 0;
-  height: 0;
-  transform-origin: 0 0;
-  transform: rotate(calc(-1 * var(--rot))) scale(calc(1 / var(--zoom)));
+  transform: scale(var(--k));
   pointer-events: none;
 }
 
-.trail__you-dot,
-.trail__you-pulse {
-  position: absolute;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-}
-
-.trail__you-dot {
-  width: 18px;
-  height: 18px;
-  background: var(--green);
-  border: 4px solid var(--cream);
-  box-shadow: 0 3px 10px rgb(var(--ink-rgb) / .35);
-}
-
-.trail__you-pulse {
-  width: 18px;
-  height: 18px;
-  border: 2px solid var(--green);
-  animation: trail-pulse 2.4s ease-out infinite;
-}
-
-@keyframes trail-pulse {
-  0%   { opacity: .6; transform: translate(-50%, -50%) scale(1); }
-  100% { opacity: 0;  transform: translate(-50%, -50%) scale(3.8); }
-}
-
-/* --- overlays --- */
-/* Rien de tout ça ne paraît avant que la carte ne soit ENTIÈREMENT ouverte : le
-   chemin, le marcheur, les étapes, le HUD et le titre en haut à gauche attendent
-   la classe `is-open`, posée par le JS au terme de la révélation. Le fondu est
-   une transition, pas un calcul au scroll : c'est un rendez-vous, pas une
-   progression. Le seul élément lié au scroll est le titre de couverture. */
-.trail__intro,
-.trail__hud,
-.trail__log,
-.trail__route,
-.trail__you,
-.trail__stops {
-  opacity: 0;
-  transition: opacity .5s ease;
-}
-
-.trail.is-open .trail__intro,
-.trail.is-open .trail__hud,
-.trail.is-open .trail__log,
-.trail.is-open .trail__route,
-.trail.is-open .trail__you,
-.trail.is-open .trail__stops {
-  opacity: 1;
-}
-
-/* Tant que la carte n'est pas ouverte, le bouton du HUD est invisible : il ne
-   doit pas non plus être cliquable ni atteignable au clavier. */
-.trail.is-open .trail__stage { pointer-events: auto; }
-
-.trail__hud { pointer-events: none; }
-.trail.is-open .trail__hud { pointer-events: auto; }
-
-/* Le titre de couverture, centré dans le carton. Il s'efface dans le premier
-   tiers de l'ouverture — passé là, le cadre est trop grand pour qu'un texte
-   centré tienne encore lieu de titre, et c'est celui d'en haut à gauche qui
-   prend le relais. L'opacité étant bornée par le navigateur, pas de clamp. */
-.trail__cover {
-  position: absolute;
-  z-index: 4;
-  left: 0;
-  right: 0;
-  top: 50%;
-  translate: 0 -50%;
-  text-align: center;
-  pointer-events: none;
-  opacity: calc(1 - var(--open) * 2.8);
-}
-
-.trail__intro {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  z-index: 4;
-  /* `--banner-h` a été la hauteur du bandeau de chantier, collant en haut de
-     fenêtre : sans ce terme il passait sur l'œil de la section, la scène étant
-     épinglée à `top: 0`. Le bandeau est retiré et le token n'est plus déclaré,
-     donc le repli à `0px` rend au titre son calage d'origine. */
-  padding: calc(var(--banner-h, 0px) + clamp(26px, 5vh, 56px)) clamp(24px, 4.5vw, 64px) 0;
-  pointer-events: none;
-}
-
-/* La tête du parcours est LA tête de section commune (voir « LA tête de section »
-   plus bas) : taille, famille et casse viennent de là. Ne restent ici que les
-   deux choses qui lui sont propres — l'œil légèrement retenu, parce qu'il est
-   posé sur la carte et non sur le fond de la page, et l'alignement à gauche, le
-   titre étant un calque dans le coin et non un bloc centré dans le flux. */
-.trail__eyebrow { color: rgb(var(--cream-rgb) / .82); }
-
-.trail__intro { text-align: left; }
-
-/* Le titre de couverture est le MÊME titre, en vignette : le carton fait au plus
-   330px de large, où 66px ne tiendrait évidemment pas. Il se règle donc sur la
-   largeur du CARTON et pas sur celle de l'écran — c'est un aperçu de la section,
-   pas une quatrième taille. Le rapport œil / titre y est le même, 0,62. */
-.trail__cover .trail__eyebrow {
-  margin-bottom: 2px;
-  font-size: calc(var(--card-w) * .055);
-}
-
-.trail__cover .trail__heading { font-size: calc(var(--card-w) * .089); }
-
-/* --- le journal : le poste courant, en bas à gauche --- */
-/* Sur fond transparent, comme demandé : pas de carton, le texte est posé à même
-   la carte — le ciel du parcours est assez sombre pour porter du crème.
-   Les cinq entrées sont toutes dans le DOM, SUPERPOSÉES, et passer de l'une à
-   l'autre n'est qu'une bascule de classe : toute la transition est en CSS, il n'y
-   a aucun minuteur JS qui pourrait se croiser sur un scroll rapide. */
-.trail__log {
-  position: absolute;
-  z-index: 4;
-  /* Le retrait à gauche, plus serré que le padding du titre au-dessus : une seule
-     valeur, que le scrim relit, pour que les deux ne puissent pas se désaccorder. */
-  --log-inset: clamp(16px, 3vw, 42px);
-  left: var(--log-inset);
-  /* MÊME `bottom` que le HUD : les deux blocs partagent la ligne du bas, à
-     n'importe quelle largeur. `right` leur évite de se rencontrer quand le texte
-     est long, et `max-width` tient la mesure de lecture sur grand écran. */
-  right: var(--hud-reserve);
-  bottom: calc(clamp(16px, 2.6vh, 38px) + var(--bar-gap));
-  width: auto;
-  max-width: 38ch;
-  /* Hauteur nulle : les entrées se recouvrent, donc la boîte n'a pas de hauteur
-     propre. On l'ancre par le bas et chaque entrée grandit VERS LE HAUT — d'où
-     une ligne du bas qui ne bouge pas d'un poste à l'autre, quelle que soit la
-     longueur de la description. */
-  height: 0;
-  pointer-events: none;
-}
-
-/* Le scrim : un dégradé d'encre né dans le coin bas gauche, qui meurt avant
-   d'atteindre le texte du HUD. Il est porté par le JOURNAL et pas par ses
-   entrées — sinon il s'effacerait et reparaîtrait à chaque changement de poste,
-   et le clignotement se verrait bien plus que le dégradé lui-même. Sa taille est
-   donc fixe et généreuse : elle couvre la description la plus longue sans que le
-   fond ne bouge quand on passe d'une étape à l'autre.
-   Pris sur `--ink`, donc sur l'axe des bleus : c'est le pied du ciel du parcours,
-   assombri, pas une nouvelle couleur. */
-.trail__log::before {
+.trail__pin::before {
   content: "";
   position: absolute;
-  left: calc(-1 * var(--log-inset));
-  right: -22%;
-  /* Jusqu'au bas de la scène, barre du navigateur comprise : le scrim ne doit
-     pas finir en bord net au-dessus d'elle. */
-  bottom: calc(-1 * clamp(16px, 2.6vh, 38px) - var(--bar-gap));
-  height: min(430px, 52vh);
-  background: radial-gradient(
-    116% 100% at 0% 100%,
-    rgb(var(--ink-rgb) / .86) 0%,
-    rgb(var(--ink-rgb) / .62) 38%,
-    rgb(var(--ink-rgb) / .22) 64%,
-    rgb(var(--ink-rgb) / 0) 82%
-  );
-  pointer-events: none;
-}
-
-/* L'entrée qui PART ne fait que s'effacer : elle ne redescend pas. D'où la
-   translation sans durée, appliquée après le fondu — donc invisible. Celle qui
-   ARRIVE monte en apparaissant, la même grammaire que les cartes d'étape. */
-.trail__log-entry {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  width: 100%;
-  opacity: 0;
-  translate: 0 10px;
-  transition: opacity .3s ease, translate 0s linear .3s;
-}
-
-.trail__log-entry.is-current {
-  opacity: 1;
-  translate: 0 0;
-  /* Le retard laisse la précédente finir de s'effacer avant que celle-ci ne
-     monte : les deux ne se croisent pas à mi-opacité. */
-  transition: opacity .5s ease .12s,
-              translate .6s cubic-bezier(.22, 1, .36, 1) .12s;
-}
-
-.trail__log-year {
-  font-family: var(--font-serif);
-  font-style: italic;
-  display: block;
-  font-size: clamp(14px, 1.15vw, 18px);
-  font-weight: 700;
-  color: var(--green);
-}
-
-.trail__log-role {
-  font-family: var(--font-display);
-  margin: 3px 0 0;
-  font-size: clamp(20px, 2vw, 32px);
-  font-weight: 700;
-  line-height: 1.12;
-  color: var(--cream);
-}
-
-.trail__log-org {
-  margin: 5px 0 0;
-  font-size: clamp(13px, 1.05vw, 16px);
-  color: rgb(var(--cream-rgb) / .72);
-}
-
-/* Le point séparateur est cloné avec le reste, et sa règle d'origine le peint en
-   encre — invisible ici. */
-.trail__log .trail__stop-dot { color: rgb(var(--cream-rgb) / .38); }
-
-.trail__log-note {
-  margin: 11px 0 0;
-  font-size: clamp(13px, 1vw, 15px);
-  line-height: 1.5;
-  color: rgb(var(--cream-rgb) / .62);
-}
-
-/* --- le mousqueton de la carte : rappeler le menu, en haut à droite ---
-   Carte ouverte, le header s'est effacé au premier geste vers le bas, et le seul
-   moyen de le revoir était de remonter — donc de reculer dans la marche. Ce
-   bouton le rappelle SANS bouger : même effet qu'un geste vers le haut, et le
-   geste suivant vers le bas le chasse de nouveau.
-
-   C'est du CHROME, donc le JS le fabrique (`js/main.js`, IIFE du header), en
-   clonant l'icône du mousqueton du header : un seul dessin à tenir. Sans JS, il
-   n'existe pas — et le header revient toujours en remontant.
-
-   À TOUTE LARGEUR, mais il ne fait pas la même chose : en desktop il rappelle
-   le header, en mobile il OUVRE LE MENU — la nav y est repliée, et la barre
-   seule ne donnerait accès à rien. Il attend `is-open` comme le HUD, et
-   s'efface dès que le header est affiché : le header passe par-dessus ce coin,
-   et deux mousquetons l'un sur l'autre ne diraient rien de plus. Sa hauteur est
-   celle de l'œil du titre, en face ; son retrait à droite, celui du HUD. */
-.trail__menu {
-  position: absolute;
-  top: calc(var(--banner-h, 0px) + clamp(26px, 5vh, 56px));
-  right: clamp(16px, 2.4vw, 38px);
-  z-index: 4;
-  display: grid;
-  place-items: center;
-  /* 38px au plus étroit : à 360px de large, le titre « Carnet de routes » finit à
-     299px, et un bouton de 42 laissait 3px entre les deux. */
-  width: clamp(38px, 3.2vw, 48px);
-  height: clamp(38px, 3.2vw, 48px);
-  padding: 0;
-  border: 1px solid rgb(var(--cream-rgb) / .16);
+  left: -6px;
+  top: -6px;
+  width: 12px;
+  height: 12px;
+  box-sizing: border-box;
   border-radius: 50%;
+  border: 2px solid rgb(var(--cream-rgb) / .7);
   background: var(--ink);
-  color: var(--pink);
-  cursor: pointer;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity .5s ease, border-color .2s ease, background-color .2s ease;
 }
 
-.trail.is-open .trail__menu {
-  opacity: 1;
-  pointer-events: auto;
-}
+.trail__pin.is-reached::before { background: var(--green); border-color: var(--cream); }
+.trail__pin.is-current::before { background: var(--cream); border-color: var(--cream); }
 
-html:has(.site-header:not(.is-hidden)) .trail.is-open .trail__menu {
-  opacity: 0;
-  pointer-events: none;
-}
-
-/* Rappelé, il n'est pas simplement effacé : il ouvre son doigt, bascule, et
-   remonte vers le header qui descend — comme s'il venait de le lâcher. Le
-   fondu attend un peu, sans quoi on ne verrait rien de tout ça. */
-html:has(.site-header.is-summoned) .trail.is-open .trail__menu {
-  translate: 0 -28px;
-  scale: .7;
-  transition: opacity .35s ease .22s,
-              translate .55s var(--ease-out) .12s,
-              scale .55s var(--ease-out) .12s;
-}
-
-html:has(.site-header.is-summoned) .trail__menu .menu-toggle__icon { rotate: -14deg; }
-
-html:has(.site-header.is-summoned) .trail__menu .menu-toggle__gate {
-  transform: rotate(-30deg);
-  transition: transform .25s var(--ease-out);
-}
-
-.trail__menu:hover,
-.trail__menu:focus-visible {
-  border-color: rgb(var(--cream-rgb) / .5);
-  background-color: var(--navy);
-}
-
-/* Au survol le doigt s'entrouvre, comme le mousqueton du header à l'ouverture
-   du menu : le bouton annonce ce qu'il va faire. */
-.trail__menu:hover .menu-toggle__gate,
-.trail__menu:focus-visible .menu-toggle__gate {
-  transform: rotate(-30deg);
-  transition: transform .5s var(--ease-out);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .trail__menu { display: none; }
-}
-
-/* --- le HUD : une pastille d'encre posée sur la carte --- */
-.trail__hud {
+.trail__pin-year {
   position: absolute;
-  right: clamp(16px, 2.4vw, 38px);
-  bottom: calc(clamp(16px, 2.6vh, 38px) + var(--bar-gap));
-  z-index: 4;
-  padding: clamp(10px, 1vw, 16px) clamp(16px, 1.6vw, 26px) clamp(8px, .8vw, 12px);
-  border-radius: 14px;
-  /* Le fond du parcours étant passé au bleu, la pastille d'encre ne se détachait
-     plus de la carte : c'est le filet crème qui lui redonne son bord. */
-  border: 1px solid rgb(var(--cream-rgb) / .16);
-  background: var(--ink);
-  color: var(--cream);
-  text-align: center;
-}
-
-.trail__hud-label {
-  font-family: var(--font-serif);
-  font-style: italic;
-  margin: 0;
-  font-size: clamp(14px, 1.15vw, 19px);
-  line-height: 1.2;
-  color: rgb(var(--cream-rgb) / .88);
-}
-
-.trail__progress-label {
+  left: 12px;
+  top: -9px;
+  white-space: nowrap;
   font-family: var(--font-display);
-  margin: 0 0 clamp(6px, .7vw, 10px);
-  font-size: clamp(30px, 2.9vw, 46px);
-  font-weight: 700;
-  line-height: 1;
-  color: var(--cream);
-  font-variant-numeric: tabular-nums;
-}
-
-/* Un seul bouton qui montre ses deux états côte à côte — l'état réel est porté
-   par `aria-pressed`, les deux libellés ne sont que du décor. */
-.trail__auto {
-  font-family: var(--font-display);
-  display: flex;
-  justify-content: center;
-  gap: clamp(10px, 1vw, 16px);
-  width: 100%;
-  padding: clamp(7px, .7vw, 10px) 2px 0;
-  border: 0;
-  border-top: 1px solid rgb(var(--cream-rgb) / .22);
-  background: none;
-  font-size: clamp(11px, .95vw, 14px);
+  font-size: 13px;
   font-weight: 600;
-  cursor: pointer;
+  color: rgb(var(--cream-rgb) / .85);
 }
 
-.trail__auto:focus-visible {
-  outline: 2px solid var(--green);
-  outline-offset: 3px;
+/* Les étapes proches se gênent quand toutes les années sont à droite : le HTML
+   (`data-label` sur le bouton) en fait passer certaines au-dessus ou au-dessous. */
+.trail__pin[data-label="above"] .trail__pin-year,
+.trail__pin[data-label="below"] .trail__pin-year {
+  left: 0;
+  translate: -50% 0;
 }
 
-.trail__auto-opt {
-  color: rgb(var(--cream-rgb) / .45);
-  transition: color .2s ease;
-}
+.trail__pin[data-label="above"] .trail__pin-year { top: auto; bottom: 9px; }
+.trail__pin[data-label="below"] .trail__pin-year { top: 9px; }
 
-.trail__auto[aria-pressed="false"] .trail__auto-opt--manual,
-.trail__auto[aria-pressed="true"] .trail__auto-opt--auto {
-  color: var(--green);
+@media (max-width: 900px) {
+  .trail__lead { display: none; }
 }
 
 /* ---------- Sections communes ---------- */
@@ -2427,119 +2280,11 @@ a.contact__mail:hover { border-bottom-color: var(--pink); }
   .sticker-7 { left: 63.4%; top: 66%;   width: 16.6%; --rot:  -4deg; } /* UI/UX */
   .sticker-3 { left: 87.9%; top: 65.9%; width: 21.6%; --rot:  20deg; } /* Sass & Less */
 
-  /* The map stays interactive on small screens — it is one composited
-     transform, so it scrubs smoothly on touch. Just tighten the labels. */
-  .trail__stop-card { padding: 4px 10px 5px; border-radius: 8px; }
-
-  .trail__stop-role { font-size: 16px; }
-  .trail__stop-org { font-size: 12px; }
-  .trail__stop-year { font-size: 13px; }
-  .trail__stop-pin { width: 13px; height: 13px; margin: -6.5px 0 0 -6.5px; }
 }
 
-/* No pinning, no camera: a plain vertical timeline instead */
+/* Sous mouvement réduit, le tas est déjà en place : il n'y a rien à jouer, ni au
+   chargement ni au scroll (le JS ne s'accroche pas non plus). */
 @media (prefers-reduced-motion: reduce) {
-  /* `--pull` ne sert qu'à tenir le fil pointillé de longueur constante jusqu'au
-     carton : ici il n'y a ni carton ni fil, et le recouvrement d'À propos ne
-     ferait que masquer ses boutons. */
-  .trail { height: auto; --pull: 0px; }
-
-  .trail__stage {
-    position: static;
-    height: auto;
-    padding: 40px 20px 56px;
-    /* Plus rien ne recouvre rien, et `is-open` n'existe pas dans ce mode : le
-       texte de la frise doit redevenir sélectionnable. */
-    pointer-events: auto;
-  }
-
-  .trail__map {
-    position: static;
-    width: auto;
-    height: auto;
-    transform: none;
-  }
-
-  .trail__relief,
-  .trail__route,
-  .trail__you,
-  .trail__hud { display: none; }
-
-  /* Ni fenêtre qui s'ouvre, ni titre de couverture : la frise est là d'emblée.
-     Les fondus pilotés par `is-open` sont annulés — le JS ne pose pas la classe
-     dans ce mode, donc sans ça tout resterait à opacité 0. */
-  .trail__window {
-    position: static;
-    clip-path: none;
-  }
-
-  .trail__cover,
-  .trail__lead,
-  .trail__log { display: none; }
-
-  /* Sans journal, la carte d'étape redevient la carte complète — c'est la frise
-     qui porte tout le texte. On rend les feuilles masquées, pas le conteneur. */
-  .trail__stop-role,
-  .trail__stop-org,
-  .trail__stop-note { display: revert; }
-
-  .trail__stop-card { padding: 9px 15px 11px; }
-
-  .trail__stop-note {
-    margin: 7px 0 0;
-    font-size: 13px;
-    line-height: 1.5;
-    color: rgb(var(--ink-rgb) / .66);
-  }
-
-  .trail__intro,
-  .trail__stops {
-    opacity: 1;
-    transition: none;
-  }
-
-  .trail__intro {
-    position: static;
-    padding: 0;
-  }
-
-  .trail__stops {
-    position: static;
-    margin: 26px auto 0;
-    padding-left: 26px;
-    max-width: min(520px, 100% - 44px);
-    /* Crème et non encre : la frise reste peinte sur le ciel du parcours — la
-       fenêtre garde son fond, elle contient toute la scène — donc un filet
-       d'encre y serait invisible. Même raison que le texte passé en crème. */
-    border-left: 2px dashed rgb(var(--cream-rgb) / .3);
-  }
-
-  .trail__stop {
-    position: relative;
-    width: auto;
-    height: auto;
-    transform: none;
-    margin-bottom: 14px;
-  }
-
-  .trail__stop-pin {
-    left: -34px;
-    top: 20px;
-    margin: 0;
-  }
-
-  .trail__stop-card {
-    position: static;
-    max-width: none;
-    opacity: 1;
-    transform: none;
-    transition: none;
-  }
-
-  .trail__you-pulse { animation: none; }
-
-  /* Le tas est déjà en place : il n'y a rien à jouer, ni au chargement ni au
-     scroll (le JS ne s'accroche pas non plus). */
   .pile__photo,
   .pile__line,
   .pile__hint { animation: none; }
@@ -3082,7 +2827,7 @@ a.contact__mail:hover { border-bottom-color: var(--pink); }
    une grande surface claire pour ne rien montrer.
 
    Quand la capture arrive, elle se pose dans `.versant__shot` : un carton crème,
-   même dessin que les cartes d'étape du parcours (#fffaf0, coins arrondis,
+   même dessin que les anciennes cartes d'étape (#fffaf0, coins arrondis,
    ombre portée). Ce sont les SEULES surfaces claires du site, et c'est justement
    ce qui fait ressortir une interface claire sur une page d'encre. */
 .versant__figure {
@@ -5805,8 +5550,7 @@ a.case-foot__next:hover { color: var(--cream); }
   color: rgb(var(--cream-rgb) / .72);
 }
 
-/* Les trois boutons partagent la même pastille : encre, filet crème, comme le
-   HUD du parcours. */
+/* Les trois boutons partagent la même pastille : encre, filet crème. */
 .viewer__close,
 .viewer__nav {
   position: absolute;

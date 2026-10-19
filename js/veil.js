@@ -10,7 +10,7 @@
 
    LE PARTAGE HABITUEL DU SITE TIENT : le JS ne pose que des CLASSES — `is-leaving`
    et `is-entering` sur la racine — et tout le dessin vit dans la feuille de
-   style, comme `--open` du parcours ou `--out` du tas de photos. Les durées
+   style, comme `--out` du tas de photos. Les durées
    elles-mêmes sont LUES dans le CSS (`--veil-close`, `--veil-hold`) plutôt que
    réécrites ici : il n'y a qu'un endroit où les changer.
 

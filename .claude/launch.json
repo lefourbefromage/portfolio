@@ -3,8 +3,20 @@
   "configurations": [
     {
       "name": "portfolio",
+      "runtimeExecutable": "py",
+      "runtimeArgs": [
+        "tools/serve.py",
+        "4173"
+      ],
+      "port": 4173
+    },
+    {
+      "name": "portfolio-python3",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["tools/serve.py", "4173"],
+      "runtimeArgs": [
+        "tools/serve.py",
+        "4173"
+      ],
       "port": 4173
     }
   ]

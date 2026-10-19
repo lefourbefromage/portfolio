@@ -5,7 +5,7 @@
 // jouée une fois, pas un montage au scroll. Il ne reste ici que la SORTIE, où
 // les photos s'échappent vers le haut : le JS pose `--out` sur la scène (0
 // posée, 1 partie) et la transformation composée vit dans `.pile__photo`,
-// comme `--open` du parcours.
+// rien d'autre ne se calcule côté JS.
 (function () {
   const scene = document.querySelector('.pile__scene');
   if (!scene) return;
@@ -57,242 +57,170 @@
   still.addEventListener('change', () => window.location.reload());
 })();
 
-/* ---------- Parcours : la carte qui défile sous vos pas ---------- */
+/* ---------- Parcours : le carnet de routes et sa carte ----------
+   À gauche les étapes, à droite la carte. Au survol ou au clic d'une étape, la
+   caméra glisse jusqu'à son point et le tracé vert se dessine jusque-là. Sans
+   survol ni clic, la carte reste en vue d'ensemble. Le JS ne fait que deux choses :
+   poser la caméra (une `transform` sur `.trail__map`) et recouper le tracé vert.
+   Sur mobile la carte est masquée et les étapes ne réagissent pas. */
 (function () {
   const trail = document.querySelector('.trail');
   if (!trail) return;
 
-  const stage = trail.querySelector('.trail__stage');
+  const view = trail.querySelector('.trail__view');
   const map = trail.querySelector('.trail__map');
   const track = trail.querySelector('.trail__track');
   const done = trail.querySelector('.trail__track-done');
-  const you = trail.querySelector('.trail__you');
-  const value = trail.querySelector('.trail__progress-value');
-  const stops = [...trail.querySelectorAll('.trail__stop')];
-  const log = trail.querySelector('.trail__log');
-  if (!map || !track || !done) return;
-
-  /* ---------- Le journal, en bas à gauche ---------- */
-  // Les entrées sont CLONÉES depuis les cartes du tracé : le <li> reste la seule
-  // source de vérité, donc il n'y a pas deux textes à tenir à jour — et le mode
-  // réduit, qui affiche ces mêmes cartes en entier, ne peut pas diverger.
-  // Les cinq sont posées d'emblée et superposées ; le rendu ne fait que déplacer
-  // une classe, tout le fondu est en CSS.
-  const LOG_PARTS = [
-    ['.trail__stop-year', 'trail__log-year', 'span'],
-    ['.trail__stop-role', 'trail__log-role', 'p'],
-    ['.trail__stop-org', 'trail__log-org', 'p'],
-    ['.trail__stop-note', 'trail__log-note', 'p'],
-  ];
-
-  const logEntries = !log ? [] : stops.map((stop) => {
-    const entry = document.createElement('div');
-    entry.className = 'trail__log-entry';
-    for (const [from, cls, tag] of LOG_PARTS) {
-      const src = stop.querySelector(from);
-      if (!src) continue;
-      const el = document.createElement(tag);
-      el.className = cls;
-      el.innerHTML = src.innerHTML;
-      entry.append(el);
-    }
-    log.append(entry);
-    return entry;
-  });
-
-  let logCurrent = null;
-
-  // How hard the going is, sampled along the route. 0 = flat stroll, 1 = grind.
-  // This one profile drives the pace. The zoom is on its own, see approachAt.
-  const GRADE = [
-    [0, 0.05], [0.12, 0.50], [0.26, 0.20], [0.42, 1.00],
-    [0.56, 0.34], [0.72, 0.92], [0.86, 0.22], [1, 0.08],
-  ];
-
-  const ROT_DAMP = 0.34;    // only part of the full heading-up turn
-  const LEAD = 0.02;        // tangent window, as a share of route length
-  // L'aimant d'une étape : un palier de coût très élevé, encadré de rampes
-  // courtes. On arrive presque à pleine vitesse, on se colle net, et il faut
-  // insister au scroll pour décrocher. C'est l'inverse de l'ancien long
-  // ralenti à l'approche, qui étalait la décélération sur un quart de marche.
-  const DETENT_HOLD = 0.0010; // demi-largeur du palier, en part de parcours
-  const DETENT_W = 0.0025;    // ... et de la rampe qui l'encadre
-  const DETENT_COST = 8.12;   // ~45vh de scroll pour décrocher d'une carte
-  const BASE_COST = 0.30;   // the walk between stops is deliberately cheap
-  const GRADE_COST = 0.95;  // steep ground costs more scroll to cross
-  const CARD_LEAD = 0.012;  // reveal the card just before you arrive
-
-  // Zoom is driven by how close the next waypoint is, nothing else: you take a
-  // step back to cover ground, then lean into the map as a stop comes up.
-  // ZOOM_W is wider than DWELL_W on purpose, so the lens is already moving
-  // before the scroll starts to resist, and keeps moving through the pause.
-  const ZOOM_TRAVEL = 0.70;
-  const ZOOM_STOP = 1.14;
-  // À garder sous la demi-distance entre deux étapes (0,035 aujourd'hui), sinon
-  // les fenêtres d'approche se recouvrent et le zoom ne redescend jamais à
-  // ZOOM_TRAVEL : la carte reste plaquée de bout en bout.
-  const ZOOM_W = 0.030;     // how much route progress the approach spans
-
-  // L'amorce et la traîne : les portions de chemin que le marcheur parcourt
-  // *pendant* que la scène entre par le bas, puis ressort par le haut. Elles
-  // n'ont rien de particulier dans le barème — même coût qu'ailleurs — c'est
-  // fraction() qui les fait tomber dans les 100vh d'entrée et les 100vh de
-  // sortie. Sans elles, le marcheur restait figé tant que la section n'était
-  // pas collée, puis se figeait de nouveau dès qu'elle se décollait : deux
-  // ruptures nettes, aux deux bouts.
-  //
-  // Elles ne sont pas égales, et c'est normal : le terrain d'avant la première
-  // carte est plus plat, donc il en faut davantage pour dépenser les mêmes
-  // 100vh de scroll. Les deux se recalculent, voir le tableau de CLAUDE.md.
-  const LEAD_RUN = 0.113;
-  const TAIL_RUN = 0.0607;
-
-  const DRIFT_X = 0.05;
-  const DRIFT_Y = 0.06;
+  const list = trail.querySelector('.trail__list');
+  const steps = [...trail.querySelectorAll('.trail__step')];
+  if (!view || !map || !track || !done || !list || steps.length === 0) return;
 
   const still = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const wide = window.matchMedia('(min-width: 901px)');
 
-  const clamp01 = (n) => (n < 0 ? 0 : n > 1 ? 1 : n);
-  const smooth = (t) => t * t * (3 - 2 * t);
+  // FIT : marge autour des étapes dans la vue d'ensemble. FOCUS : échelle posée sur
+  // une étape. GLIDE_MS : durée du glissement de caméra.
+  const FIT = 1.6;
+  const FOCUS = 1;
+  const GLIDE_MS = 900;
+  // En dessous de cette échelle la carte est « dézoomée » : les piles de projets
+  // s'effacent, elles encombreraient la vue d'ensemble.
+  const NEAR = 0.6;
+  // Les bornes du zoom (boutons et pincement), et le pas d'un clic de bouton.
+  const MIN_S = 0.12;
+  const MAX_S = 1.6;
+  const ZOOM_STEP = 1.5;
+  // Une étape est « au centre » quand son repère tombe à moins de cette part du
+  // petit côté de la fenêtre : on la rend alors active en glissant ou en zoomant.
+  const CENTER_R = 0.18;
 
-  function gradeAt(p) {
-    for (let i = 1; i < GRADE.length; i++) {
-      if (p <= GRADE[i][0]) {
-        const [p0, g0] = GRADE[i - 1];
-        const [p1, g1] = GRADE[i];
-        return g0 + (g1 - g0) * smooth((p - p0) / (p1 - p0));
+  const total = track.getTotalLength();
+  const at = (f) => track.getPointAtLength(total * f);
+
+  // Une entrée par étape, dans l'ordre de la liste. `walked` est la longueur du
+  // tracé à parcourir pour atteindre le point.
+  const stops = steps.map((step) => {
+    const f = parseFloat(step.querySelector('.trail__step-btn').dataset.at);
+    const pt = at(f);
+    return {
+      f,
+      x: pt.x,
+      y: pt.y,
+      walked: total * f,
+      year: step.querySelector('.trail__year').textContent,
+    };
+  });
+
+  const pins = stops.map((s, i) => {
+    const pin = document.createElement('span');
+    pin.className = 'trail__pin';
+    // Où se pose l'année autour du repère : décidé dans le HTML, sur le bouton.
+    const side = steps[i].querySelector('.trail__step-btn').dataset.label;
+    if (side) pin.dataset.label = side;
+    pin.setAttribute('aria-hidden', 'true');
+    pin.style.left = `${s.x}px`;
+    pin.style.top = `${s.y}px`;
+    const label = document.createElement('span');
+    label.className = 'trail__pin-year';
+    label.textContent = s.year;
+    pin.append(label);
+    map.append(pin);
+    return pin;
+  });
+
+  /* ---------- Les piles de projets, au-dessus des repères ----------
+     Les projets d'une étape (`.trail__proj`, dans la liste) sont CLONÉS en une pile
+     de cartes posée au-dessus de son repère : le HTML reste la seule source, et sur
+     mobile ce sont les pastilles qu'on lit. La pile vit dans la carte et suit son
+     zoom, comme le terrain (seuls les repères gardent leur taille). Le JS pose pour
+     chaque carte sa
+     place au repos (`--x`, `--y`, `--r`) et dans l'éventail (`--fx`, `--fy`,
+     `--fr`) ; le passage de l'une à l'autre, au survol, est en CSS. Le premier projet
+     listé est au sommet, donc le dernier dans le DOM. */
+  // Au repos : la carte du dessus presque droite, les suivantes qui dépassent derrière,
+  // tournées d'un côté puis de l'autre.
+  const REST = [[0, 0, -3], [22, -12, 7], [-20, -16, -9]];
+  const FAN_X = 130;   // px entre deux cartes de l'éventail
+  const FAN_R = 7;     // deg de rotation par carte, depuis le centre
+
+  const decks = [];
+  steps.forEach((step, i) => {
+    const projs = [...step.querySelectorAll('.trail__proj')];
+    if (!projs.length) return;
+
+    const deck = document.createElement('div');
+    deck.className = 'trail__deck';
+    deck.style.left = `${stops[i].x}px`;
+    deck.style.top = `${stops[i].y}px`;
+    const stack = document.createElement('div');
+    stack.className = 'trail__stack';
+    const n = projs.length;
+    stack.style.setProperty('--spread', `${((n - 1) / 2) * FAN_X}px`);
+
+    projs.slice().reverse().forEach((p, j) => {
+      const depth = n - 1 - j;             // 0 = sommet de la pile
+      const pos = n - 1 - depth - (n - 1) / 2; // place dans l'éventail, centrée
+      const [x, y, r] = REST[Math.min(depth, REST.length - 1)];
+      const isLink = p.tagName === 'A';
+      const card = document.createElement(isLink ? 'a' : 'div');
+      card.className = 'trail__card';
+      if (isLink) card.href = p.getAttribute('href');
+      card.style.setProperty('--x', `${x}px`);
+      card.style.setProperty('--y', `${y}px`);
+      card.style.setProperty('--r', `${r}deg`);
+      card.style.setProperty('--fx', `${pos * FAN_X}px`);
+      card.style.setProperty('--fy', `${Math.abs(pos) * 12}px`);
+      card.style.setProperty('--fr', `${pos * FAN_R}deg`);
+      // L'entrée se fait du fond vers le dessus de la pile.
+      card.style.setProperty('--d', `${(n - 1 - depth) * 80}ms`);
+
+      const name = p.dataset.name || p.textContent.trim();
+      const media = document.createElement('span');
+      media.className = 'trail__card-media';
+      if (p.dataset.image) {
+        const img = document.createElement('img');
+        img.src = p.dataset.image;
+        img.alt = '';
+        img.loading = 'lazy';
+        img.decoding = 'async';
+        media.append(img);
+      } else {
+        media.classList.add('trail__card-media--ph');
+        media.textContent = name.charAt(0);
+        media.setAttribute('aria-hidden', 'true');
       }
-    }
-    return GRADE[GRADE.length - 1][1];
-  }
 
-  const stopPositions = stops.map((s) => parseFloat(s.dataset.at));
+      const body = document.createElement('span');
+      body.className = 'trail__card-body';
+      // Le titre de la carte, c'est la marque : son logo est déjà dans le visuel.
+      const title = document.createElement('span');
+      title.className = 'trail__card-title';
+      title.textContent = name;
+      const tags = document.createElement('span');
+      tags.className = 'trail__card-tags';
+      for (const t of [stops[i].year, isLink ? 'Étude de cas' : 'À venir']) {
+        const tag = document.createElement('span');
+        tag.className = 'trail__card-tag';
+        tag.textContent = t;
+        tags.append(tag);
+      }
+      body.append(title, tags);
 
-  // The scroll covers first stop -> last stop, plus the tail. That way you open
-  // already standing at the first job with green route behind you, and the last
-  // card holds while the trail creeps on past it.
-  const FIRST = stopPositions[0];
-  const LAST = stopPositions[stopPositions.length - 1];
-  const START = FIRST - LEAD_RUN;
-  const END = LAST + TAIL_RUN;
+      card.append(media, body);
+      stack.append(card);
+    });
 
-  // How close the nearest waypoint is: 0 out on the trail, 1 standing on it.
-  function approachAt(p) {
-    let near = 0;
-    for (const at of stopPositions) {
-      const d = Math.abs(p - at);
-      if (d < ZOOM_W) near = Math.max(near, smooth(1 - d / ZOOM_W));
-    }
-    return near;
-  }
+    deck.append(stack);
+    map.append(deck);
+    decks.push({ el: deck, x: stops[i].x, y: stops[i].y });
+    stops[i].stack = stack;
+  });
+  if (map.querySelector('.trail__deck')) trail.classList.add('has-deck');
 
-  // Coût de scroll par unité de parcours : le terrain raide est lent, et chaque
-  // étape porte un aimant — trapèze étroit et très haut, plutôt qu'une longue
-  // pente. Le marcheur n'y avance que de ~47px de carte pour 45vh de scroll :
-  // autant dire qu'il est collé, et qu'il faut insister pour repartir.
-  function costAt(p) {
-    let c = BASE_COST + GRADE_COST * gradeAt(p);
-    for (const at of stopPositions) {
-      const d = Math.abs(p - at);
-      if (d >= DETENT_W) continue;
-      const grip = d <= DETENT_HOLD ? 1 : 1 - (d - DETENT_HOLD) / (DETENT_W - DETENT_HOLD);
-      c += DETENT_COST * grip;
-    }
-    return c;
-  }
-
-  // Integrate the cost once, then invert it to turn scroll into route progress.
-  const STEPS = 1400;
-  const cum = new Float64Array(STEPS + 1);
-  for (let i = 1; i <= STEPS; i++) {
-    const p = START + (END - START) * ((i - 0.5) / STEPS);
-    cum[i] = cum[i - 1] + costAt(p) / STEPS;
-  }
-  const totalCost = cum[STEPS];
-
-  function progressFor(scrolled) {
-    const target = clamp01(scrolled) * totalCost;
-    let lo = 0;
-    let hi = STEPS;
-    while (lo < hi) {
-      const mid = (lo + hi) >> 1;
-      if (cum[mid] < target) lo = mid + 1;
-      else hi = mid;
-    }
-    const i = Math.max(1, lo);
-    const span = cum[i] - cum[i - 1];
-    const t = span > 0 ? (target - cum[i - 1]) / span : 0;
-    return START + (END - START) * clamp01((i - 1 + t) / STEPS);
-  }
-
-  // L'inverse de progressFor : à quelle fraction de scroll se tient-on ici ?
-  function scrollFor(target) {
-    let lo = 0;
-    let hi = 1;
-    for (let k = 0; k < 40; k++) {
-      const mid = (lo + hi) / 2;
-      if (progressFor(mid) < target) lo = mid;
-      else hi = mid;
-    }
-    return (lo + hi) / 2;
-  }
-
-  // Les étapes, en fraction de scroll. Le mode auto ne s'arrête que là-dessus,
-  // la traîne en est volontairement exclue : elle se parcourt à la main.
-  const MARKS = stopPositions.map(scrollFor);
-  const LAST_MARK = MARKS[MARKS.length - 1];
-
-  /* ---------- La révélation, par-dessus le début de la marche ---------- */
-  // Les deux courent EN MÊME TEMPS, et c'est voulu : dès que la scène s'épingle,
-  // la fenêtre s'ouvre du petit carton au plein écran pendant que le marcheur
-  // entame son amorce. Quand la carte finit de s'ouvrir, il est presque sur la
-  // première étape — on découvre le chemin juste avant d'y arriver, plutôt que de
-  // rester 100vh sans rien faire une fois le cadre ouvert.
-  //
-  // REVEAL_VH est donc à régler contre le coût de l'amorce, qui vaut 100vh : à
-  // 0,8 il reste 20vh de marche visible après l'ouverture, le temps de voir le
-  // marcheur couvrir les derniers mètres et la carte d'étape apparaître. Monter
-  // à 1 le colle sur l'étape à l'instant même où le cadre s'ouvre.
-  //
-  // Il n'a PAS de budget de scroll à lui : la hauteur CSS ne dépend plus de lui.
-  const REVEAL_VH = 0.8;
-
-  const trailTop = () => trail.getBoundingClientRect().top + window.scrollY;
-  const revealPx = () => window.innerHeight * REVEAL_VH;
-
-  // La marche court de l'épinglage au bord bas de la section — 717vh, soit
-  // exactement le budget d'origine, dont les 100 derniers vh se jouent pendant
-  // que la scène ressort par le haut (la traîne).
-  const walkPx = () => Math.max(1, trail.offsetHeight);
-  const walkStart = () => trailTop();
-
-  const revealFraction = () => clamp01((window.scrollY - trailTop()) / revealPx());
-  // Où en sera la marche quand la fenêtre finira de s'ouvrir.
-  const revealEnd = () => clamp01(revealPx() / walkPx());
-
-  // Comme avant, c'est UNE division sur une longueur de scroll réelle en pixels :
-  // pas de couture calculée à l'avance, pas de dérive sur mobile où `vh` et
-  // `window.innerHeight` ne sont pas d'accord à cause de la barre d'URL.
-  const fraction = () => clamp01((window.scrollY - walkStart()) / walkPx());
-
-  // ... et sa réciproque, dont le mode auto a besoin pour viser une étape.
-  const pageYFor = (frac) => walkStart() + walkPx() * frac;
-
-  let total = track.getTotalLength();
-  let prevHeading = null;
-  let ticking = false;
-
-  const at = (len) => track.getPointAtLength(Math.max(0, Math.min(total, len)));
-
-  // Le chemin parcouru est le MÊME tracé, recoupé au point atteint — et non plus
-  // révélé par `stroke-dasharray`. WebKit (Safari, et tous les navigateurs iOS)
-  // ignore ce tiret sur ce tracé-là : le vert s'y peignait de bout en bout, dès
-  // l'ouverture. Vérifié sur iOS 18 avec quatre variantes — tiret + trou,
-  // `dashoffset`, trou de 1e7, SVG sans calque ni transform — qui échouent
-  // toutes ; seul le `d` recoupé tient.
-  // Le `d` n'est fait que de M et de L (voir gen_route.py / gen_relief.py), donc
-  // les longueurs cumulées se calculent une fois, et chaque image ne fait plus
-  // qu'une recherche dichotomique et une jointure de chaîne.
+  /* ---------- Le tracé vert, recoupé au point atteint ----------
+     Le chemin parcouru est le MÊME tracé, recoupé — et non `stroke-dasharray`, que
+     WebKit (tous les navigateurs iOS) ignore sur ce tracé. Le `d` n'est fait que de
+     M et de L, donc les longueurs se calculent une fois. */
   const doneFull = done.getAttribute('d');
   const donePts = (doneFull.match(/-?\d*\.?\d+/g) || []).map(Number);
   const doneSegs = [];
@@ -326,133 +254,260 @@
       `M ${donePts[0]} ${donePts[1]} ${doneSegs.slice(0, lo).join(' ')} L ${x.toFixed(1)} ${y.toFixed(1)}`);
   }
 
-  function layoutStops() {
-    stops.forEach((s) => {
-      const pt = at(total * parseFloat(s.dataset.at));
-      s.style.left = `${pt.x}px`;
-      s.style.top = `${pt.y}px`;
-    });
-  }
+  /* ---------- La caméra ----------
+     Elle est décrite par le point de la carte posé au centre de la fenêtre (x, y),
+     une échelle (s) et la longueur de tracé à colorier (walked). Une seule
+     transformation la traduit : la carte est décalée pour que (x, y) tombe au centre,
+     puis mise à l'échelle. */
+  let vw = 0;
+  let vh = 0;
+  const cam = { x: 0, y: 0, s: 1, walked: 0 };
+  let anim = 0;
 
-  function render() {
-    ticking = false;
-
-    // La fenêtre d'abord. Le JS n'écrit qu'un nombre — toute la géométrie de
-    // l'ouverture (taille du carton, marge finale, arrondi) vit dans le CSS.
-    // Le lissage est ici et pas dans la marche : ouvrir un cadre supporte une
-    // courbe, suivre un chemin non (voir la note sur le mode auto).
-    const rev = revealFraction();
-    // Posés sur la SECTION et pas sur la scène : le fil pointillé, qui est un frère
-    // de la scène, doit les lire lui aussi (il s'escamote à l'ouverture).
-    trail.style.setProperty('--open', smooth(rev).toFixed(4));
-    trail.classList.toggle('is-open', rev >= 0.999);
-
-    const scrolled = fraction();
-    const p = progressFor(scrolled);
-    const walked = total * p;
-
-    drawWalked(walked);
-
-    // Le marcheur avance dès l'épinglage, mais la CAMÉRA ne le suit qu'une fois le
-    // chemin visible. Pendant l'ouverture elle est tenue à la position qu'il aura
-    // à la FIN de la révélation : le terrain reste donc parfaitement immobile sous
-    // le cadre qui s'ouvre — c'est ce qui fait lire l'ouverture comme un masque —
-    // et comme les deux se rejoignent à l'instant du raccord, il n'y a aucun saut.
-    // Viser la position de départ à la place produirait ce saut.
-    const pCam = rev < 1 ? progressFor(revealEnd()) : p;
-    const seen = total * pCam;
-
-    const here = at(seen);
-
-    // Heading, sampled either side so the turn is smooth, then damped so a
-    // fast scroll does not send the map spinning.
-    const lead = total * LEAD;
-    const back = at(seen - lead);
-    const fwd = at(seen + lead);
-    let heading = -90 - (Math.atan2(fwd.y - back.y, fwd.x - back.x) * 180) / Math.PI;
-    if (prevHeading !== null) {
-      while (heading - prevHeading > 180) heading -= 360;
-      while (heading - prevHeading < -180) heading += 360;
-    }
-    prevHeading = heading;
-    const rot = heading * ROT_DAMP;
-
-    const zoom = ZOOM_TRAVEL + (ZOOM_STOP - ZOOM_TRAVEL) * approachAt(pCam);
-
-    const stageW = stage.clientWidth;
-    const stageH = stage.clientHeight;
-    const cx = stageW / 2 + Math.sin(pCam * Math.PI * 3.1) * stageW * DRIFT_X;
-    const cy = stageH / 2 + Math.sin(pCam * Math.PI * 2.3 + 1.1) * stageH * DRIFT_Y;
-
-    // Origin is 0 0, so this reads right-to-left: bring the walker's point to
-    // the origin, scale, turn, then drop it where we want it on screen.
+  function paint() {
     map.style.transform =
-      `translate(${cx.toFixed(1)}px, ${cy.toFixed(1)}px) ` +
-      `rotate(${rot.toFixed(2)}deg) scale(${zoom.toFixed(4)}) ` +
-      `translate(${(-here.x).toFixed(1)}px, ${(-here.y).toFixed(1)}px)`;
+      `translate(${(vw / 2 - cam.x * cam.s).toFixed(1)}px, ${(vh / 2 - cam.y * cam.s).toFixed(1)}px) ` +
+      `scale(${cam.s.toFixed(4)})`;
+    // Les repères gardent leur taille à l'écran : ils se remettent à l'échelle inverse.
+    map.style.setProperty('--k', (1 / cam.s).toFixed(4));
+    // Une pile se montre quand la carte est assez zoomée ET que son repère est dans le
+    // cadre (la pile monte au-dessus, d'où la marge du bas) : son entrée se rejoue donc
+    // à chaque fois qu'on la fait revenir dans le champ en faisant glisser la carte.
+    const near = cam.s >= NEAR;
+    for (const d of decks) {
+      const sx = vw / 2 + (d.x - cam.x) * cam.s;
+      const sy = vh / 2 + (d.y - cam.y) * cam.s;
+      const inside = sx > -60 && sx < vw + 60 && sy > 40 && sy < vh + 260;
+      d.el.classList.toggle('is-shown', near && inside);
+    }
+    drawWalked(cam.walked);
+  }
 
-    // Labels read these to cancel the map's turn and zoom
-    map.style.setProperty('--rot', `${rot.toFixed(2)}deg`);
-    map.style.setProperty('--zoom', zoom.toFixed(4));
+  // La vue d'ensemble cadre toutes les étapes, et non le tracé entier : la queue du
+  // tracé déborde après 2012 et 2025, et elle écrasait tout à l'échelle.
+  function overview() {
+    const xs = stops.map((st) => st.x);
+    const ys = stops.map((st) => st.y);
+    const x0 = Math.min(...xs);
+    const x1 = Math.max(...xs);
+    const y0 = Math.min(...ys);
+    const y1 = Math.max(...ys);
+    const w = Math.max(x1 - x0, 1);
+    const h = Math.max(y1 - y0, 1);
+    return {
+      x: (x0 + x1) / 2,
+      y: (y0 + y1) / 2,
+      s: Math.min(FOCUS, vw / (w * FIT), vh / (h * FIT)),
+      walked: 0,
+    };
+  }
 
-    // En coordonnées carte : la caméra amène ce point pile en (cx, cy).
-    you.style.left = `${here.x.toFixed(1)}px`;
-    you.style.top = `${here.y.toFixed(1)}px`;
+  // Ce qu'on regarde sur une étape, c'est sa pile de projets ET son repère : la caméra
+  // vise le milieu des deux, donc le repère tombe sous le centre de la moitié de la
+  // hauteur de la pile. Celle-ci est lue sur la pile elle-même (sa hauteur et son
+  // retrait au-dessus du repère, en unités de carte) : aucun nombre recopié du CSS. La
+  // pile suivant le zoom, le décalage à l'écran est cette moitié fois l'échelle. Sans
+  // pile, ou carte dézoomée, le repère est au centre.
+  function lift(i, scale) {
+    const st = stops[i].stack;
+    if (!st || scale < NEAR) return 0;
+    // Les cartes prennent la hauteur de leur contenu : on lit la plus haute.
+    const h = Math.max(...[...st.children].map((c) => c.offsetHeight));
+    return ((h + parseFloat(getComputedStyle(st).bottom)) / 2) * scale;
+  }
 
-    // Le journal garde le DERNIER poste atteint : tant que l'étape suivante n'est
-    // pas débloquée, c'est le précédent qui reste affiché. Avant la première, le
-    // coin est vide — d'où le -1, qui ne correspond à aucune entrée.
-    let current = -1;
-    stops.forEach((s, i) => {
-      const reached = p >= parseFloat(s.dataset.at) - CARD_LEAD;
-      s.classList.toggle('is-reached', reached);
-      if (reached) current = i;
+  function focus(i) {
+    const s = stops[i];
+    return { x: s.x, y: s.y - lift(i, FOCUS) / FOCUS, s: FOCUS, walked: s.walked };
+  }
+
+  // Un glissement, pas une téléportation. Avec `instant` ou sous mouvement réduit,
+  // la caméra se pose d'un coup.
+  function glide(to, instant, then) {
+    cancelAnimationFrame(anim);
+    if ('walked' in to) cancelAnimationFrame(walkAnim);
+    if (instant || still.matches) {
+      Object.assign(cam, to);
+      paint();
+      if (then) then();
+      return;
+    }
+    const from = { ...cam };
+    const t0 = performance.now();
+    const step = (now) => {
+      const k = Math.min(1, (now - t0) / GLIDE_MS);
+      const e = 1 - (1 - k) ** 3;
+      for (const key of Object.keys(to)) cam[key] = from[key] + (to[key] - from[key]) * e;
+      paint();
+      if (k < 1) anim = requestAnimationFrame(step);
+      else if (then) then();
+    };
+    anim = requestAnimationFrame(step);
+  }
+
+  // Le tracé seul, sans toucher à la caméra : quand on fait glisser la carte, c'est
+  // le visiteur qui tient le cadre, le chemin avance tout seul.
+  let walkAnim = 0;
+  function walkTo(len) {
+    cancelAnimationFrame(walkAnim);
+    if (still.matches) { cam.walked = len; paint(); return; }
+    const from = cam.walked;
+    const t0 = performance.now();
+    const step = (now) => {
+      const k = Math.min(1, (now - t0) / GLIDE_MS);
+      cam.walked = from + (len - from) * (1 - (1 - k) ** 3);
+      paint();
+      if (k < 1) walkAnim = requestAnimationFrame(step);
+    };
+    walkAnim = requestAnimationFrame(step);
+  }
+
+  /* ---------- L'étape montrée ----------
+     Survoler, atteindre au clavier ou cliquer une étape la rend active, et la carte
+     y RESTE : quitter la liste — pour aller vers une pastille de projet, ou sur la
+     carte — ne ramène pas la vue d'ensemble. Celle-ci n'est que l'état de départ. */
+  let active = -1;
+
+  function update(instant) {
+    glide(active >= 0 ? focus(active) : overview(), instant);
+    mark();
+  }
+
+  // Les classes de l'étape active : la ligne de la liste (son effet de survol) et
+  // les repères atteints.
+  function mark() {
+    steps.forEach((step, i) => {
+      step.classList.toggle('is-active', i === active);
+      step.querySelector('.trail__step-btn').setAttribute('aria-pressed', String(i === active));
     });
 
-    if (current !== logCurrent) {
-      logEntries.forEach((e, i) => e.classList.toggle('is-current', i === current));
-      logCurrent = current;
-    }
-
-    // Read out the scroll through the section, not the raw position on the
-    // route — the route deliberately starts and ends outside the walk.
-    if (value) value.textContent = Math.round(scrolled * 100);
+    const here = active >= 0 ? stops[active].f : -1;
+    pins.forEach((pin, i) => {
+      pin.classList.toggle('is-reached', here >= 0 && stops[i].f <= here);
+      pin.classList.toggle('is-current', i === active);
+    });
   }
 
-  function onScroll() {
-    if (ticking) return;
-    ticking = true;
-    requestAnimationFrame(render);
+  function show(i) {
+    if (!wide.matches || active === i) return;
+    active = i;
+    update(false);
   }
 
-  function refresh() {
-    if (still.matches) return;
-    total = track.getTotalLength();
-    prevHeading = null;
-    layoutStops();
-    render();
+  steps.forEach((step, i) => {
+    const btn = step.querySelector('.trail__step-btn');
+    btn.addEventListener('mouseenter', () => show(i));
+    btn.addEventListener('focus', () => show(i));
+    btn.addEventListener('click', () => show(i));
+  });
+
+  /* ---------- L'étape au centre ----------
+     Quand on fait glisser la carte ou qu'on zoome, l'étape dont le repère tombe à peu
+     près au centre devient active : le chemin avance jusqu'à elle et sa ligne
+     s'allume dans la liste. La caméra, elle, reste où le visiteur l'a mise. */
+  function pickCentered() {
+    let best = -1;
+    let bestD = Math.min(vw, vh) * CENTER_R;
+    stops.forEach((st, i) => {
+      // Même visée que `focus` : le repère est attendu sous le centre, de `lift`.
+      const d = Math.hypot((st.x - cam.x) * cam.s, (st.y - cam.y) * cam.s - lift(i, cam.s));
+      if (d < bestD) { bestD = d; best = i; }
+    });
+    if (best < 0 || best === active) return;
+    active = best;
+    mark();
+    walkTo(stops[best].walked);
+  }
+
+  /* ---------- Faire glisser la carte ----------
+     On attrape le terrain et on le déplace : la caméra suit le pointeur, à l'échelle
+     près. Un glissement de caméra en cours est interrompu ; si le tracé était en
+     route, il finit sa course. Pas depuis une carte de projet ni un bouton de zoom. */
+  let drag = null;
+  view.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0 || e.target.closest('.trail__card, .trail__zoom')) return;
+    cancelAnimationFrame(anim);
+    if (active >= 0 && cam.walked !== stops[active].walked) walkTo(stops[active].walked);
+    drag = { x: e.clientX, y: e.clientY, cx: cam.x, cy: cam.y };
+    view.setPointerCapture(e.pointerId);
+    view.classList.add('is-dragging');
+  });
+  view.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    // Bornée à la carte, pour ne jamais sortir du relief.
+    cam.x = Math.min(7200, Math.max(0, drag.cx - (e.clientX - drag.x) / cam.s));
+    cam.y = Math.min(7200, Math.max(0, drag.cy - (e.clientY - drag.y) / cam.s));
+    paint();
+    pickCentered();
+  });
+  const endDrag = () => {
+    drag = null;
+    view.classList.remove('is-dragging');
+  };
+  view.addEventListener('pointerup', endDrag);
+  view.addEventListener('pointercancel', endDrag);
+
+  /* ---------- Zoomer, dézoomer ----------
+     Deux boutons, fabriqués ici (c'est du chrome) : ils zooment autour du centre, en
+     glissant. Sur la carte, la molette et le pincement d'un trackpad zooment autour du
+     pointeur, d'un coup : vers le bas on dézoome, vers le haut on zoome. Aux bornes du
+     zoom la molette rend la main à la page, sans quoi la carte, haute, piégerait le
+     défilement : on dézoome jusqu'au bout, puis la page repart. */
+  function zoomAt(factor, px, py, instant) {
+    const s = Math.min(MAX_S, Math.max(MIN_S, cam.s * factor));
+    // Le point de la carte sous (px, py) y reste.
+    const mx = cam.x + (px - vw / 2) / cam.s;
+    const my = cam.y + (py - vh / 2) / cam.s;
+    glide({ x: mx - (px - vw / 2) / s, y: my - (py - vh / 2) / s, s }, instant, pickCentered);
+  }
+
+  const zoom = document.createElement('div');
+  zoom.className = 'trail__zoom';
+  for (const [label, sign, factor] of [['Zoomer sur la carte', '+', ZOOM_STEP], ['Dézoomer la carte', '−', 1 / ZOOM_STEP]]) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'trail__zoom-btn';
+    b.setAttribute('aria-label', label);
+    b.textContent = sign;
+    b.addEventListener('click', () => zoomAt(factor, vw / 2, vh / 2, false));
+    zoom.append(b);
+  }
+  view.append(zoom);
+
+  view.addEventListener('wheel', (e) => {
+    if (!vw) return;
+    // Firefox compte parfois en lignes : on ramène tout en pixels.
+    const dy = e.deltaMode === 1 ? e.deltaY * 33 : e.deltaY;
+    const out = dy > 0;
+    if (!e.ctrlKey && ((out && cam.s <= MIN_S * 1.001) || (!out && cam.s >= MAX_S * 0.999))) return;
+    e.preventDefault();
+    const r = view.getBoundingClientRect();
+    // Le pincement envoie de petits deltas, la molette des crans de ~100 px.
+    const speed = e.ctrlKey ? 0.01 : 0.002;
+    zoomAt(Math.exp(-dy * speed), e.clientX - r.left, e.clientY - r.top, true);
+  }, { passive: false });
+
+  // Mise en place : mesure la fenêtre et pose la caméra sans glisser.
+  function refresh(instant) {
+    if (!wide.matches) return;
+    vw = view.clientWidth;
+    vh = view.clientHeight;
+    if (!vw || !vh) return;
+    update(instant);
+  }
+
+  // Sur mobile la carte est masquée et les boutons sont désactivés : la liste seule.
+  function sync() {
+    const on = wide.matches;
+    steps.forEach((step) => { step.querySelector('.trail__step-btn').disabled = !on; });
+    refresh(true);
   }
 
   /* ---------- La tuile de relief, rastérisée une fois ----------
-     La carte topo clignotait par moments pendant la marche, et c'est un
-     problème de RASTÉRISATION, pas de code : le fil principal tient ses 8,3 ms
-     médians de bout en bout.
-
-     `assets/home/trail/relief.svg` est une tuile de 192 tracés translucides. Tant
-     que l'échelle ne bouge pas, le compositeur réutilise sa texture — mais
-     `scale()` change à chaque approche d'étape (0,70 → 1,14), et Chrome doit
-     alors redessiner ces 192 tracés pour CHAQUE tuile visible. Mesuré à 58 ms
-     la tuile de 1400px, contre 12 ms pour la même image déjà rastérisée et
-     16 ms de budget par image. Le rasteur décroche, affiche des tuiles vides,
-     et c'est le clignotement — de temps en temps seulement, puisque le zoom ne
-     bouge qu'à l'approche des cartes.
-
-     On dessine donc la tuile UNE fois dans un canvas et on passe la bitmap en
-     fond. Le SVG reste la source de vérité : c'est lui que produit
-     gen_relief.py, c'est lui qu'on lit ici — via le fond déjà déclaré en CSS,
-     pour ne pas tenir le chemin à deux endroits — et si quoi que ce soit
-     échoue, le fond d'origine reste en place. Rien ne dépend de cette
-     optimisation, elle ne fait qu'accélérer. */
+     Chrome redessine les 192 tracés de la tuile à chaque changement d'échelle, ce qui
+     fait clignoter la carte. On la dessine donc une fois dans un canvas. Le SVG reste
+     la source : c'est lui qu'on relit depuis le fond CSS. Si ça échoue, le fond
+     d'origine reste en place. */
   function bakeRelief() {
     const relief = map.querySelector('.trail__relief');
     if (!relief || typeof HTMLCanvasElement === 'undefined') return;
@@ -462,11 +517,9 @@
     const tile = parseFloat(cs.backgroundSize);
     if (!src || !(tile > 0)) return;
 
-    // La tuile est vue jusqu'à ZOOM_STOP sur un écran qui peut être retina : on
-    // rastérise à la densité maximale réellement affichée. Plafonnée à 2 — au-delà
-    // la bitmap coûte plus de mémoire qu'elle ne rend de finesse sur un trait à
-    // 4 % d'opacité.
-    const density = Math.min(2, (window.devicePixelRatio || 1) * ZOOM_STOP);
+    // Densité plafonnée à 2 : au-delà la bitmap coûte plus de mémoire qu'elle ne rend
+    // de finesse sur des traits à faible opacité.
+    const density = Math.min(2, (window.devicePixelRatio || 1) * FOCUS);
     const size = Math.round(tile * density);
 
     const img = new Image();
@@ -485,269 +538,18 @@
     img.src = src[1];
   }
 
-  /* ---------- Mode « étape par étape » ---------- */
-  // Un cran de molette ne fait pas défiler : il déclenche la marche jusqu'à
-  // l'étape suivante, chemin compris, que la caméra suit toute seule. Le geste
-  // est un déclencheur, pas une poignée. Activé par défaut, débrayable par le
-  // bouton du HUD — qui est aussi la sortie de secours si le glissement coince.
-
-  // Le rythme de la marche automatique. Volontairement lent : la moitié de
-  // l'intérêt de la section est de voir le cheminement se faire, pas d'être
-  // téléporté d'une carte à l'autre. Baisse GLIDE_PACE pour accélérer.
-  const GLIDE_PACE = 3.4;    // ms de marche par px de scroll à couvrir
-  // Les deux bornes ne sont là que contre les cas dégénérés, et il faut qu'elles
-  // NE MORDENT JAMAIS sur une vraie marche : la vitesse au scroll doit être la
-  // même partout, sans quoi l'écart s'entend aussitôt. C'est vrai des deux côtés.
-  //
-  // Le plancher valait 2600 ms, et c'est lui qui produisait le « ralentissement
-  // à 2012 ». La première marche est la seule courte du lot — 385 px, contre 850
-  // à 1382 pour les autres — parce qu'elle ne part pas d'une carte mais de la fin
-  // de la révélation. Elle demandait 1310 ms, le plancher lui en imposait 2600 :
-  // 148 px/s contre 294 partout ailleurs, soit la moitié de la vitesse, sur la
-  // toute première marche que le visiteur voit.
-  const GLIDE_MIN = 250;     // ms — jamais atteint par une marche réelle
-  const GLIDE_MAX = 6500;    // ms — idem : assez haut pour qu'aucune marche ne
-                             // soit écrêtée sur un écran courant.
-  const WHEEL_TRIGGER = 24;  // px de molette cumulés avant de déclencher
-  const SWIPE_TRIGGER = 34;  // px de doigt
-  const REARM = 260;         // ms de battement après une marche, contre l'inertie
-  const MARK_EPS = 0.004;
-
-  // La destination du geste qui suit la DERNIÈRE carte : non plus « rien », mais
-  // la section d'après. Ce n'est pas une marque de plus — il n'y a pas d'étape
-  // là-bas — donc un jeton à part, que `nextMark` ne peut pas produire.
-  const EXIT = 'exit';
-
-  const toggle = trail.querySelector('.trail__auto');
-  let auto = true;
-  let glide = null;
-  let lockUntil = 0;
-  let wheelAcc = 0;
-  let touchY = null;
-
-  // 1px de tolérance : au ras de l'épinglage le rect vaut couramment 0,23px, et
-  // un test strict laisserait le tout premier geste filer sous la section.
-  function pinned() {
-    const r = trail.getBoundingClientRect();
-    return r.top <= 1 && r.bottom >= window.innerHeight - 1;
-  }
-
-  function nextMark(from, dir) {
-    if (dir > 0) {
-      for (const m of MARKS) if (m > from + MARK_EPS) return m;
-    } else {
-      for (let i = MARKS.length - 1; i >= 0; i--) if (MARKS[i] < from - MARK_EPS) return MARKS[i];
-    }
-    return null; // plus rien devant : la page reprend son défilement normal
-  }
-
-  // Où mène la sortie : le haut de la section qui suit la piste. On la lit dans
-  // le DOM plutôt que par son id — c'est « la suivante » qui est vraie ici, pas
-  // « projets », et la piste garde sa sortie si l'ordre de la page change.
-  function exitY() {
-    const next = trail.nextElementSibling;
-    if (!next) return trailTop() + walkPx();
-    return next.getBoundingClientRect().top + window.scrollY;
-  }
-
-  const glideTo = (frac, dir) => glideToY(pageYFor(frac), frac, dir);
-
-  // `key` identifie la destination : une fraction de scroll, ou EXIT. C'est elle
-  // que `step` relit pour savoir si une autre marche l'a supplantée. `dir` dit
-  // dans quel sens on marche : c'est lui qui permet à `handle` d'avaler les
-  // gestes qui sauteraient l'étape en cours sans avaler le demi-tour.
-  function glideToY(to, key, dir) {
-    const from = window.scrollY;
-    const dur = Math.min(GLIDE_MAX, Math.max(GLIDE_MIN, Math.abs(to - from) * GLIDE_PACE));
-    const t0 = performance.now();
-    glide = { to: key, dir };
-    lockUntil = t0 + dur + REARM;
-
-    const step = (now) => {
-      if (!glide || glide.to !== key) return;
-      const t = clamp01((now - t0) / dur);
-      // 'instant' est indispensable : html porte scroll-behavior: smooth, qui
-      // sinon animerait chaque pas de l'animation et la ferait ramer sur place.
-      // Interpolation linéaire, sans aucun assouplissement : toute courbe d'entrée
-      // /sortie se lit ici comme une accélération au milieu du trajet, ce qui est
-      // exactement ce qu'on ne veut pas quand le sujet est de suivre le chemin.
-      window.scrollTo({ top: from + (to - from) * t, left: 0, behavior: 'instant' });
-      if (t < 1) requestAnimationFrame(step);
-      else glide = null;
-    };
-    requestAnimationFrame(step);
-  }
-
-  // La marque visée par un geste, ou null si la section doit rendre la main.
-  function targetFor(dir) {
-    if (!auto || still.matches) return null;
-
-    // Menu mobile ouvert : la page est verrouillée sous le panneau, et un geste
-    // ne doit pas lancer une marche qu'on ne verrait pas.
-    if (document.documentElement.classList.contains('menu-open')) return null;
-
-    // Une sortie en cours absorbe les gestes, et ce test passe AVANT `pinned()` :
-    // la sortie traverse la traîne, donc la scène se décolle en cours de route.
-    // Sans ça la page se remettrait à défiler par-dessus l'animation, et les deux
-    // se tireraient dessus. Vers le haut, on repart sur la dernière carte.
-    if (glide && glide.to === EXIT) return dir > 0 ? EXIT : LAST_MARK;
-
-    if (!pinned()) return null;
-    // Pendant la révélation la scène est déjà épinglée : sans ce garde, le
-    // premier cran de molette filerait droit sur la première carte et on ne
-    // verrait jamais la fenêtre s'ouvrir.
-    if (revealFraction() < 1) return null;
-    // Passé la dernière carte, on est dans la traîne : le mode auto ne s'en mêle
-    // plus, dans aucun des deux sens, et le scroll redevient manuel.
-    if (fraction() > LAST_MARK + MARK_EPS) return null;
-
-    const mark = nextMark(glide ? glide.to : fraction(), dir);
-    // Plus de carte devant : depuis la dernière, un geste vers le bas emmène à la
-    // section suivante d'un seul mouvement, au lieu de rendre la main au milieu
-    // de la traîne. Vers le haut, `nextMark` a le dernier mot comme avant.
-    if (mark === null && dir > 0) return EXIT;
-    return mark;
-  }
-
-  // true = le geste est consommé par la section, false = laisse passer la page.
-  function handle(dir) {
-    const target = targetFor(dir);
-    if (target === null) return false;
-    // UNE MARCHE VA TOUJOURS JUSQU'À SA CARTE. Un geste de plus dans le MÊME
-    // sens est donc avalé sans rien relancer : il ne fait pas sauter l'étape en
-    // cours. Sans ce garde, une marche longue (jusqu'à ~4,7 s) restait ouverte
-    // aux gestes dès la retombée de l'inertie, et trois crans de molette
-    // menaient d'une carte à celle d'APRÈS la suivante sans s'arrêter entre les
-    // deux. Le demi-tour, lui, reprend la main tout de suite — c'est ce qui
-    // permet de revenir sur la dernière carte pendant la sortie, et ce qui
-    // évite d'enfermer quelqu'un pendant une marche.
-    if (glide) {
-      if (dir === glide.dir) return true;
-    } else if (performance.now() < lockUntil) {
-      return true; // avalé, mais sans avancer : battement anti-inertie
-    }
-    // Déjà en route vers là : on avale sans relancer l'animation depuis la
-    // position courante, ce qui la ferait repartir plus lentement à chaque cran.
-    if (glide && glide.to === target) return true;
-    if (target === EXIT) glideToY(exitY(), EXIT, dir);
-    else glideTo(target, dir);
-    return true;
-  }
-
-  function onWheel(e) {
-    const dir = e.deltaY > 0 ? 1 : e.deltaY < 0 ? -1 : 0;
-    if (!dir || targetFor(dir) === null) {
-      wheelAcc = 0;
-      return;
-    }
-    e.preventDefault(); // sinon l'inertie du trackpad traverse toute la section
-    if (dir !== Math.sign(wheelAcc)) wheelAcc = 0;
-    wheelAcc += e.deltaY;
-    if (Math.abs(wheelAcc) < WHEEL_TRIGGER) return;
-    if (handle(dir)) wheelAcc = 0;
-  }
-
-  function onTouchStart(e) {
-    touchY = e.touches.length === 1 ? e.touches[0].clientY : null;
-  }
-
-  function onTouchMove(e) {
-    if (touchY === null) return;
-    const dy = touchY - e.touches[0].clientY;
-    const dir = dy > 0 ? 1 : -1;
-    if (targetFor(dir) === null) return;
-    e.preventDefault();
-    if (Math.abs(dy) < SWIPE_TRIGGER) return;
-    if (handle(dir)) touchY = e.touches[0].clientY;
-  }
-
-  function onKey(e) {
-    if (e.target === toggle || e.metaKey || e.ctrlKey || e.altKey) return;
-    let dir = 0;
-    if (e.key === 'ArrowDown' || e.key === 'PageDown') dir = 1;
-    else if (e.key === 'ArrowUp' || e.key === 'PageUp') dir = -1;
-    else if (e.key === ' ') dir = e.shiftKey ? -1 : 1;
-    if (dir && handle(dir)) e.preventDefault();
-  }
-
-  function setAuto(on) {
-    auto = on;
-    glide = null;
-    wheelAcc = 0;
-    lockUntil = 0;
-    // Les deux libellés « Manuel / Auto » sont décoratifs : l'état réel passe par
-    // aria-pressed, et le nom accessible dit ce que fait le bouton maintenant.
-    if (toggle) {
-      toggle.setAttribute('aria-pressed', String(on));
-      toggle.setAttribute('aria-label', on ? 'Avancer étape par étape' : 'Défilement libre');
-    }
-  }
-
-  if (toggle) toggle.addEventListener('click', () => setAuto(!auto));
-  setAuto(true);
-
-  if (!still.matches) {
-    bakeRelief();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', refresh);
-    window.addEventListener('wheel', onWheel, { passive: false });
-    window.addEventListener('touchstart', onTouchStart, { passive: true });
-    window.addEventListener('touchmove', onTouchMove, { passive: false });
-    window.addEventListener('keydown', onKey);
-  }
-  still.addEventListener('change', () => window.location.reload());
-
-  /* ---------- Les liens « Parcours » arrivent sur la carte OUVERTE ----------
-     L'ancre `#parcours` pose le haut de la section, c'est-à-dire le petit carton
-     d'AVANT la révélation : on arrivait devant une vignette, à scroller encore
-     pour voir la carte. On vise donc la première étape (`MARKS[0]`), qui tombe
-     20vh après la fin de l'ouverture — carte dépliée, première carte d'étape
-     affichée, et le mode auto repart de là comme d'une marque ordinaire.
-
-     Deux chemins, un seul point d'arrivée :
-     - un lien de la page (header, footer, menu mobile) : on prend la main sur le
-       clic et on défile en douceur jusque-là. L'ancre reste posée dans l'URL ;
-     - une arrivée d'une page projet sur `./#parcours` : le navigateur saute
-       d'abord sur l'ancre, on repose la page au `load` — moment où il cesse de
-       re-viser le fragment. Le voile de transition couvre ce saut.
-
-     En mouvement réduit la section est une frise, sans carte à ouvrir : l'ancre
-     garde son comportement normal. */
-  if (!still.matches) {
-    const openY = () => pageYFor(MARKS[0]);
-
-    document.addEventListener('click', (e) => {
-      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-      const a = e.target.closest('a[href]');
-      if (!a || a.hash !== '#parcours' || a.pathname !== location.pathname) return;
-      e.preventDefault();
-      glide = null;
-      lockUntil = 0; // le verrou couvre toute la marche : il part avec elle
-      if (location.hash !== '#parcours') history.pushState(null, '', '#parcours');
-      window.scrollTo({ top: openY(), behavior: 'smooth' });
-    });
-
-    // Un rechargement garde la position restaurée par le navigateur : ce n'est
-    // pas une arrivée.
-    const nav = performance.getEntriesByType('navigation')[0];
-    if (location.hash === '#parcours' && !(nav && nav.type === 'reload')) {
-      let free = false;
-      ['wheel', 'touchstart', 'keydown'].forEach((type) => {
-        window.addEventListener(type, () => { free = true; }, { passive: true, once: true });
-      });
-      const put = () => { if (!free) window.scrollTo({ top: openY(), behavior: 'instant' }); };
-      put();
-      window.addEventListener('load', put);
-    }
-  }
-
-  refresh();
+  bakeRelief();
+  sync();
+  // La carte peut changer de taille sans que la fenêtre bouge (la liste la fait grandir) :
+  // on suit la boîte elle-même.
+  new ResizeObserver(() => refresh(true)).observe(view);
+  wide.addEventListener('change', sync);
 })();
 
 /* ---------- Projets : le groupement qui suit la carte survolée ---------- */
 // Le JS ne pose qu'UN état : la classe `is-active`, déplacée d'un `<li>` à
 // l'autre. Tout le reste — le fondu, les décalages d'entrée, l'échelle de la
-// carte — vit dans le CSS, comme `--open` du parcours ou `--out` du tas de
+// carte — vit dans le CSS, comme `--out` du tas de
 // photos.
 //
 // La classe part du HTML, sur le premier projet : sans JS, en mouvement réduit
@@ -854,8 +656,7 @@
 /* ---------- Le comparateur avant / après (page projet) ----------
    Le curseur natif fait tout le travail : glissement à la souris et au doigt,
    clavier, bornes, annonce aux lecteurs d'écran. Le JS n'écrit qu'un nombre,
-   `--pos`, et le CSS compose le reste — même partage que le tas de photos et la
-   révélation du parcours. */
+   `--pos`, et le CSS compose le reste — même partage que le tas de photos. */
 (function () {
   const wipes = document.querySelectorAll('.wipe');
   if (!wipes.length) return;
@@ -1097,7 +898,7 @@
      ce qui bouge, sans avoir à ouvrir le JS.
    - LE JS NE POSE QU'UN NOMBRE, `--par`, entre -1 et 1 : la position de
      l'élément dans la fenêtre, -1 tout en haut, +1 tout en bas. Comme `--out`
-     du tas de photos et `--open` du parcours.
+     du tas de photos.
    - LE CSS COMPOSE. C'est lui qui décide de combien et dans quel sens, via
      `--par-amp` dans la règle de chaque pièce. Une amplitude POSITIVE fait
      l'élément passer plus vite que la page — il vient devant ; une NÉGATIVE le
@@ -1210,18 +1011,10 @@
   let last = window.scrollY;
   let run = 0;          // cumul signé du déplacement dans le sens courant
   let hold = 0;         // minuteur du gel pendant un saut d'ancre
-  // Rappelé par le mousqueton de la carte, le header reste affiché jusqu'au
-  // prochain geste du VISITEUR. En mode auto, la marche fait défiler la page
-  // toute seule ; sans ce drapeau, ce défilement était lu comme un geste vers
-  // le bas et le header repartait à l'image suivante.
-  let kept = false;
   let ticking = false;
 
   const hide = (on) => {
     header.classList.toggle('is-hidden', on);
-    // Un header qui repart n'a plus à rejouer son arrivée : on lui rend sa
-    // transition ordinaire, l'arrivée animée reste réservée au mousqueton.
-    if (on) header.classList.remove('is-summoned');
   };
 
   function render() {
@@ -1235,7 +1028,7 @@
     const top = y <= header.offsetHeight;
     header.classList.toggle('is-stuck', !top);
 
-    if (hold || kept) return;
+    if (hold) return;
     if (top) { hide(false); run = 0; return; }
 
     run = (d > 0) === (run > 0) ? run + d : d;
@@ -1249,13 +1042,11 @@
     run = 0;
   }
 
-  // Seul un geste du visiteur lève le drapeau — molette, doigt, clavier,
-  // pointeur. Le défilement qu'il déclenche est alors lu normalement : un geste
-  // vers le bas chasse le header, comme partout ailleurs. `pointerdown` précède
-  // le `click` du mousqueton, donc il ne lève pas le drapeau que ce clic pose.
-  const unkeep = () => { kept = false; run = 0; last = window.scrollY; };
+  // Un geste du visiteur remet le cumul à zéro : le défilement qu'il déclenche est
+  // alors lu normalement, et un geste vers le bas chasse le header comme partout.
+  const gesture = () => { run = 0; last = window.scrollY; };
   for (const type of ['wheel', 'touchstart', 'keydown', 'pointerdown']) {
-    window.addEventListener(type, unkeep, { passive: true, capture: true });
+    window.addEventListener(type, gesture, { passive: true, capture: true });
   }
 
   window.addEventListener('scroll', () => {
@@ -1272,61 +1063,6 @@
     clearTimeout(hold);
     hold = setTimeout(release, SETTLE);
   });
-
-  // LE MOUSQUETON DE LA CARTE. Carte ouverte, le header s'est effacé, et le
-  // faire revenir demandait de remonter — donc de reculer dans la marche. Le
-  // bouton le rappelle sur place, comme un geste vers le haut : le cumul repart
-  // de zéro, et le prochain vrai geste vers le bas le chasse de nouveau.
-  // C'est du chrome, donc fabriqué ici, en clonant l'icône du header — un seul
-  // dessin à tenir. Tout le reste (desktop seulement, fondu à l'ouverture,
-  // effacement quand le header est là) est dans le CSS.
-  const icon = header.querySelector('.menu-toggle__icon');
-  const hud = document.querySelector('.trail__hud');
-  if (icon && hud) {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'trail__menu';
-    btn.setAttribute('aria-label', 'Afficher le menu');
-    btn.appendChild(icon.cloneNode(true));
-    // L'arrivée animée tient à une classe posée le temps de l'animation. On la
-    // retire puis la repose pour qu'un second clic rejoue l'arrivée, et un
-    // minuteur la reprend si `animationend` ne vient pas (onglet en fond).
-    let summoned = 0;
-    const settle = () => { clearTimeout(summoned); header.classList.remove('is-summoned'); };
-    // La cascade finit sur « Discutons » : c'est la dernière pièce à se poser.
-    header.addEventListener('animationend', (e) => {
-      if (e.animationName === 'header-drop' && e.target.matches('.btn-contact')) settle();
-    });
-    btn.addEventListener('click', () => {
-      // EN MOBILE, IL OUVRE LE MENU. La nav y est repliée derrière le
-      // mousqueton du header : afficher la barre seule ne donnerait accès à
-      // rien, il faudrait encore un second clic. On passe donc par ce bouton-là
-      // — son IIFE affiche le header, ouvre le panneau et gère le focus. Le
-      // drapeau `kept` garde la barre en place une fois le panneau refermé.
-      const toggle = header.querySelector('.menu-toggle');
-      if (toggle && toggle.offsetParent) {
-        hide(false);
-        run = 0;
-        kept = true;
-        toggle.click();
-        return;
-      }
-      header.classList.remove('is-summoned');
-      void header.offsetWidth;
-      header.classList.add('is-summoned');
-      clearTimeout(summoned);
-      summoned = setTimeout(settle, 1600);
-      hide(false);
-      run = 0;
-      kept = true;
-      // Au clavier, le focus passe au premier lien du menu : sans ça, il
-      // resterait sur un bouton qui vient de s'effacer.
-      if (btn.matches(':focus-visible')) {
-        header.querySelector('.main-nav a')?.focus({ preventScroll: true });
-      }
-    });
-    hud.before(btn);
-  }
 
   // Au chargement la page peut déjà être plus bas (ancre, position restaurée) :
   // le dégradé doit être là, le header reste affiché.
